@@ -28,9 +28,9 @@ setup(
     namespace_packages=['tutorweb'],
     install_requires=[
         'setuptools',
-        'plone.subrequest',
-        'Products.TutorWeb',
-        'lxml',
+        'z3c.saconfig',
+        'MySQL-python',
+        'SQLAlchemy>=0.8',
     ],
     extras_require={
         'test': [
