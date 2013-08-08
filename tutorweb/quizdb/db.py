@@ -1,4 +1,5 @@
-import datetime
+from hashlib import md5
+from datetime import datetime
 
 import sqlalchemy.event
 import sqlalchemy.schema
@@ -15,9 +16,10 @@ class Allocation(ORMBase):
         primary_key=True,
         autoincrement=True,
     )
-    allocationPublicId = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(64),
+    publicId = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(32),
         nullable=False,
+        unique=True,
     )
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -34,17 +36,17 @@ class Allocation(ORMBase):
         nullable=False,
         default=datetime.now,
     )
+    #TODO: Index on studentId, studentId:questionId unique, publicId
 
 
 @sqlalchemy.event.listens_for(Allocation, "before_insert")
 def generatePublicId(mapper, connection, instance):
     """Generate a sparse ID for this row"""
-    #TODO: Encrypt / faff about with raw data?
-    instance.allocationPublicId = (
-        instance.studentId +
-        instance.questionId +
-        instance.allocationTime
-    )
+    instance.publicId = md5('%s:%s:%s' % (
+        instance.studentId,
+        instance.questionId,
+        datetime.now()
+    )).hexdigest()
 
 
 class Question(ORMBase):
@@ -53,14 +55,19 @@ class Question(ORMBase):
 
     questionId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
-        primary_key=True,
         autoincrement=True,
+        primary_key=True,
     )
-    questionPath = sqlalchemy.schema.Column(
+    plonePath = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(64),
+        nullable=False,
+        unique=True,
+    )
+    parentPath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
     )
-    timesAskedFor = sqlalchemy.schema.Column(
+    timesAnswered = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         nullable=False,
         default=0,
@@ -70,26 +77,34 @@ class Question(ORMBase):
         nullable=False,
         default=0,
     )
+    lastUpdate = sqlalchemy.schema.Column(
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime.now,
+    )
+    #TODO: Index on parentPath
 
 
 class Student(ORMBase):
     """Student table: Students of quizzes"""
-    __tablename__ = 'answer'
+    __tablename__ = 'student'
 
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         primary_key=True,
         autoincrement=True,
     )
-    studentPloneId = sqlalchemy.schema.Column(
+    userName = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
+        unique=True,
     )
+    #TODO: Index on userName
 
 
 class Answer(ORMBase):
     """Answer table: List of all answers for questions"""
-    __tablename__ = 'question'
+    __tablename__ = 'answer'
 
     answerId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -118,3 +133,4 @@ class Answer(ORMBase):
         sqlalchemy.types.DateTime(),
         nullable=False,
     )
+    #TODO: Index on questionId

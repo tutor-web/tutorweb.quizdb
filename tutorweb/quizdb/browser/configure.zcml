@@ -1,0 +1,23 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="tutorweb.content">
+
+    <browser:page name="quizdb-sync"
+      for="tutorweb.content.schema.ILecture"
+      class=".sync.SyncLectureView"
+      permission="zope2.View"
+      />
+
+    <browser:page name="quizdb-all-questions"
+      for="tutorweb.content.schema.ILecture"
+      class=".sync.GetLectureQuestionsView"
+      permission="zope2.View"
+      />
+
+    <browser:page name="quizdb-get-question"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".sync.GetQuestionView"
+      permission="zope2.View"
+      />
+</configure>
