@@ -10,6 +10,9 @@ from tutorweb.quizdb import ORMBase
 class Allocation(ORMBase):
     """Allocation table: Which students are working on which questions"""
     __tablename__ = 'allocation'
+    __table_args__ = (
+        sqlalchemy.schema.UniqueConstraint('studentId', 'questionId', name='uniq_studid_qnid'),
+    )
 
     allocationId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -20,11 +23,13 @@ class Allocation(ORMBase):
         sqlalchemy.types.String(32),
         nullable=False,
         unique=True,
+        index=True,
     )
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('student.studentId'),
         nullable=False,
+        index=True,
     )
     questionId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -36,7 +41,6 @@ class Allocation(ORMBase):
         nullable=False,
         default=datetime.now,
     )
-    #TODO: Index on studentId, studentId:questionId unique, publicId
 
 
 @sqlalchemy.event.listens_for(Allocation, "before_insert")
@@ -66,6 +70,7 @@ class Question(ORMBase):
     parentPath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
+        index=True,
     )
     timesAnswered = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -82,7 +87,6 @@ class Question(ORMBase):
         nullable=False,
         default=datetime.now,
     )
-    #TODO: Index on parentPath
 
 
 class Student(ORMBase):
@@ -98,8 +102,8 @@ class Student(ORMBase):
         sqlalchemy.types.String(64),
         nullable=False,
         unique=True,
+        index=True,
     )
-    #TODO: Index on userName
 
 
 class Answer(ORMBase):
@@ -120,6 +124,7 @@ class Answer(ORMBase):
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('question.questionId'),
         nullable=False,
+        index=True,
     )
     chosenAnswer = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -133,4 +138,3 @@ class Answer(ORMBase):
         sqlalchemy.types.DateTime(),
         nullable=False,
     )
-    #TODO: Index on questionId
