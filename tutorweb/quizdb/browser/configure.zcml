@@ -9,6 +9,12 @@
       permission="zope2.View"
       />
 
+    <browser:page name="quizdb-sync"
+      for="tutorweb.content.schema.ITutorial"
+      class=".sync.SyncTutorialView"
+      permission="zope2.View"
+      />
+
     <browser:page name="quizdb-all-questions"
       for="tutorweb.content.schema.ILecture"
       class=".question.GetLectureQuestionsView"

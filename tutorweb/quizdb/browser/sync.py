@@ -11,6 +11,18 @@ from tutorweb.quizdb import db
 from .base import JSONBrowserView
 
 
+class SyncTutorialView(JSONBrowserView):
+    def asDict(self):
+        listing = self.context.restrictedTraverse('@@folderListing')(
+            portal_type='tw_lecture',
+        )
+        return dict(
+            uri=self.context.absolute_url() + '/quizdb-sync',
+            title=self.context.title,
+            lectures=[self.context.restrictedTraverse(l.id + '/quizdb-sync').asDict() for l in listing],
+        )
+
+
 class SyncLectureView(JSONBrowserView):
     def asDict(self):
         parentPath = '/'.join(self.context.getPhysicalPath())
