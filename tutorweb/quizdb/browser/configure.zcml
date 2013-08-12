@@ -11,13 +11,13 @@
 
     <browser:page name="quizdb-all-questions"
       for="tutorweb.content.schema.ILecture"
-      class=".sync.GetLectureQuestionsView"
+      class=".question.GetLectureQuestionsView"
       permission="zope2.View"
       />
 
     <browser:page name="quizdb-get-question"
       for="Products.CMFCore.interfaces.ISiteRoot"
-      class=".sync.GetQuestionView"
+      class=".question.GetQuestionView"
       permission="zope2.View"
       />
 </configure>
