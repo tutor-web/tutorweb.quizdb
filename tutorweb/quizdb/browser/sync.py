@@ -169,7 +169,8 @@ class SyncLectureView(JSONBrowserView):
         Session.flush()
 
         return dict(
-            uri=self.context.absolute_url() + '/sync',
+            uri=self.context.absolute_url() + '/quizdb-sync',
+            question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
             questions=[dict(
                 uri=rootUrl + '/quizdb-get-question/' + dbAlloc.publicId,
