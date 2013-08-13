@@ -1,16 +1,26 @@
+import base64
+import json
+
 from zope.interface import implements
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from z3c.saconfig import Session
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from Products.CMFCore.utils import getToolByName
-
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
 
 
-class GetQuestionView(JSONBrowserView):
+class QuestionView(JSONBrowserView):
+    """Base class: fetches questions and obsfucates"""
+    def getQuestionData(self, path):
+        out = self.portalObject().unrestrictedTraverse(path + '/data').asDict()
+        # Obsfucate answer
+        out['answer'] = base64.b64encode(json.dumps(out['answer']))
+        return out
+
+
+class GetQuestionView(QuestionView):
     """Fetched the named allocated question"""
     implements(IPublishTraverse)
 
@@ -41,13 +51,10 @@ class GetQuestionView(JSONBrowserView):
             raise NotFound(self, self.questionId, self.request)
 
         #NB: Unrestricted so we can see this even when direct access is banned
-        portal = getToolByName(self.context, "portal_url").getPortalObject()
-        #TODO: Where should answer obsfucation go?
-        return portal.unrestrictedTraverse(str(dbQn.plonePath) + '/data') \
-                     .asDict()
+        return self.getQuestionData(str(dbQn.plonePath))
 
 
-class GetLectureQuestionsView(JSONBrowserView):
+class GetLectureQuestionsView(QuestionView):
     """Fetch all questions for a lecture"""
     def asDict(self):
         parentPath = '/'.join(self.context.getPhysicalPath())
@@ -64,9 +71,8 @@ class GetLectureQuestionsView(JSONBrowserView):
             .all()
 
         # Render each question into a dict
-        #TODO: Where should answer obsfucation go?
-        portal = getToolByName(self.context, "portal_url").getPortalObject()
+        portal = self.portalObject()
         return dict((
             portal.absolute_url() + '/quizdb-get-question/' + dbAlloc.publicId,
-            portal.unrestrictedTraverse(str(dbQn.plonePath) + '/data').asDict()
+            self.getQuestionData(str(dbQn.plonePath)),
         ) for (dbQn, dbAlloc) in dbAllocs)

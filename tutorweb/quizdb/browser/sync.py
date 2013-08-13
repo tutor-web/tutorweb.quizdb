@@ -26,8 +26,7 @@ class SyncTutorialView(JSONBrowserView):
 class SyncLectureView(JSONBrowserView):
     def asDict(self):
         parentPath = '/'.join(self.context.getPhysicalPath())
-        rootUrl = self.context.restrictedTraverse(
-            '@@plone_portal_state/navigation_root_url')()
+        portalUrl = self.portalObject().absolute_url()
         student = self.getCurrentStudent()
 
         # Get all plone questions, turn it into a dict by path
@@ -49,8 +48,8 @@ class SyncLectureView(JSONBrowserView):
             ).subquery(),
         )
         dbAllocs = Session.query(db.Question, subquery) \
-            .filter(parentPath == parentPath) \
             .outerjoin(subquery) \
+            .filter(db.Question.parentPath == parentPath) \
             .all()
 
         # Update / delete any existing questions
@@ -61,8 +60,8 @@ class SyncLectureView(JSONBrowserView):
                 # dbQn.lastUpdate = ploneQns[dbQn.plonePath]['lastUpdate']
                 del ploneQns[dbQn.plonePath]
             else:
-                # Question removed, so remove it here too
-                raise NotImplementedError  #TODO:
+                # Question isn't in Plone, so shouldn't be in DB
+                Session.delete(dbQn)
 
         # Add any questions missing from DB
         for qn in ploneQns.values():
@@ -88,7 +87,7 @@ class SyncLectureView(JSONBrowserView):
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
             questions=[dict(
-                uri=rootUrl + '/quizdb-get-question/' + dbAlloc.publicId,
+                uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
                 chosen=dbQn.timesAnswered,
                 correct=dbQn.timesCorrect,
             ) for (dbQn, dbAlloc) in dbAllocs],

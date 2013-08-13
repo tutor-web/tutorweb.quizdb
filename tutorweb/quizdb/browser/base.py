@@ -5,6 +5,7 @@ from z3c.saconfig import Session
 
 from sqlalchemy.orm.exc import NoResultFound
 
+from Products.CMFCore.utils import getToolByName
 from Products.Five.browser import BrowserView
 
 from tutorweb.quizdb import db
@@ -37,6 +38,13 @@ class JSONBrowserView(BrowserView):
         return self.getDbStudent(mb.getUserName())
 
     ### Database operations (move these elsewhere?)
+
+    def portalObject(self):
+        """Get the portal object, caching it"""
+        if getattr(self, '_portal', None) is None:
+            pu = getToolByName(self.context, "portal_url")
+            self._portal = pu.getPortalObject()
+        return self._portal
 
     def getDbStudent(self, username):
         """Return the datbase student, creating if necessary"""
