@@ -1,4 +1,5 @@
 import json
+import logging
 
 from z3c.saconfig import Session
 
@@ -21,6 +22,8 @@ class JSONBrowserView(BrowserView):
             self.request.response.setHeader("Content-type", "application/json")
             return json.dumps(out)
         except Exception, ex:
+            logging.error("Failed call: " + self.request['URL'])
+            logging.exception(ex)
             self.request.response.setStatus(500)
             self.request.response.setHeader("Content-type", "application/json")
             return json.dumps(dict(
