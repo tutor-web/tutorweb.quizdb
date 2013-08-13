@@ -14,6 +14,8 @@ from .base import JSONBrowserView
 class QuestionView(JSONBrowserView):
     """Base class: fetches questions and obsfucates"""
     def getQuestionData(self, path):
+        """Fetch dict for question, obsfucating the answer"""
+        #NB: Unrestricted so we can see this even when direct access is banned
         out = self.portalObject().unrestrictedTraverse(path + '/data').asDict()
         # Obsfucate answer
         out['answer'] = base64.b64encode(json.dumps(out['answer']))
@@ -38,11 +40,12 @@ class GetQuestionView(QuestionView):
     def asDict(self):
         if self.questionId is None:
             raise NotFound(self, None, self.request)
+        student = self.getCurrentStudent()
 
-        #TODO: Filter by logged in user?
         try:
             dbQn = Session.query(db.Question) \
                 .join(db.Allocation) \
+                .filter(db.Allocation.studentId == student.studentId) \
                 .filter(db.Allocation.publicId == self.questionId) \
                 .one()
         except NoResultFound:
@@ -50,7 +53,6 @@ class GetQuestionView(QuestionView):
         except MultipleResultsFound:
             raise NotFound(self, self.questionId, self.request)
 
-        #NB: Unrestricted so we can see this even when direct access is banned
         return self.getQuestionData(str(dbQn.plonePath))
 
 
@@ -58,16 +60,13 @@ class GetLectureQuestionsView(QuestionView):
     """Fetch all questions for a lecture"""
     def asDict(self):
         parentPath = '/'.join(self.context.getPhysicalPath())
-
-        # Get listing of all questions, insert them in the DB if not
-        # already there
         student = self.getCurrentStudent()
 
         # Get all questions from DB and their allocations
         dbAllocs = Session.query(db.Question, db.Allocation) \
+            .join(db.Allocation) \
             .filter(parentPath == parentPath) \
             .filter(db.Allocation.studentId == student.studentId) \
-            .join(db.Allocation) \
             .all()
 
         # Render each question into a dict
