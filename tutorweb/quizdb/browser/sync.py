@@ -1,4 +1,6 @@
+import datetime
 import dateutil.parser
+import json
 import logging
 logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)  #TODO:
 
@@ -28,6 +30,45 @@ class SyncLectureView(JSONBrowserView):
         parentPath = '/'.join(self.context.getPhysicalPath())
         portalUrl = self.portalObject().absolute_url()
         student = self.getCurrentStudent()
+
+        # Have we been handed a structure to update?
+        answerQueue = []
+        if self.request.getHeader('Content-Type') == 'application/json':
+            self.request.stdin.seek(0)
+            lecture = json.loads(self.request.stdin.read())
+            answerQueue = lecture['answerQueue']
+
+            # Get student's allocation for this lecture
+            questionIds = dict(
+                (dbAlloc.publicId, dbAlloc.questionId)
+                for dbAlloc in Session.query(db.Allocation)
+                    .join(db.Question)
+                    .filter(db.Question.parentPath == parentPath)
+                    .filter(db.Allocation.studentId == student.studentId)
+            )
+
+            # Insert records into DB
+            for a in answerQueue:
+                if a['synced']:
+                    continue
+                if 'student_answer' not in a:
+                    continue
+                if '/quizdb-get-question/' not in a['uri']:
+                    logger.warn("Question ID %s malformed" % a['uri'])
+                    continue
+                publicId = a['uri'].split('/quizdb-get-question/', 2)[1]
+                if publicId not in questionIds:
+                    logger.warn("Allocation %s not in DB" % a['uri'])
+                    continue
+                Session.add(db.Answer(
+                    studentId=student.studentId,
+                    questionId=questionIds[publicId],
+                    chosenAnswer=a['student_answer'],
+                    timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),  #TODO: Timezone?
+                    timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
+                ))
+                a['synced'] = True
+            Session.flush()
 
         # Get all plone questions, turn it into a dict by path
         #TODO: What about unpublished questions?
@@ -94,4 +135,5 @@ class SyncLectureView(JSONBrowserView):
             histsel=(self.context.aq_parent.histsel
                      if self.context.histsel < 0
                      else self.context.histsel),
+            answerQueue=answerQueue,
         )
