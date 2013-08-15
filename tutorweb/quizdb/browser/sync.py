@@ -68,17 +68,18 @@ class SyncLectureView(JSONBrowserView):
                     timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
                 ))
                 a['synced'] = True
+            #TODO: Update per-question records too
             Session.flush()
 
         # Get all plone questions, turn it into a dict by path
-        #TODO: What about unpublished questions?
-        listing = self.context.restrictedTraverse('@@folderListing')(
-            object_provides=IQuestion.__identifier__,
+        listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
+            path={'query': '/'.join(self.context.getPhysicalPath()), 'depth': 1},
+            object_provides=IQuestion.__identifier__
         )
         ploneQns = dict((l.getPath(), dict(
             plonePath=l.getPath(),
             parentPath=parentPath,
-            lastUpdate=dateutil.parser.parse(l.ModificationDate()),
+            lastUpdate=dateutil.parser.parse(l['ModificationDate']),
         )) for l in listing)
 
         # Get all questions from DB and their allocations
