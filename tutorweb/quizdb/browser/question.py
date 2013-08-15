@@ -65,7 +65,7 @@ class GetLectureQuestionsView(QuestionView):
         # Get all questions from DB and their allocations
         dbAllocs = Session.query(db.Question, db.Allocation) \
             .join(db.Allocation) \
-            .filter(parentPath == parentPath) \
+            .filter(db.Question.parentPath == parentPath) \
             .filter(db.Allocation.studentId == student.studentId) \
             .all()
 
