@@ -54,11 +54,11 @@ class SyncLectureView(JSONBrowserView):
                 if 'student_answer' not in a:
                     continue
                 if '/quizdb-get-question/' not in a['uri']:
-                    logger.warn("Question ID %s malformed" % a['uri'])
+                    logging.warn("Question ID %s malformed" % a['uri'])
                     continue
                 publicId = a['uri'].split('/quizdb-get-question/', 2)[1]
                 if publicId not in questionIds:
-                    logger.warn("Allocation %s not in DB" % a['uri'])
+                    logging.warn("Allocation %s not in DB" % a['uri'])
                     continue
                 Session.add(db.Answer(
                     studentId=student.studentId,
