@@ -1,6 +1,7 @@
 import json
 import logging
 
+from AccessControl import Unauthorized
 from z3c.saconfig import Session
 
 from sqlalchemy.orm.exc import NoResultFound
@@ -22,6 +23,13 @@ class JSONBrowserView(BrowserView):
             self.request.response.setStatus(200)
             self.request.response.setHeader("Content-type", "application/json")
             return json.dumps(out)
+        except Unauthorized, ex:
+            self.request.response.setStatus(403)
+            self.request.response.setHeader("Content-type", "application/json")
+            return json.dumps(dict(
+                error=ex.__class__.__name__,
+                message=str(ex),
+            ))
         except Exception, ex:
             logging.error("Failed call: " + self.request['URL'])
             logging.exception(ex)
@@ -33,8 +41,10 @@ class JSONBrowserView(BrowserView):
             ))
 
     def getCurrentStudent(self):
-        #TODO: What if anonymous?
-        mb = self.context.portal_membership.getAuthenticatedMember()
+        membership = self.context.portal_membership;
+        if membership.isAnonymousUser():
+            raise Unauthorized
+        mb = membership.getAuthenticatedMember()
         return self.getDbStudent(mb.getUserName())
 
     ### Database operations (move these elsewhere?)
