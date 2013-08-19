@@ -27,14 +27,14 @@ class GetQuestionView(QuestionView):
     implements(IPublishTraverse)
 
     def __init__(self, context, request):
-        super(JSONBrowserView, self).__init__(context, request)
+        super(QuestionView, self).__init__(context, request)
         self.questionId = None
 
-    def publishTraverse(self, request, name):
+    def publishTraverse(self, request, id):
         if self.questionId is None:
-            self.questionId = name
+            self.questionId = id
         else:
-            raise NotFound(self, name, request)
+            raise NotFound(self, id, request)
         return self
 
     def asDict(self):
