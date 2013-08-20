@@ -38,16 +38,8 @@ class SyncLectureView(JSONBrowserView):
             lecture = json.loads(self.request.stdin.read())
             answerQueue = lecture['answerQueue']
 
-            # Get student's allocation for this lecture
-            questionIds = dict(
-                (dbAlloc.publicId, dbAlloc.questionId)
-                for dbAlloc in Session.query(db.Allocation)
-                    .join(db.Question)
-                    .filter(db.Question.parentPath == parentPath)
-                    .filter(db.Allocation.studentId == student.studentId)
-            )
-
-            # Insert records into DB
+            # Update per-question records, gathering real question ids as we go
+            questionIds = dict()
             for a in answerQueue:
                 if a['synced']:
                     continue
@@ -56,19 +48,34 @@ class SyncLectureView(JSONBrowserView):
                 if '/quizdb-get-question/' not in a['uri']:
                     logging.warn("Question ID %s malformed" % a['uri'])
                     continue
-                publicId = a['uri'].split('/quizdb-get-question/', 2)[1]
-                if publicId not in questionIds:
-                    logging.warn("Allocation %s not in DB" % a['uri'])
+                a['public_id'] = a['uri'].split('/quizdb-get-question/', 2)[1]
+                #TODO: Try this with MySQL to check locking
+                dbQn = (Session.query(db.Question)
+                    .with_lockmode('update')
+                    .join(db.Allocation)
+                    .filter(db.Allocation.studentId == student.studentId)
+                    .filter(db.Allocation.publicId == a['public_id'])
+                    .one())
+                dbQn.timesAnswered += 1
+                #TODO: Shouldn't rely on this, should check chosen.
+                #TODO: Write answers to Plone too, while we're here?
+                if a['correct']:
+                    dbQn.timesCorrect += 1
+                a['private_id'] = dbQn.questionId
+            Session.flush()
+
+            # Insert records into DB
+            for a in answerQueue:
+                if 'private_id' not in a:
                     continue
                 Session.add(db.Answer(
                     studentId=student.studentId,
-                    questionId=questionIds[publicId],
+                    questionId=a['private_id'],
                     chosenAnswer=a['student_answer'],
                     timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),  #TODO: Timezone?
                     timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
                 ))
                 a['synced'] = True
-            #TODO: Update per-question records too
             Session.flush()
 
         # Get all plone questions, turn it into a dict by path
