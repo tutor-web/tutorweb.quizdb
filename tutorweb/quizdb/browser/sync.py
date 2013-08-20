@@ -17,6 +17,7 @@ class SyncTutorialView(JSONBrowserView):
     def asDict(self):
         listing = self.context.restrictedTraverse('@@folderListing')(
             portal_type='tw_lecture',
+            sort_on='id',
         )
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
