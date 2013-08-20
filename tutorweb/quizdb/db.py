@@ -12,6 +12,10 @@ class Allocation(ORMBase):
     __tablename__ = 'allocation'
     __table_args__ = (
         sqlalchemy.schema.UniqueConstraint('studentId', 'questionId', name='uniq_studid_qnid'),
+        dict(
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        )
     )
 
     allocationId = sqlalchemy.schema.Column(
@@ -56,6 +60,10 @@ def generatePublicId(mapper, connection, instance):
 class Question(ORMBase):
     """Question table: Per-question stats"""
     __tablename__ = 'question'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
 
     questionId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -92,6 +100,10 @@ class Question(ORMBase):
 class Student(ORMBase):
     """Student table: Students of quizzes"""
     __tablename__ = 'student'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
 
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -109,6 +121,10 @@ class Student(ORMBase):
 class Answer(ORMBase):
     """Answer table: List of all answers for questions"""
     __tablename__ = 'answer'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
 
     answerId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
