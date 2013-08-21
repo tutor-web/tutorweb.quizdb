@@ -88,6 +88,8 @@ class SyncLectureView(JSONBrowserView):
             plonePath=l.getPath(),
             parentPath=parentPath,
             lastUpdate=dateutil.parser.parse(l['ModificationDate']),
+            timesAnswered=l.getObject().timesanswered,  #TODO: Don't make object twice
+            timesCorrect=l.getObject().timescorrect,
         )) for l in listing)
 
         # Get all questions from DB and their allocations
