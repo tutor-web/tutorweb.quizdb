@@ -50,7 +50,6 @@ class SyncLectureView(JSONBrowserView):
                     logging.warn("Question ID %s malformed" % a['uri'])
                     continue
                 a['public_id'] = a['uri'].split('/quizdb-get-question/', 2)[1]
-                #TODO: Try this with MySQL to check locking
                 dbQn = (Session.query(db.Question)
                     .with_lockmode('update')
                     .join(db.Allocation)
@@ -58,10 +57,30 @@ class SyncLectureView(JSONBrowserView):
                     .filter(db.Allocation.publicId == a['public_id'])
                     .one())
                 dbQn.timesAnswered += 1
-                #TODO: Shouldn't rely on this, should check chosen.
-                #TODO: Write answers to Plone too, while we're here?
-                if a['correct']:
-                    dbQn.timesCorrect += 1
+
+                # Find Plone question
+                listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
+                    path=dbQn.plonePath,
+                    object_provides=IQuestion.__identifier__,
+                )
+                if len(listing) != 1:
+                    logging.error("Cannot find Plone question at %s" % dbQn.plonePath)
+                    continue
+                ploneQn = listing[0].getObject()
+
+                # Check against plone to ensure student was right
+                try:
+                    if ploneQn.choices[a['student_answer']]['correct']:
+                        dbQn.timesCorrect += 1
+                except KeyError, IndexError:
+                    logging.error("Student answer %d out of range" % a['student_answer'])
+                    continue
+
+                # Write back stats to Plone whilst here
+                ploneQn.timesanswered = dbQn.timesAnswered
+                ploneQn.timescorrect = dbQn.timesCorrect
+
+                # Everything worked, so add private ID (and insert this data into DB)
                 a['private_id'] = dbQn.questionId
             Session.flush()
 
