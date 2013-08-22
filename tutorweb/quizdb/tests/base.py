@@ -4,7 +4,6 @@ from unittest import TestCase
 import json
 
 from plone.app.testing import IntegrationTesting, FunctionalTesting
-from plone.testing.z2 import Browser
 from zope.configuration import xmlconfig
 
 # Nab test case setup from tutorweb.content
@@ -15,6 +14,7 @@ from tutorweb.content.tests.base import (
     MANAGER_ID,
 )
 from tutorweb.content.tests.base import TestFixture as ContentTestFixture
+from tutorweb.content.tests.base import FunctionalTestCase as ContentFunctionalTestCase
 
 class TestFixture(ContentTestFixture):
     def setUpZope(self, app, configurationContext):
@@ -57,17 +57,12 @@ class IntegrationTestCase(TestCase):
     layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING
 
 
-class FunctionalTestCase(TestCase):
+class FunctionalTestCase(ContentFunctionalTestCase):
     layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
 
     def getJson(self, path, user=USER_A_ID, expectedStatus=200):
         """Call view, decode JSON results"""
-        browser = Browser(self.layer['app'])
-        if user:
-            browser.addHeader('Authorization', 'Basic %s:%s' % (
-                user,
-                'secret' + user[0],
-            ))
+        browser = self.getBrowser(None, user=user)
         browser.handleErrors = False
         browser.raiseHttpErrors = False
         browser.open(path)
