@@ -90,16 +90,16 @@ class SyncViewTest(FunctionalTestCase):
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3'],
         )
 
-        # Delete question2, doesn't appear in sync
-        browser = self.getBrowser('http://nohost/plone/dept1/tut1/lec1/qn2/delete_confirmation', user=MANAGER_ID)
+        # Delete question3, doesn't appear in sync
+        browser = self.getBrowser('http://nohost/plone/dept1/tut1/lec1/qn3/delete_confirmation', user=MANAGER_ID)
         browser.getControl('Delete').click()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q3'],
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q3'],
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
