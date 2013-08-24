@@ -1,11 +1,14 @@
 import base64
 import json
 
+from AccessControl import getSecurityManager
 from zope.interface import implements
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from z3c.saconfig import Session
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+
+from Products.CMFCore import permissions
 
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
@@ -40,18 +43,27 @@ class GetQuestionView(QuestionView):
             raise NotFound(self, id, request)
         return self
 
+    def isAdmin(self):
+        """Is the current user an admin?"""
+        return getSecurityManager().checkPermission(
+            permissions.ManagePortal,
+            self.context,
+        )
+
     def asDict(self):
         if self.questionId is None:
             raise NotFound(self, None, self.request)
-        student = self.getCurrentStudent()
 
         try:
-            dbQn = Session.query(db.Question) \
+            query = Session.query(db.Question) \
                 .join(db.Allocation) \
-                .filter(db.Allocation.studentId == student.studentId) \
                 .filter(db.Allocation.publicId == self.questionId) \
-                .filter(db.Question.active == True) \
-                .one()
+                .filter(db.Question.active == True)
+            # If not an admin, ensure we're the right user
+            if not self.isAdmin():
+                student = self.getCurrentStudent()
+                query = query.filter(db.Allocation.studentId == student.studentId)
+            dbQn = query.one()
         except NoResultFound:
             raise NotFound(self, self.questionId, self.request)
         except MultipleResultsFound:

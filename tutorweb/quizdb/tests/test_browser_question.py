@@ -46,6 +46,12 @@ class GetQuestionViewTest(FunctionalTestCase):
         out = self.getJson(aAlloc['questions'][0]['uri'], expectedStatus=403, user=None)
         out = self.getJson(bAlloc['questions'][0]['uri'], expectedStatus=403, user=None)
 
+        # Manager can see everything
+        out = self.getJson(aAlloc['questions'][0]['uri'], expectedStatus=200, user=MANAGER_ID)
+        self.assertTrue(out['title'].startswith('Unittest D1 T1 L1 Q'))
+        out = self.getJson(bAlloc['questions'][0]['uri'], expectedStatus=200, user=MANAGER_ID)
+        self.assertTrue(out['title'].startswith('Unittest D1 T1 L2 Q'))
+
     def test_questionDeletion(self):
         """After a question is deleted, can't get it"""
         # Create a temporary question
