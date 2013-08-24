@@ -67,5 +67,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         browser.raiseHttpErrors = False
         browser.open(path)
         self.assertEqual(browser.headers['content-type'], 'application/json')
-        self.assertEqual(browser.headers['Status'][0:3], str(expectedStatus))
+        if browser.headers['Status'][0:3] != str(expectedStatus):
+            self.assertEqual(browser.contents, "")
+            self.assertEqual(browser.headers['Status'][0:3], str(expectedStatus))
         return json.loads(browser.contents)

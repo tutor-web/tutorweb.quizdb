@@ -4,6 +4,8 @@ from datetime import datetime
 import sqlalchemy.event
 import sqlalchemy.schema
 import sqlalchemy.types
+from sqlalchemy.sql import func
+
 from tutorweb.quizdb import ORMBase
 
 
@@ -50,6 +52,7 @@ class Allocation(ORMBase):
 @sqlalchemy.event.listens_for(Allocation, "before_insert")
 def generatePublicId(mapper, connection, instance):
     """Generate a sparse ID for this row"""
+    #TODO: Surely this shouldn't be predictable?
     instance.publicId = md5('%s:%s:%s' % (
         instance.studentId,
         instance.questionId,
@@ -94,6 +97,12 @@ class Question(ORMBase):
         sqlalchemy.types.DateTime(),
         nullable=False,
         default=datetime.now,
+        onupdate=func.now(),
+    )
+    active = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+        default=True,
     )
 
 

@@ -47,6 +47,7 @@ class GetQuestionView(QuestionView):
                 .join(db.Allocation) \
                 .filter(db.Allocation.studentId == student.studentId) \
                 .filter(db.Allocation.publicId == self.questionId) \
+                .filter(db.Question.active == True) \
                 .one()
         except NoResultFound:
             raise NotFound(self, self.questionId, self.request)
@@ -66,6 +67,7 @@ class GetLectureQuestionsView(QuestionView):
         dbAllocs = Session.query(db.Question, db.Allocation) \
             .join(db.Allocation) \
             .filter(db.Question.parentPath == parentPath) \
+            .filter(db.Question.active == True) \
             .filter(db.Allocation.studentId == student.studentId) \
             .all()
 

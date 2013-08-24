@@ -1,9 +1,21 @@
+import logging
+import sys
+
+import transaction
+from zope.testing.loggingsupport import InstalledHandler
+
+from plone.app.testing import login
+
 from .base import FunctionalTestCase
-from .base import USER_A_ID, USER_B_ID
+from .base import USER_A_ID, USER_B_ID, MANAGER_ID
 
 
 class SyncViewTest(FunctionalTestCase):
     maxDiff = None
+    def setUp(self):
+        self.loghandler = InstalledHandler('sqlalchemy.engine')
+    def logs():
+        return [x.getMessage() for x in self.loghandler.records]
 
     def test_anonymous(self):
         """Anonymous users should get a 403 (not a redirect to login)"""
@@ -52,3 +64,42 @@ class SyncViewTest(FunctionalTestCase):
         self.assertTrue(aAlloc['questions'][1]['uri'] == aAlloc1['questions'][1]['uri'])
         self.assertTrue(bAlloc['questions'][0]['uri'] == bAlloc1['questions'][0]['uri'])
         self.assertTrue(bAlloc['questions'][1]['uri'] == bAlloc1['questions'][1]['uri'])
+
+    def test_adddelete(self):
+        """Allocate some questions"""
+        portal = self.layer['portal']
+
+        # Start with 2 questions
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+
+        # Add a question3, appears in sync call
+        login(portal, MANAGER_ID)
+        portal['dept1']['tut1']['lec1'].invokeFactory(
+            type_name="tw_latexquestion",
+            id="qn3",
+            title="Unittest D1 T1 L1 Q3",
+        )
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3'],
+        )
+
+        # Delete question2, doesn't appear in sync
+        browser = self.getBrowser('http://nohost/plone/dept1/tut1/lec1/qn2/delete_confirmation', user=MANAGER_ID)
+        browser.getControl('Delete').click()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q3'],
+        )
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q3'],
+        )

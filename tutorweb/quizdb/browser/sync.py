@@ -126,13 +126,12 @@ class SyncLectureView(JSONBrowserView):
         # Update / delete any existing questions
         for (dbQn, dbAlloc) in dbAllocs:
             if dbQn.plonePath in ploneQns:
-                # Question already there, update lastUpdate
-                #TODO: Do we do this all the time? Don't work anyway.
-                # dbQn.lastUpdate = ploneQns[dbQn.plonePath]['lastUpdate']
+                # Already have dbQn, don't need to create it
                 del ploneQns[dbQn.plonePath]
+                dbQn.active = True
             else:
-                # Question isn't in Plone, so shouldn't be in DB
-                Session.delete(dbQn)
+                # Question isn't in Plone, so deactivate in DB
+                dbQn.active = False
 
         # Add any questions missing from DB
         for qn in ploneQns.values():
@@ -144,6 +143,7 @@ class SyncLectureView(JSONBrowserView):
         # Allocate any unallocated questions
         for i in xrange(len(dbAllocs)):
             if dbAllocs[i][1] is not None:
+                # Already got an allocation
                 continue
             dbAlloc = db.Allocation(
                 studentId=student.studentId,
@@ -161,7 +161,7 @@ class SyncLectureView(JSONBrowserView):
                 uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
                 chosen=dbQn.timesAnswered,
                 correct=dbQn.timesCorrect,
-            ) for (dbQn, dbAlloc) in dbAllocs],
+            ) for (dbQn, dbAlloc) in dbAllocs if dbQn.active],
             histsel=(self.context.aq_parent.histsel
                      if self.context.histsel < 0
                      else self.context.histsel),
