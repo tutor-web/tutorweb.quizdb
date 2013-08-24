@@ -5,6 +5,7 @@ import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.exc import NoResultFound
 
 from z3c.saconfig import Session
 
@@ -50,12 +51,19 @@ class SyncLectureView(JSONBrowserView):
                     logging.warn("Question ID %s malformed" % a['uri'])
                     continue
                 a['public_id'] = a['uri'].split('/quizdb-get-question/', 2)[1]
-                dbQn = (Session.query(db.Question)
-                    .with_lockmode('update')
-                    .join(db.Allocation)
-                    .filter(db.Allocation.studentId == student.studentId)
-                    .filter(db.Allocation.publicId == a['public_id'])
-                    .one())
+                try:
+                    dbQn = (Session.query(db.Question)
+                        .with_lockmode('update')
+                        .join(db.Allocation)
+                        .filter(db.Allocation.studentId == student.studentId)
+                        .filter(db.Allocation.publicId == a['public_id'])
+                        .one())
+                except NoResultFound:
+                    logging.error("No record of allocation %s for student %s" % (
+                        a['public_id'],
+                        student.userName,
+                    ))
+                    continue
                 dbQn.timesAnswered += 1
 
                 # Find Plone question
