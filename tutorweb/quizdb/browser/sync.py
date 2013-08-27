@@ -28,85 +28,78 @@ class SyncTutorialView(JSONBrowserView):
 
 
 class SyncLectureView(JSONBrowserView):
-    def asDict(self):
-        parentPath = '/'.join(self.context.getPhysicalPath())
-        portalUrl = self.portalObject().absolute_url()
-        student = self.getCurrentStudent()
-
-        # Have we been handed a structure to update?
-        answerQueue = []
-        if self.request.getHeader('Content-Type') == 'application/json':
-            self.request.stdin.seek(0)
-            lecture = json.loads(self.request.stdin.read())
-            answerQueue = lecture['answerQueue']
-
-            # Update per-question records, gathering real question ids as we go
-            questionIds = dict()
-            for a in answerQueue:
-                if a['synced']:
-                    continue
-                if 'student_answer' not in a:
-                    continue
-                if '/quizdb-get-question/' not in a['uri']:
-                    logging.warn("Question ID %s malformed" % a['uri'])
-                    continue
-                a['public_id'] = a['uri'].split('/quizdb-get-question/', 2)[1]
-                try:
-                    dbQn = (Session.query(db.Question)
-                        .with_lockmode('update')
-                        .join(db.Allocation)
-                        .filter(db.Allocation.studentId == student.studentId)
-                        .filter(db.Allocation.publicId == a['public_id'])
-                        .one())
-                except NoResultFound:
-                    logging.error("No record of allocation %s for student %s" % (
-                        a['public_id'],
-                        student.userName,
-                    ))
-                    continue
-                dbQn.timesAnswered += 1
-
-                # Find Plone question
-                listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
-                    path=dbQn.plonePath,
-                    object_provides=IQuestion.__identifier__,
-                )
-                if len(listing) != 1:
-                    logging.error("Cannot find Plone question at %s" % dbQn.plonePath)
-                    continue
-                ploneQn = listing[0].getObject()
-
-                # Check against plone to ensure student was right
-                try:
-                    if ploneQn.choices[a['student_answer']]['correct']:
-                        dbQn.timesCorrect += 1
-                except KeyError, IndexError:
-                    logging.error("Student answer %d out of range" % a['student_answer'])
-                    continue
-
-                # Write back stats to Plone whilst here
-                ploneQn.timesanswered = dbQn.timesAnswered
-                ploneQn.timescorrect = dbQn.timesCorrect
-
-                # Everything worked, so add private ID (and insert this data into DB)
-                a['private_id'] = dbQn.questionId
-            Session.flush()
-
-            # Insert records into DB
-            for a in answerQueue:
-                if 'private_id' not in a:
-                    continue
-                Session.add(db.Answer(
-                    studentId=student.studentId,
-                    questionId=a['private_id'],
-                    chosenAnswer=a['student_answer'],
-                    timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),  #TODO: Timezone?
-                    timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
+    def parseAnswerQueue(self, student, answerQueue):
+        # Update per-question records, gathering real question ids as we go
+        questionIds = dict()
+        for a in answerQueue:
+            if a['synced']:
+                continue
+            if 'student_answer' not in a:
+                continue
+            if '/quizdb-get-question/' not in a['uri']:
+                logging.warn("Question ID %s malformed" % a['uri'])
+                continue
+            a['public_id'] = a['uri'].split('/quizdb-get-question/', 2)[1]
+            try:
+                dbQn = (Session.query(db.Question)
+                    .with_lockmode('update')
+                    .join(db.Allocation)
+                    .filter(db.Allocation.studentId == student.studentId)
+                    .filter(db.Allocation.publicId == a['public_id'])
+                    .one())
+            except NoResultFound:
+                logging.error("No record of allocation %s for student %s" % (
+                    a['public_id'],
+                    student.userName,
                 ))
-                a['synced'] = True
-            Session.flush()
+                continue
+            dbQn.timesAnswered += 1
 
+            # Find Plone question
+            listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
+                path=dbQn.plonePath,
+                object_provides=IQuestion.__identifier__,
+            )
+            if len(listing) != 1:
+                logging.error("Cannot find Plone question at %s" % dbQn.plonePath)
+                continue
+            ploneQn = listing[0].getObject()
+
+            # Check against plone to ensure student was right
+            try:
+                if ploneQn.choices[a['student_answer']]['correct']:
+                    dbQn.timesCorrect += 1
+            except KeyError, IndexError:
+                logging.error("Student answer %d out of range" % a['student_answer'])
+                continue
+
+            # Write back stats to Plone whilst here
+            ploneQn.timesanswered = dbQn.timesAnswered
+            ploneQn.timescorrect = dbQn.timesCorrect
+
+            # Everything worked, so add private ID (and insert this data into DB)
+            a['private_id'] = dbQn.questionId
+        Session.flush()
+
+        # Insert records into DB
+        for a in answerQueue:
+            if 'private_id' not in a:
+                continue
+            Session.add(db.Answer(
+                studentId=student.studentId,
+                questionId=a['private_id'],
+                chosenAnswer=a['student_answer'],
+                timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),  #TODO: Timezone?
+                timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
+            ))
+            a['synced'] = True
+        Session.flush()
+
+        return answerQueue
+
+    def getQuestionAllocation(self, student, questions):
         # Get all plone questions, turn it into a dict by path
+        parentPath = '/'.join(self.context.getPhysicalPath())
         listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
             path={'query': '/'.join(self.context.getPhysicalPath()), 'depth': 1},
             object_provides=IQuestion.__identifier__
@@ -161,17 +154,32 @@ class SyncLectureView(JSONBrowserView):
             dbAllocs[i] = (dbAllocs[i][0], dbAlloc)
         Session.flush()
 
+        # Return all active questions
+        portalUrl = self.portalObject().absolute_url()
+        return [dict(
+            uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
+            chosen=dbQn.timesAnswered,
+            correct=dbQn.timesCorrect,
+        ) for (dbQn, dbAlloc) in dbAllocs if dbQn.active]
+
+    def asDict(self):
+        student = self.getCurrentStudent()
+
+        # Have we been handed a structure to update?
+        if self.request.getHeader('Content-Type') == 'application/json':
+            self.request.stdin.seek(0)
+            lecture = json.loads(self.request.stdin.read())
+        else:
+            lecture = dict(questions=[], answerQueue=[])
+
+        # Build lecture dict
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
-            questions=[dict(
-                uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
-                chosen=dbQn.timesAnswered,
-                correct=dbQn.timesCorrect,
-            ) for (dbQn, dbAlloc) in dbAllocs if dbQn.active],
             histsel=(self.context.aq_parent.histsel
                      if self.context.histsel < 0
                      else self.context.histsel),
-            answerQueue=answerQueue,
+            answerQueue=self.parseAnswerQueue(student, lecture['answerQueue']),
+            questions=self.getQuestionAllocation(student, lecture['questions']),
         )
