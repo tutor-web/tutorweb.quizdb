@@ -82,7 +82,7 @@ class SyncLectureView(JSONBrowserView):
                 questionId=dbQn.questionId,
                 chosenAnswer=a['student_answer'],
                 correct=a['correct'],
-                grade=a['grade'],  #TODO: clientside doesn't actually return this yet
+                grade=a['grade_after'],
                 timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),
                 timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
             ))
@@ -100,7 +100,7 @@ class SyncLectureView(JSONBrowserView):
             quiz_time=int(time.mktime(dbAns.timeStart.timetuple())),
             answer_time=int(time.mktime(dbAns.timeEnd.timetuple())),
             student_answer=dbAns.chosenAnswer,
-            grade=dbAns.grade,
+            grade_after=dbAns.grade,
             synced=True,
         ) for dbAns in reversed(dbAnswers)]
 
@@ -185,7 +185,7 @@ class SyncLectureView(JSONBrowserView):
             uri=self.context.absolute_url() + '/quizdb-sync',
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
-            histsel=(self.context.aq_parent.histsel
+            hist_sel=(self.context.aq_parent.histsel
                      if self.context.histsel < 0
                      else self.context.histsel),
             answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),

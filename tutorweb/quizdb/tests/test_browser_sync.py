@@ -128,7 +128,7 @@ class SyncViewTest(FunctionalTestCase):
                     correct='wibble',
                     quiz_time=1377000000,
                     answer_time=1377000010,
-                    grade=0.1,
+                    grade_after=0.1,
                 ),
                 dict(
                     synced=False,
@@ -137,7 +137,7 @@ class SyncViewTest(FunctionalTestCase):
                     correct=False,
                     quiz_time=1377000020,
                     answer_time=1377000030,
-                    grade=0.2,
+                    grade_after=0.2,
                 ),
                 dict(
                     synced=False,
@@ -146,7 +146,7 @@ class SyncViewTest(FunctionalTestCase):
                     correct=True,
                     quiz_time=1377000020,
                     answer_time=1377000030,
-                    grade=0.3,
+                    grade_after=0.3,
                 ),
             ],
         ))
@@ -161,7 +161,7 @@ class SyncViewTest(FunctionalTestCase):
                     u'correct': False,
                     u'quiz_time': 1377000000,
                     u'answer_time': 1377000010,
-                    u'grade': 0.1,
+                    u'grade_after': 0.1,
                 },
                 {
                     u'synced': True,
@@ -169,7 +169,7 @@ class SyncViewTest(FunctionalTestCase):
                     u'correct': True,
                     u'quiz_time': 1377000020,
                     u'answer_time': 1377000030,
-                    u'grade': 0.3,
+                    u'grade_after': 0.3,
                 },
         ])
 
@@ -182,7 +182,7 @@ class SyncViewTest(FunctionalTestCase):
                     u'correct': False,
                     u'quiz_time': 1377000000,
                     u'answer_time': 1377000010,
-                    u'grade': 0.1,
+                    u'grade_after': 0.1,
                 },
                 {
                     u'synced': True,
@@ -190,7 +190,7 @@ class SyncViewTest(FunctionalTestCase):
                     u'correct': True,
                     u'quiz_time': 1377000020,
                     u'answer_time': 1377000030,
-                    u'grade': 0.3,
+                    u'grade_after': 0.3,
                 },
         ])
 
