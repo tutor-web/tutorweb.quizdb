@@ -109,6 +109,23 @@ class SyncViewTest(FunctionalTestCase):
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
 
+    def test_histSel(self):
+        """Make sure hist_sel is inherited from tutorial"""
+        portal = self.layer['portal']
+        # Set lecture 1 to inherit, should get 0.8
+        portal['dept1']['tut1'].histsel = 0.8
+        portal['dept1']['tut1']['lec1'].histsel = -1.0
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['hist_sel'], 0.8)
+
+        # Set lecture 1 to override, should get 0.5
+        portal['dept1']['tut1'].histsel = 0.8
+        portal['dept1']['tut1']['lec1'].histsel = 0.5
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['hist_sel'], 0.5)
+
     def test_answerQueuePersistent(self):
         """Make sure answerQueue gets logged and is returned"""
         # Allocate to user A
