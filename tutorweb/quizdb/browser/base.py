@@ -55,6 +55,22 @@ class JSONBrowserView(BrowserView):
         mb = membership.getAuthenticatedMember()
         return self.getDbStudent(mb.getUserName())
 
+    def getLectureId(self):
+        """Return database ID for the current lecture"""
+        if self.context.portal_type != 'tw_lecture':
+            # Could go up to find lecture at this point, but no need yet.
+            raise NotImplementedError
+        plonePath = '/'.join(self.context.getPhysicalPath())
+        try:
+            dbLec = Session.query(db.Lecture) \
+                .filter(db.Lecture.plonePath == plonePath).one()
+            return dbLec.lectureId
+        except NoResultFound:
+            dbLec = db.Lecture(plonePath=plonePath)
+            Session.add(dbLec)
+            Session.flush()
+            return dbLec.lectureId
+
     ### Database operations (move these elsewhere?)
 
     def portalObject(self):

@@ -2,16 +2,20 @@ import datetime
 import dateutil.parser
 import json
 import logging
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+import time
 
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound
 
+from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
+
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class SyncTutorialView(JSONBrowserView):
@@ -29,84 +33,86 @@ class SyncTutorialView(JSONBrowserView):
 
 class SyncLectureView(JSONBrowserView):
     def parseAnswerQueue(self, student, answerQueue):
-        # Update per-question records, gathering real question ids as we go
-        questionIds = dict()
         for a in answerQueue:
             if a['synced']:
                 continue
             if 'student_answer' not in a:
                 continue
             if '/quizdb-get-question/' not in a['uri']:
-                logging.warn("Question ID %s malformed" % a['uri'])
+                logger.warn("Question ID %s malformed" % a['uri'])
                 continue
-            a['public_id'] = a['uri'].split('/quizdb-get-question/', 2)[1]
+
+            # Fetch question for allocation
+            publicId = a['uri'].split('/quizdb-get-question/', 2)[1]
             try:
                 dbQn = (Session.query(db.Question)
                     .with_lockmode('update')
                     .join(db.Allocation)
                     .filter(db.Allocation.studentId == student.studentId)
-                    .filter(db.Allocation.publicId == a['public_id'])
+                    .filter(db.Allocation.publicId == publicId)
                     .one())
             except NoResultFound:
-                logging.error("No record of allocation %s for student %s" % (
-                    a['public_id'],
+                logger.error("No record of allocation %s for student %s" % (
+                    publicId,
                     student.userName,
                 ))
                 continue
             dbQn.timesAnswered += 1
 
-            # Find Plone question
-            listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
-                path=dbQn.plonePath,
-                object_provides=IQuestion.__identifier__,
-            )
-            if len(listing) != 1:
-                logging.error("Cannot find Plone question at %s" % dbQn.plonePath)
-                continue
-            ploneQn = listing[0].getObject()
-
             # Check against plone to ensure student was right
             try:
-                if ploneQn.choices[a['student_answer']]['correct']:
+                ploneQn = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
+                a['correct'] = True if ploneQn.allChoices()[a['student_answer']]['correct'] else False
+                if a['correct']:
                     dbQn.timesCorrect += 1
-            except KeyError, IndexError:
-                logging.error("Student answer %d out of range" % a['student_answer'])
+                #TODO: Recalculate grade at this point, instead of relying on JS?
+                # Write back stats to Plone
+                ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
+            except KeyError, NotFound:
+                logger.error("Cannot find Plone question at %s" % dbQn.plonePath)
+                continue
+            except (TypeError, IndexError):
+                logger.warn("Student answer %d out of range" % a['student_answer'])
                 continue
 
-            # Write back stats to Plone whilst here
-            ploneQn.timesanswered = dbQn.timesAnswered
-            ploneQn.timescorrect = dbQn.timesCorrect
-
-            # Everything worked, so add private ID (and insert this data into DB)
-            a['private_id'] = dbQn.questionId
-        Session.flush()
-
-        # Insert records into DB
-        for a in answerQueue:
-            if 'private_id' not in a:
-                continue
+            # Everything worked, so add private ID and update DB
             Session.add(db.Answer(
+                lectureId=self.getLectureId(),
                 studentId=student.studentId,
-                questionId=a['private_id'],
+                questionId=dbQn.questionId,
                 chosenAnswer=a['student_answer'],
-                timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),  #TODO: Timezone?
+                correct=a['correct'],
+                grade=a['grade'],  #TODO: clientside doesn't actually return this yet
+                timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),
                 timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
             ))
             a['synced'] = True
         Session.flush()
 
-        return answerQueue
+        # Get last 8 answers and send them back
+        dbAnswers = (Session.query(db.Answer)
+            .filter(db.Answer.lectureId == self.getLectureId())
+            .order_by(db.Answer.answerId.desc())
+            .limit(8)
+            .all())
+        return [dict(  # NB: Not fully recreating, but shouldn't be a problem
+            correct=dbAns.correct,
+            quiz_time=int(time.mktime(dbAns.timeStart.timetuple())),
+            answer_time=int(time.mktime(dbAns.timeEnd.timetuple())),
+            student_answer=dbAns.chosenAnswer,
+            grade=dbAns.grade,
+            synced=True,
+        ) for dbAns in reversed(dbAnswers)]
 
     def getQuestionAllocation(self, student, questions):
         # Get all plone questions, turn it into a dict by path
-        parentPath = '/'.join(self.context.getPhysicalPath())
         listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
             path={'query': '/'.join(self.context.getPhysicalPath()), 'depth': 1},
             object_provides=IQuestion.__identifier__
         )
         ploneQns = dict((l.getPath(), dict(
             plonePath=l.getPath(),
-            parentPath=parentPath,
+            lectureId=self.getLectureId(),
             lastUpdate=dateutil.parser.parse(l['ModificationDate']),
             timesAnswered=l.getObject().timesanswered,  #TODO: Don't make object twice
             timesCorrect=l.getObject().timescorrect,
@@ -121,7 +127,7 @@ class SyncLectureView(JSONBrowserView):
         )
         dbAllocs = Session.query(db.Question, subquery) \
             .outerjoin(subquery) \
-            .filter(db.Question.parentPath == parentPath) \
+            .filter(db.Question.lectureId == self.getLectureId()) \
             .all()
 
         # Update / delete any existing questions
@@ -166,11 +172,13 @@ class SyncLectureView(JSONBrowserView):
         student = self.getCurrentStudent()
 
         # Have we been handed a structure to update?
-        if self.request.getHeader('Content-Type') == 'application/json':
+        if self.request.get_header('content_length') > 0:
+            # NB: Should be checking self.request.getHeader('Content-Type') ==
+            # 'application/json' but zope.testbrowser cannae do that.
             self.request.stdin.seek(0)
             lecture = json.loads(self.request.stdin.read())
         else:
-            lecture = dict(questions=[], answerQueue=[])
+            lecture = dict()
 
         # Build lecture dict
         return dict(
@@ -180,6 +188,6 @@ class SyncLectureView(JSONBrowserView):
             histsel=(self.context.aq_parent.histsel
                      if self.context.histsel < 0
                      else self.context.histsel),
-            answerQueue=self.parseAnswerQueue(student, lecture['answerQueue']),
-            questions=self.getQuestionAllocation(student, lecture['questions']),
+            answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),
+            questions=self.getQuestionAllocation(student, lecture.get('questions', [])),
         )

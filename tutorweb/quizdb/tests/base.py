@@ -60,12 +60,15 @@ class IntegrationTestCase(TestCase):
 class FunctionalTestCase(ContentFunctionalTestCase):
     layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
 
-    def getJson(self, path, user=USER_A_ID, expectedStatus=200):
+    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
         """Call view, decode JSON results"""
         browser = self.getBrowser(None, user=user)
         browser.handleErrors = False
         browser.raiseHttpErrors = False
-        browser.open(path)
+        if body:
+            browser.post(path, json.dumps(body))
+        else:
+            browser.open(path)
         self.assertEqual(browser.headers['content-type'], 'application/json')
         self.assertEqual(
             browser.headers['Status'][0:3],

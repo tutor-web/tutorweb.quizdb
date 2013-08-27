@@ -60,6 +60,26 @@ def generatePublicId(mapper, connection, instance):
     )).hexdigest()
 
 
+class Lecture(ORMBase):
+    """DB -> Plone question lookup table"""
+    __tablename__ = 'lecture'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        autoincrement=True,
+        primary_key=True,
+    )
+    plonePath = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
 class Question(ORMBase):
     """Question table: Per-question stats"""
     __tablename__ = 'question'
@@ -78,10 +98,10 @@ class Question(ORMBase):
         nullable=False,
         unique=True,
     )
-    parentPath = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(64),
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
         nullable=False,
-        index=True,
     )
     timesAnswered = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -140,6 +160,11 @@ class Answer(ORMBase):
         primary_key=True,
         autoincrement=True,
     )
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        nullable=False,
+    )
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('student.studentId'),
@@ -155,11 +180,19 @@ class Answer(ORMBase):
         sqlalchemy.types.Integer(),
         nullable=False,
     )
+    correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+    )
     timeStart = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
         nullable=False,
     )
     timeEnd = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
+        nullable=False,
+    )
+    grade = sqlalchemy.schema.Column(
+        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
         nullable=False,
     )

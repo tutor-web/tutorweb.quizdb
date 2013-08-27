@@ -75,13 +75,12 @@ class GetQuestionView(QuestionView):
 class GetLectureQuestionsView(QuestionView):
     """Fetch all questions for a lecture"""
     def asDict(self):
-        parentPath = '/'.join(self.context.getPhysicalPath())
         student = self.getCurrentStudent()
 
         # Get all questions from DB and their allocations
         dbAllocs = Session.query(db.Question, db.Allocation) \
             .join(db.Allocation) \
-            .filter(db.Question.parentPath == parentPath) \
+            .filter(db.Question.lectureId == self.getLectureId()) \
             .filter(db.Question.active == True) \
             .filter(db.Allocation.studentId == student.studentId) \
             .all()

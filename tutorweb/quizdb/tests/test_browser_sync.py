@@ -1,5 +1,6 @@
 import logging
 import sys
+import time
 
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
@@ -13,9 +14,13 @@ from .base import USER_A_ID, USER_B_ID, MANAGER_ID
 class SyncViewTest(FunctionalTestCase):
     maxDiff = None
     def setUp(self):
-        self.loghandler = InstalledHandler('sqlalchemy.engine')
-    def logs():
-        return [x.getMessage() for x in self.loghandler.records]
+        self.loghandlers = dict(
+            sqlalchemy=InstalledHandler('sqlalchemy.engine'),
+            sync=InstalledHandler('tutorweb.quizdb.browser.sync')
+        )
+
+    def logs(self, name='sqlalchemy'):
+        return [x.getMessage() for x in self.loghandlers[name].records]
 
     def test_anonymous(self):
         """Anonymous users should get a 403 (not a redirect to login)"""
@@ -103,3 +108,92 @@ class SyncViewTest(FunctionalTestCase):
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
+
+    def test_answerQueuePersistent(self):
+        """Make sure answerQueue gets logged and is returned"""
+        # Allocate to user A
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+
+        # Write some answers back
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=0,
+                    correct='wibble',
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade=0.1,
+                ),
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][1]['uri'],
+                    student_answer=99,
+                    correct=False,
+                    quiz_time=1377000020,
+                    answer_time=1377000030,
+                    grade=0.2,
+                ),
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][1]['uri'],
+                    student_answer=2,
+                    correct=True,
+                    quiz_time=1377000020,
+                    answer_time=1377000030,
+                    grade=0.3,
+                ),
+            ],
+        ))
+
+        # Noticed that middle item wasn't correct
+        self.assertEqual(self.logs('sync'), ['Student answer 99 out of range'])
+        # Returned answerQueue without dodgy answer
+        self.assertEqual(aAlloc['answerQueue'], [
+                {
+                    u'synced': True,
+                    u'student_answer': 0,
+                    u'correct': False,
+                    u'quiz_time': 1377000000,
+                    u'answer_time': 1377000010,
+                    u'grade': 0.1,
+                },
+                {
+                    u'synced': True,
+                    u'student_answer': 2,
+                    u'correct': True,
+                    u'quiz_time': 1377000020,
+                    u'answer_time': 1377000030,
+                    u'grade': 0.3,
+                },
+        ])
+
+        # Fetching again returns the same queue
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['answerQueue'], [
+                {
+                    u'synced': True,
+                    u'student_answer': 0,
+                    u'correct': False,
+                    u'quiz_time': 1377000000,
+                    u'answer_time': 1377000010,
+                    u'grade': 0.1,
+                },
+                {
+                    u'synced': True,
+                    u'student_answer': 2,
+                    u'correct': True,
+                    u'quiz_time': 1377000020,
+                    u'answer_time': 1377000030,
+                    u'grade': 0.3,
+                },
+        ])
+
+    def test_answerQueueIsolation(self):
+        """Make sure answerQueues for students and lectures are separate"""
+        #TODO:
