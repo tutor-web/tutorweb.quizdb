@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import time
 
@@ -213,4 +214,74 @@ class SyncViewTest(FunctionalTestCase):
 
     def test_answerQueueIsolation(self):
         """Make sure answerQueues for students and lectures are separate"""
-        #TODO:
+        # Allocate to user A
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+
+        # Write some answers back
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=0,
+                    correct='wibble',
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][1]['uri'],
+                    student_answer=2,
+                    correct=True,
+                    quiz_time=1377000020,
+                    answer_time=1377000030,
+                    grade_after=0.3,
+                ),
+            ],
+        ))
+
+        # Get user B, has no answers yet.
+        bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID)
+        self.assertEquals(bAlloc['answerQueue'], [
+        ])
+
+        # Write some answers back
+        bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=2,
+                    correct=True,
+                    quiz_time=1377000040,
+                    answer_time=1377000050,
+                    grade_after=0.3,
+                ),
+            ],
+        ))
+
+        # A doesn't see B's answer
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['answerQueue'], [
+                {
+                    u'synced': True,
+                    u'student_answer': 0,
+                    u'correct': False,
+                    u'quiz_time': 1377000000,
+                    u'answer_time': 1377000010,
+                    u'grade_after': 0.1,
+                },
+                {
+                    u'synced': True,
+                    u'student_answer': 2,
+                    u'correct': True,
+                    u'quiz_time': 1377000020,
+                    u'answer_time': 1377000030,
+                    u'grade_after': 0.3,
+                },
+        ])

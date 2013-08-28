@@ -92,6 +92,7 @@ class SyncLectureView(JSONBrowserView):
         # Get last 8 answers and send them back
         dbAnswers = (Session.query(db.Answer)
             .filter(db.Answer.lectureId == self.getLectureId())
+            .filter(db.Answer.studentId == student.studentId)
             .order_by(db.Answer.answerId.desc())
             .limit(8)
             .all())
