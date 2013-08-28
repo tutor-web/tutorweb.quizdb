@@ -194,5 +194,5 @@ class Answer(ORMBase):
     )
     grade = sqlalchemy.schema.Column(
         sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
-        nullable=False,
+        nullable=True,
     )

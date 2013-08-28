@@ -82,7 +82,7 @@ class SyncLectureView(JSONBrowserView):
                 questionId=dbQn.questionId,
                 chosenAnswer=a['student_answer'],
                 correct=a['correct'],
-                grade=a['grade_after'],
+                grade=a.get('grade_after', None),
                 timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),
                 timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
             ))
