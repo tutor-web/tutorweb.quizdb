@@ -106,16 +106,19 @@ class SyncLectureView(JSONBrowserView):
             synced=True,
         ) for dbAns in reversed(dbAnswers)]
 
-        # Also tell the student how many they have answered.
+        # Also tell the student how many they have answered at this point
         if len(out) > 0:
             dbTotals = (Session.query(db.Answer).add_columns(func.count())
                 .filter(db.Answer.lectureId == self.getLectureId())
                 .filter(db.Answer.studentId == student.studentId)
                 .group_by(db.Answer.correct)
-                .order_by(db.Answer.correct)
                 .all())
-            out[-1]['lec_answered'] = dbTotals[0][1] + dbTotals[1][1]
-            out[-1]['lec_correct'] = dbTotals[1][1]
+            out[-1]['lec_answered'] = 0
+            out[-1]['lec_correct'] = 0
+            for t in dbTotals:
+                out[-1]['lec_answered'] += t[1]
+                if t[0].correct:
+                    out[-1]['lec_correct'] += t[1]
         return out
 
     def getQuestionAllocation(self, student, questions):
