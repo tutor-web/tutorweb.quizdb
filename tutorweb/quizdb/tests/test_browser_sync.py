@@ -199,6 +199,8 @@ class SyncViewTest(FunctionalTestCase):
                     u'quiz_time': 1377000020,
                     u'answer_time': 1377000030,
                     u'grade_after': 0.3,
+                    u'lec_answered': 2,
+                    u'lec_correct': 1,
                 },
         ])
 
@@ -220,8 +222,30 @@ class SyncViewTest(FunctionalTestCase):
                     u'quiz_time': 1377000020,
                     u'answer_time': 1377000030,
                     u'grade_after': 0.3,
+                    u'lec_answered': 2,
+                    u'lec_correct': 1,
                 },
         ])
+
+        # Writing a third time updates totals
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][1]['uri'],
+                    student_answer=2,
+                    correct=False,  # NB: Sending back false even though question is really true
+                    quiz_time=1377000040,
+                    answer_time=1377000050,
+                    grade_after=0.1,
+                ),
+            ]
+        ))
+        self.assertEqual(len(aAlloc['answerQueue']), 3)
+        self.assertEqual(aAlloc['answerQueue'][-1]['answer_time'], 1377000050)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 3)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 2)
+        self.assertEqual(aAlloc['answerQueue'][-1]['correct'], True)
 
     def test_answerQueueIsolation(self):
         """Make sure answerQueues for students and lectures are separate"""
@@ -294,5 +318,7 @@ class SyncViewTest(FunctionalTestCase):
                     u'quiz_time': 1377000020,
                     u'answer_time': 1377000030,
                     u'grade_after': 0.3,
+                    u'lec_answered': 2,
+                    u'lec_correct': 1,
                 },
         ])

@@ -4,6 +4,7 @@ import json
 import logging
 import time
 
+from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -96,7 +97,7 @@ class SyncLectureView(JSONBrowserView):
             .order_by(db.Answer.answerId.desc())
             .limit(8)
             .all())
-        return [dict(  # NB: Not fully recreating, but shouldn't be a problem
+        out = [dict(  # NB: Not fully recreating what JS creates, but shouldn't be a problem
             correct=dbAns.correct,
             quiz_time=int(time.mktime(dbAns.timeStart.timetuple())),
             answer_time=int(time.mktime(dbAns.timeEnd.timetuple())),
@@ -104,6 +105,18 @@ class SyncLectureView(JSONBrowserView):
             grade_after=dbAns.grade,
             synced=True,
         ) for dbAns in reversed(dbAnswers)]
+
+        # Also tell the student how many they have answered.
+        if len(out) > 0:
+            dbTotals = (Session.query(db.Answer).add_columns(func.count())
+                .filter(db.Answer.lectureId == self.getLectureId())
+                .filter(db.Answer.studentId == student.studentId)
+                .group_by(db.Answer.correct)
+                .order_by(db.Answer.correct)
+                .all())
+            out[-1]['lec_answered'] = dbTotals[0][1] + dbTotals[1][1]
+            out[-1]['lec_correct'] = dbTotals[1][1]
+        return out
 
     def getQuestionAllocation(self, student, questions):
         # Get all plone questions, turn it into a dict by path
