@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound
 
+from AccessControl import Unauthorized
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
 
@@ -194,12 +195,15 @@ class SyncLectureView(JSONBrowserView):
             # 'application/json' but zope.testbrowser cannae do that.
             self.request.stdin.seek(0)
             lecture = json.loads(self.request.stdin.read())
+            if lecture.get('user', None) and lecture['user'] != student.userName:
+                raise Unauthorized('Quiz for user ' + lecture['user'])
         else:
             lecture = dict()
 
         # Build lecture dict
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
+            user=student.userName,
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
             hist_sel=(self.context.aq_parent.histsel

@@ -46,6 +46,7 @@ class SyncViewTest(FunctionalTestCase):
         self.assertEquals(aAlloc['title'], u'Unittest D1 T1 L1')
         self.assertEquals(aAlloc['uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-sync')
         self.assertEquals(aAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-all-questions')
+        self.assertEquals(aAlloc['user'], u'Arnold')
         self.assertEquals(len(aAlloc['questions']), 2)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
@@ -68,6 +69,7 @@ class SyncViewTest(FunctionalTestCase):
         self.assertEquals(bAlloc['title'], u'Unittest D1 T1 L1')
         self.assertEquals(bAlloc['uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-sync')
         self.assertEquals(bAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-all-questions')
+        self.assertEquals(bAlloc['user'], u'Betty')
         self.assertEquals(len(bAlloc['questions']), 2)
         self.assertTrue(aAlloc['questions'][0]['uri'] != bAlloc['questions'][0]['uri'])
         self.assertTrue(aAlloc['questions'][0]['uri'] != bAlloc['questions'][1]['uri'])
@@ -149,6 +151,7 @@ class SyncViewTest(FunctionalTestCase):
 
         # Write some answers back
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
             answerQueue=[
                 dict(
                     synced=False,
@@ -229,6 +232,7 @@ class SyncViewTest(FunctionalTestCase):
 
         # Writing a third time updates totals
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
             answerQueue=[
                 dict(
                     synced=False,
@@ -285,20 +289,36 @@ class SyncViewTest(FunctionalTestCase):
         self.assertEquals(bAlloc['answerQueue'], [
         ])
 
-        # Write some answers back
+        # Write some answers back, can only write back B's allocation
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID, body=dict(
+            user='Betty',
             answerQueue=[
                 dict(
                     synced=False,
                     uri=aAlloc['questions'][0]['uri'],
-                    student_answer=2,
+                    student_answer=0,
                     correct=True,
                     quiz_time=1377000040,
                     answer_time=1377000050,
                     grade_after=0.3,
                 ),
+                dict(
+                    synced=False,
+                    uri=bAlloc['questions'][0]['uri'],
+                    student_answer=0,
+                    correct=True,
+                    quiz_time=1377000041,
+                    answer_time=1377000051,
+                    grade_after=0.3,
+                ),
             ],
         ))
+        self.assertEquals(len(bAlloc['answerQueue']), 1)
+        self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
+        self.assertTrue((
+            u'No record of allocation %s for student Betty'
+            % aAlloc['questions'][0]['uri'].replace('http://nohost/plone/quizdb-get-question/', '')
+        ) in self.logs('sync'))
 
         # A doesn't see B's answer
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
@@ -322,3 +342,22 @@ class SyncViewTest(FunctionalTestCase):
                     u'lec_correct': 1,
                 },
         ])
+
+        # A can't write back answers for B
+        bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Betty',
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=2,
+                    correct=True,
+                    quiz_time=1377000060,
+                    answer_time=1377000070,
+                    grade_after=0.3,
+                ),
+            ],
+        ), expectedStatus=403)
+        bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID)
+        self.assertEquals(len(bAlloc['answerQueue']), 1)
+        self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
