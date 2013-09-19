@@ -201,14 +201,15 @@ class SyncLectureView(JSONBrowserView):
             lecture = dict()
 
         # Build lecture dict
+        settings = {}
+        settings.update(self.context.aq_parent.settings or {})
+        settings.update(self.context.settings or {})
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             user=student.userName,
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
-            hist_sel=(self.context.aq_parent.histsel
-                     if self.context.histsel < 0
-                     else self.context.histsel),
+            settings=settings,
             answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),
             questions=self.getQuestionAllocation(student, lecture.get('questions', [])),
         )

@@ -123,22 +123,55 @@ class SyncViewTest(FunctionalTestCase):
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
 
-    def test_histSel(self):
-        """Make sure hist_sel is inherited from tutorial"""
+    def test_settings(self):
+        """Make sure settings are inherited from tutorial"""
         portal = self.layer['portal']
-        # Set lecture 1 to inherit, should get 0.8
-        portal['dept1']['tut1'].histsel = 0.8
-        portal['dept1']['tut1']['lec1'].histsel = -1.0
-        transaction.commit()
-        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEqual(aAlloc['hist_sel'], 0.8)
 
-        # Set lecture 1 to override, should get 0.5
-        portal['dept1']['tut1'].histsel = 0.8
-        portal['dept1']['tut1']['lec1'].histsel = 0.5
+        portal['dept1']['tut1'].settings = dict(
+            hist_sel='0.8',
+            value_a='x',
+            value_b='x',
+        )
+        portal['dept1']['tut1']['lec1'].settings = dict(
+            value_b='y',
+            value_c='y',
+        )
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEqual(aAlloc['hist_sel'], 0.5)
+        self.assertEqual(aAlloc['settings'], dict(
+            hist_sel='0.8',
+            value_a='x',
+            value_b='y',
+            value_c='y',
+        ))
+
+        # Still works if lecture is None
+        portal['dept1']['tut1'].settings = dict(
+            hist_sel='0.8',
+            value_a='x',
+            value_b='x',
+        )
+        portal['dept1']['tut1']['lec1'].settings = None
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['settings'], dict(
+            hist_sel='0.8',
+            value_a='x',
+            value_b='x',
+        ))
+
+        # Still works if tutorial is none
+        portal['dept1']['tut1'].settings = None
+        portal['dept1']['tut1']['lec1'].settings = dict(
+            value_b='y',
+            value_c='y',
+        )
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['settings'], dict(
+            value_b='y',
+            value_c='y',
+        ))
 
     def test_answerQueuePersistent(self):
         """Make sure answerQueue gets logged and is returned"""
