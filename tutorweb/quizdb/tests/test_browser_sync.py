@@ -125,17 +125,22 @@ class SyncViewTest(FunctionalTestCase):
 
     def test_settings(self):
         """Make sure settings are inherited from tutorial"""
+        def toList(d):
+            # Bodge actual dicts into what we're storing.
+            return [dict(key=k, value=v) for (k,v) in d.items()]
+
         portal = self.layer['portal']
 
-        portal['dept1']['tut1'].settings = dict(
-            hist_sel='0.8',
-            value_a='x',
-            value_b='x',
-        )
-        portal['dept1']['tut1']['lec1'].settings = dict(
+        portal['dept1']['tut1'].settings = [
+            dict(key='hist_sel', value='0.8'),
+            dict(key='value_a', value='z'),
+            dict(key='value_a', value='x'),
+            dict(key='value_b', value='x'),
+        ]
+        portal['dept1']['tut1']['lec1'].settings = toList(dict(
             value_b='y',
             value_c='y',
-        )
+        ))
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['settings'], dict(
@@ -146,11 +151,11 @@ class SyncViewTest(FunctionalTestCase):
         ))
 
         # Still works if lecture is None
-        portal['dept1']['tut1'].settings = dict(
+        portal['dept1']['tut1'].settings = toList(dict(
             hist_sel='0.8',
             value_a='x',
             value_b='x',
-        )
+        ))
         portal['dept1']['tut1']['lec1'].settings = None
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
@@ -162,10 +167,10 @@ class SyncViewTest(FunctionalTestCase):
 
         # Still works if tutorial is none
         portal['dept1']['tut1'].settings = None
-        portal['dept1']['tut1']['lec1'].settings = dict(
+        portal['dept1']['tut1']['lec1'].settings = toList(dict(
             value_b='y',
             value_c='y',
-        )
+        ))
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['settings'], dict(
