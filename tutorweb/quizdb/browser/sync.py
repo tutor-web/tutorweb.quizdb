@@ -35,6 +35,7 @@ class SyncTutorialView(JSONBrowserView):
 
 class SyncLectureView(JSONBrowserView):
     def parseAnswerQueue(self, student, answerQueue):
+        newGrade = None
         for a in answerQueue:
             if a.get('synced', False):
                 continue
@@ -89,6 +90,7 @@ class SyncLectureView(JSONBrowserView):
                 timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
                 practice=a.get('practice', False),
             ))
+            newGrade = a.get('grade_after', newGrade)
             a['synced'] = True
         Session.flush()
 
@@ -115,19 +117,17 @@ class SyncLectureView(JSONBrowserView):
                 .filter(db.AnswerSummary.lectureId == self.getLectureId())
                 .filter(db.AnswerSummary.studentId == student.studentId)
                 .one())
-            updateSummary = len(answerQueue) > 0
         except NoResultFound:
             dbAnsSummary = db.AnswerSummary(
                 lectureId=self.getLectureId(),
                 studentId=student.studentId,
             )
             Session.add(dbAnsSummary)
-            updateSummary = True
+            newGrade = 0
 
         # Update row if we need to
-        if updateSummary:
-            if len(answerQueue) > 0:
-                dbAnsSummary.grade = answerQueue[-1].get('grade_after', 0)
+        if newGrade is not None:
+            dbAnsSummary.grade = newGrade
             dbAnsSummary.lecAnswered = (Session.query(func.count())
                 .filter(db.Answer.lectureId == self.getLectureId())
                 .filter(db.Answer.studentId == student.studentId)
