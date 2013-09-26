@@ -71,7 +71,7 @@ class SyncLectureView(JSONBrowserView):
                 #TODO: Recalculate grade at this point, instead of relying on JS?
                 # Write back stats to Plone
                 ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
-            except KeyError, NotFound:
+            except (KeyError, NotFound):
                 logger.error("Cannot find Plone question at %s" % dbQn.plonePath)
                 continue
             except (TypeError, IndexError):
