@@ -87,6 +87,7 @@ class SyncLectureView(JSONBrowserView):
                 grade=a.get('grade_after', None),
                 timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),
                 timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
+                practice=a.get('practice', False),
             ))
             a['synced'] = True
         Session.flush()
@@ -95,6 +96,7 @@ class SyncLectureView(JSONBrowserView):
         dbAnswers = (Session.query(db.Answer)
             .filter(db.Answer.lectureId == self.getLectureId())
             .filter(db.Answer.studentId == student.studentId)
+            .filter(db.Answer.practice == False)
             .order_by(db.Answer.answerId.desc())
             .limit(8)
             .all())

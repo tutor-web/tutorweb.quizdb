@@ -399,3 +399,56 @@ class SyncViewTest(FunctionalTestCase):
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID)
         self.assertEquals(len(bAlloc['answerQueue']), 1)
         self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
+
+    def test_practiceMode(self):
+        """Practice mod answers are recorded, but not returned"""
+        # Allocate to user A
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+
+        # Form nice long answerQueue and submit it
+        answerQueue = [dict(
+            synced=False,
+            uri=aAlloc['questions'][0]['uri'],
+            student_answer=i % 2,  # Odd i's should be correct
+            correct='wibble',
+            quiz_time=1377000000 + (i * 10),
+            answer_time=1377000001 + (i * 10),
+            grade_after=0.1,
+        ) for i in range(0, 13)]
+        answerQueue[0]['practice'] = False
+        answerQueue[1]['practice'] = False
+        # Miss answerQueue[2], should assume it's false
+        answerQueue[3]['practice'] = False
+        answerQueue[4]['practice'] = True
+        answerQueue[5]['practice'] = True
+        answerQueue[6]['practice'] = True
+        answerQueue[7]['practice'] = True
+        answerQueue[8]['practice'] = False
+        answerQueue[9]['practice'] = False
+        answerQueue[10]['practice'] = False
+        answerQueue[11]['practice'] = False
+        answerQueue[12]['practice'] = False
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=answerQueue,
+        ))
+
+        # Only 8 return, skipping over practice values
+        self.assertEquals([a['quiz_time'] for a in aAlloc['answerQueue']], [
+            answerQueue[1]['quiz_time'],
+            answerQueue[2]['quiz_time'],
+            answerQueue[3]['quiz_time'],
+            answerQueue[8]['quiz_time'],
+            answerQueue[9]['quiz_time'],
+            answerQueue[10]['quiz_time'],
+            answerQueue[11]['quiz_time'],
+            answerQueue[12]['quiz_time'],
+        ])
+
+        # Practice values are included in the count though
+        self.assertEquals(aAlloc['answerQueue'][-1]['lec_answered'], 13)
+        self.assertEquals(aAlloc['answerQueue'][-1]['lec_correct'], 6)

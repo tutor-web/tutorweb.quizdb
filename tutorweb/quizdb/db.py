@@ -196,3 +196,8 @@ class Answer(ORMBase):
         sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
         nullable=True,
     )
+    practice = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+        default=False,
+    )
