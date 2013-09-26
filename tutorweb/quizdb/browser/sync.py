@@ -36,7 +36,7 @@ class SyncTutorialView(JSONBrowserView):
 class SyncLectureView(JSONBrowserView):
     def parseAnswerQueue(self, student, answerQueue):
         for a in answerQueue:
-            if a['synced']:
+            if a.get('synced', False):
                 continue
             if 'student_answer' not in a:
                 continue
