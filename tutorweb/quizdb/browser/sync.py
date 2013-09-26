@@ -109,19 +109,41 @@ class SyncLectureView(JSONBrowserView):
             synced=True,
         ) for dbAns in reversed(dbAnswers)]
 
-        # Also tell the student how many they have answered at this point
-        if len(out) > 0:
-            dbTotals = (Session.query(db.Answer).add_columns(func.count())
+        # Fetch answerSummary row for student
+        try:
+            dbAnsSummary = (Session.query(db.AnswerSummary)
+                .filter(db.AnswerSummary.lectureId == self.getLectureId())
+                .filter(db.AnswerSummary.studentId == student.studentId)
+                .one())
+            updateSummary = len(answerQueue) > 0
+        except NoResultFound:
+            dbAnsSummary = db.AnswerSummary(
+                lectureId=self.getLectureId(),
+                studentId=student.studentId,
+            )
+            Session.add(dbAnsSummary)
+            updateSummary = True
+
+        # Update row if we need to
+        if updateSummary:
+            if len(answerQueue) > 0:
+                dbAnsSummary.grade = answerQueue[-1].get('grade_after', 0)
+            dbAnsSummary.lecAnswered = (Session.query(func.count())
                 .filter(db.Answer.lectureId == self.getLectureId())
                 .filter(db.Answer.studentId == student.studentId)
-                .group_by(db.Answer.correct)
-                .all())
-            out[-1]['lec_answered'] = 0
-            out[-1]['lec_correct'] = 0
-            for t in dbTotals:
-                out[-1]['lec_answered'] += t[1]
-                if t[0].correct:
-                    out[-1]['lec_correct'] += t[1]
+                .as_scalar())
+            dbAnsSummary.lecCorrect = (Session.query(func.count())
+                .filter(db.Answer.lectureId == self.getLectureId())
+                .filter(db.Answer.studentId == student.studentId)
+                .filter(db.Answer.correct == True)
+                .as_scalar())
+            Session.flush()
+
+        # Tell student how many questions they have answered
+        if len(out) > 0:
+            out[-1]['lec_answered'] = dbAnsSummary.lecAnswered
+            out[-1]['lec_correct'] = dbAnsSummary.lecCorrect
+
         return out
 
     def getQuestionAllocation(self, student, questions):

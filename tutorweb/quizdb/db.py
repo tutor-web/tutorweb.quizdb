@@ -201,3 +201,42 @@ class Answer(ORMBase):
         nullable=False,
         default=False,
     )
+
+class AnswerSummary(ORMBase):
+    """Answer summary table: The latest results for student"""
+    __tablename__ = 'answerSummary'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    answerSummaryId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        primary_key=True,
+        autoincrement=True,
+    )
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        nullable=False,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        nullable=False,
+    )
+    grade = sqlalchemy.schema.Column(
+        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        nullable=False,
+        default=0,
+    )
+    lecAnswered = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=0,
+    )
+    lecCorrect = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=0,
+    )
