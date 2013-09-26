@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="tutorweb.content">
+<body>
+
+<metal:content-core fill-slot="content-core">
+
+<table class="listing">
+  <thead>
+    <th>Student</th>
+    <th tal:repeat="lec view/lecturesInClass">
+      <a tal:attributes="href lec/url" tal:content="lec/id">id</a>
+    </th>
+  </thead>
+  <tbody>
+    <tr tal:repeat="student view/allStudentGrades">
+      <td tal:content="student/username"></td>
+      <td tal:repeat="grade student/grades" tal:content="grade"></td>
+    </tr>
+  </tbody>
+</table>
+
+</metal:content-core>
+
+</body>
+</html>

@@ -26,4 +26,11 @@
       class=".question.GetQuestionView"
       permission="zope2.View"
       />
+
+    <browser:page name="student-results"
+      for="tutorweb.content.schema.IClass"
+      permission="cmf.ModifyPortalContent"
+      class=".class.StudentResultsView"
+      template="tw_class_student_results.pt"
+      />
 </configure>
