@@ -2,6 +2,7 @@ import datetime
 import dateutil.parser
 import json
 import logging
+import random
 import time
 
 from sqlalchemy import func
@@ -18,6 +19,8 @@ from .base import JSONBrowserView
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+QUESTION_CAP = 100  # Maximum number of questions to assign to user
 
 
 class SyncTutorialView(JSONBrowserView):
@@ -172,7 +175,7 @@ class SyncLectureView(JSONBrowserView):
             .all()
 
         # Update / delete any existing questions
-        for (dbQn, dbAlloc) in dbAllocs:
+        for (i, (dbQn, dbAlloc)) in enumerate(dbAllocs):
             if dbQn.plonePath in ploneQns:
                 # Already have dbQn, don't need to create it
                 del ploneQns[dbQn.plonePath]
@@ -180,6 +183,8 @@ class SyncLectureView(JSONBrowserView):
             else:
                 # Question isn't in Plone, so deactivate in DB
                 dbQn.active = False
+                # Remove allocation, so users don't take this question any more
+                dbAllocs[i] = (dbQn, None)
 
         # Add any questions missing from DB
         for qn in ploneQns.values():
@@ -188,11 +193,10 @@ class SyncLectureView(JSONBrowserView):
             dbAllocs.append((dbQn, None))
         Session.flush()
 
-        # Allocate any unallocated questions
-        for i in xrange(len(dbAllocs)):
-            if dbAllocs[i][1] is not None:
-                # Already got an allocation
-                continue
+        # Count questions that aren't allocated, and allocate more if needed
+        spareAllocs = [i for i in xrange(len(dbAllocs)) if dbQn.active and dbAllocs[i][1] is None]
+        neededAllocs = max(0, min(QUESTION_CAP, len(dbAllocs)) - (len(dbAllocs) - len(spareAllocs)))
+        for i in random.sample(spareAllocs, neededAllocs):
             dbAlloc = db.Allocation(
                 studentId=student.studentId,
                 questionId=dbAllocs[i][0].questionId,
@@ -207,7 +211,7 @@ class SyncLectureView(JSONBrowserView):
             uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
             chosen=dbQn.timesAnswered,
             correct=dbQn.timesCorrect,
-        ) for (dbQn, dbAlloc) in dbAllocs if dbQn.active]
+        ) for (dbQn, dbAlloc) in dbAllocs if dbAlloc is not None]
 
     def asDict(self):
         student = self.getCurrentStudent()

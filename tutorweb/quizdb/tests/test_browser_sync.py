@@ -3,6 +3,7 @@ from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
 
+from ..browser.sync import QUESTION_CAP
 from .base import FunctionalTestCase
 from .base import USER_A_ID, USER_B_ID, MANAGER_ID
 
@@ -106,6 +107,19 @@ class SyncViewTest(FunctionalTestCase):
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+
+        # Recreate it
+        portal['dept1']['tut1']['lec1'].invokeFactory(
+            type_name="tw_latexquestion",
+            id="qn3",
+            title="Unittest D1 T1 L1 Q3",
+        )
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3'],
         )
 
     def test_settings(self):
@@ -437,3 +451,64 @@ class SyncViewTest(FunctionalTestCase):
         # Practice values are included in the count though
         self.assertEquals(aAlloc['answerQueue'][-1]['lec_answered'], 13)
         self.assertEquals(aAlloc['answerQueue'][-1]['lec_correct'], 6)
+
+    def test_lotsofquestions(self):
+        """Shouldn't go over the question cap when assigning questions"""
+        def createQuestions(obj, count):
+            if not hasattr(self, 'createdQns'):
+                self.createdQns = 0
+            for i in xrange(count):
+                obj.invokeFactory(
+                    type_name="tw_latexquestion",
+                    id="qn%d" % (self.createdQns + i),
+                    title="Unittest megalec Q%d" % (self.createdQns + i),
+                    choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
+                    finalchoices=[],
+                )
+            self.createdQns = count
+            import transaction ; transaction.commit()
+
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create a lecture with a reasonable number of questions
+        portal['dept1']['tut1'].invokeFactory(
+            type_name="tw_lecture",
+            id="megalec",
+            title="Lecture with a bazillion question",
+        )
+        createQuestions(portal['dept1']['tut1']['megalec'], 20)
+
+        # Allocate to user A, get 20
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 20)
+
+        # Create even more questions, shouldn't get any more than QUESTION_CAP
+        createQuestions(portal['dept1']['tut1']['megalec'], QUESTION_CAP)
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), QUESTION_CAP)
+
+        # Allocate to user B, only get QUESTION_CAP straight away
+        bAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_B_ID)
+        self.assertEquals(len(bAlloc['questions']), QUESTION_CAP)
+
+        # However, they're a different set of questions
+        # NB: There's only 20 spare, so could flap
+        self.assertNotEqual(
+            sorted([qn['uri'] for qn in aAlloc['questions']]),
+            sorted([qn['uri'] for qn in bAlloc['questions']]),
+        )
+
+        # A should still get the same set though
+        aAlloc1 = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(
+            sorted([qn['uri'] for qn in aAlloc['questions']]),
+            sorted([qn['uri'] for qn in aAlloc1['questions']]),
+        )
+
+        # B should still get the same set too
+        bAlloc1 = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_B_ID)
+        self.assertEqual(
+            sorted([qn['uri'] for qn in bAlloc['questions']]),
+            sorted([qn['uri'] for qn in bAlloc1['questions']]),
+        )
