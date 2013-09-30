@@ -123,7 +123,6 @@ class SyncLectureView(JSONBrowserView):
                 studentId=student.studentId,
             )
             Session.add(dbAnsSummary)
-            newGrade = 0
 
         # Update row if we need to
         if newGrade is not None:
