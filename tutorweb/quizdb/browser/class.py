@@ -1,6 +1,5 @@
 from collections import defaultdict
-import logging
-
+# import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 from z3c.saconfig import Session
@@ -22,7 +21,9 @@ class StudentResultsView(BrowserView):
         ) for lec in lectures]
 
     def allStudentGrades(self):
-        """Get entries from AnswerSummary for the classes lectures / students"""
+        """
+        Get entries from AnswerSummary for the classes lectures / students
+        """
         lecturePaths = [r.to_path for r in self.context.lectures]
         dbTotals = (
             Session.query(db.AnswerSummary)

@@ -1,10 +1,7 @@
-import logging
-
+import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
-from plone.app.testing import login, logout
-
-from Products.CMFCore.utils import getToolByName
+from plone.app.testing import login
 
 from tutorweb.content.tests.base import setRelations
 from .base import IntegrationTestCase
@@ -126,7 +123,7 @@ class StudentResultsViewTest(IntegrationTestCase):
             grade_after=grade,
         ) for grade in grades])
         login(self.layer['portal'], MANAGER_ID)
-        import transaction ; transaction.commit()
+        transaction.commit()
         return out
 
     def getView(self):

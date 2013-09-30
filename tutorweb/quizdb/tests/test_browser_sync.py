@@ -1,8 +1,3 @@
-import logging
-import os
-import sys
-import time
-
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -14,6 +9,7 @@ from .base import USER_A_ID, USER_B_ID, MANAGER_ID
 
 class SyncViewTest(FunctionalTestCase):
     maxDiff = None
+
     def setUp(self):
         self.loghandlers = dict(
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
@@ -116,7 +112,7 @@ class SyncViewTest(FunctionalTestCase):
         """Make sure settings are inherited from tutorial"""
         def toList(d):
             # Bodge actual dicts into what we're storing.
-            return [dict(key=k, value=v) for (k,v) in d.items()]
+            return [dict(key=k, value=v) for (k, v) in d.items()]
 
         portal = self.layer['portal']
 
@@ -214,47 +210,47 @@ class SyncViewTest(FunctionalTestCase):
         self.assertEqual(self.logs('sync'), ['Student answer 99 out of range'])
         # Returned answerQueue without dodgy answer
         self.assertEqual(aAlloc['answerQueue'], [
-                {
-                    u'synced': True,
-                    u'student_answer': 0,
-                    u'correct': False,
-                    u'quiz_time': 1377000000,
-                    u'answer_time': 1377000010,
-                    u'grade_after': 0.1,
-                },
-                {
-                    u'synced': True,
-                    u'student_answer': 2,
-                    u'correct': True,
-                    u'quiz_time': 1377000020,
-                    u'answer_time': 1377000030,
-                    u'grade_after': 0.3,
-                    u'lec_answered': 2,
-                    u'lec_correct': 1,
-                },
+            {
+                u'synced': True,
+                u'student_answer': 0,
+                u'correct': False,
+                u'quiz_time': 1377000000,
+                u'answer_time': 1377000010,
+                u'grade_after': 0.1,
+            },
+            {
+                u'synced': True,
+                u'student_answer': 2,
+                u'correct': True,
+                u'quiz_time': 1377000020,
+                u'answer_time': 1377000030,
+                u'grade_after': 0.3,
+                u'lec_answered': 2,
+                u'lec_correct': 1,
+            },
         ])
 
         # Fetching again returns the same queue
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['answerQueue'], [
-                {
-                    u'synced': True,
-                    u'student_answer': 0,
-                    u'correct': False,
-                    u'quiz_time': 1377000000,
-                    u'answer_time': 1377000010,
-                    u'grade_after': 0.1,
-                },
-                {
-                    u'synced': True,
-                    u'student_answer': 2,
-                    u'correct': True,
-                    u'quiz_time': 1377000020,
-                    u'answer_time': 1377000030,
-                    u'grade_after': 0.3,
-                    u'lec_answered': 2,
-                    u'lec_correct': 1,
-                },
+            {
+                u'synced': True,
+                u'student_answer': 0,
+                u'correct': False,
+                u'quiz_time': 1377000000,
+                u'answer_time': 1377000010,
+                u'grade_after': 0.1,
+            },
+            {
+                u'synced': True,
+                u'student_answer': 2,
+                u'correct': True,
+                u'quiz_time': 1377000020,
+                u'answer_time': 1377000030,
+                u'grade_after': 0.3,
+                u'lec_answered': 2,
+                u'lec_correct': 1,
+            },
         ])
 
         # Writing a third time updates totals
@@ -350,24 +346,24 @@ class SyncViewTest(FunctionalTestCase):
         # A doesn't see B's answer
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['answerQueue'], [
-                {
-                    u'synced': True,
-                    u'student_answer': 0,
-                    u'correct': False,
-                    u'quiz_time': 1377000000,
-                    u'answer_time': 1377000010,
-                    u'grade_after': 0.1,
-                },
-                {
-                    u'synced': True,
-                    u'student_answer': 2,
-                    u'correct': True,
-                    u'quiz_time': 1377000020,
-                    u'answer_time': 1377000030,
-                    u'grade_after': 0.3,
-                    u'lec_answered': 2,
-                    u'lec_correct': 1,
-                },
+            {
+                u'synced': True,
+                u'student_answer': 0,
+                u'correct': False,
+                u'quiz_time': 1377000000,
+                u'answer_time': 1377000010,
+                u'grade_after': 0.1,
+            },
+            {
+                u'synced': True,
+                u'student_answer': 2,
+                u'correct': True,
+                u'quiz_time': 1377000020,
+                u'answer_time': 1377000030,
+                u'grade_after': 0.3,
+                u'lec_answered': 2,
+                u'lec_correct': 1,
+            },
         ])
 
         # A can't write back answers for B
