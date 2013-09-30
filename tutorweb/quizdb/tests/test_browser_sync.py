@@ -4,12 +4,10 @@ import sys
 import time
 
 import transaction
-from z3c.saconfig import Session
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
 
-from tutorweb.quizdb import ORMBase
 from .base import FunctionalTestCase
 from .base import USER_A_ID, USER_B_ID, MANAGER_ID
 
@@ -21,15 +19,6 @@ class SyncViewTest(FunctionalTestCase):
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
         )
-
-    def tearDown(self):
-        """Drop all DB tables and recreate"""
-        Session().execute("DROP TABLE allocation")
-        Session().execute("DROP TABLE lecture")
-        Session().execute("DROP TABLE question")
-        Session().execute("DROP TABLE student")
-        Session().execute("DROP TABLE answer")
-        ORMBase.metadata.create_all(Session().bind)
 
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]

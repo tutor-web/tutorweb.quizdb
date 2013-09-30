@@ -4,6 +4,7 @@ from unittest import TestCase
 import json
 
 from plone.app.testing import IntegrationTesting, FunctionalTesting
+from z3c.saconfig import Session
 from zope.configuration import xmlconfig
 
 # Nab test case setup from tutorweb.content
@@ -15,6 +16,7 @@ from tutorweb.content.tests.base import (
 )
 from tutorweb.content.tests.base import TestFixture as ContentTestFixture
 from tutorweb.content.tests.base import FunctionalTestCase as ContentFunctionalTestCase
+from tutorweb.quizdb import ORMBase
 
 class TestFixture(ContentTestFixture):
     def setUpZope(self, app, configurationContext):
@@ -56,6 +58,15 @@ TUTORWEB_QUIZDB_FUNCTIONAL_TESTING = FunctionalTesting(
 class IntegrationTestCase(TestCase):
     layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING
 
+    def tearDown(self):
+        """Drop all DB tables and recreate"""
+        Session().execute("DROP TABLE allocation")
+        Session().execute("DROP TABLE lecture")
+        Session().execute("DROP TABLE question")
+        Session().execute("DROP TABLE student")
+        Session().execute("DROP TABLE answer")
+        ORMBase.metadata.create_all(Session().bind)
+
 
 class FunctionalTestCase(ContentFunctionalTestCase):
     layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
@@ -80,3 +91,12 @@ class FunctionalTestCase(ContentFunctionalTestCase):
             )
         )
         return json.loads(browser.contents)
+
+    def tearDown(self):
+        """Drop all DB tables and recreate"""
+        Session().execute("DROP TABLE allocation")
+        Session().execute("DROP TABLE lecture")
+        Session().execute("DROP TABLE question")
+        Session().execute("DROP TABLE student")
+        Session().execute("DROP TABLE answer")
+        ORMBase.metadata.create_all(Session().bind)
