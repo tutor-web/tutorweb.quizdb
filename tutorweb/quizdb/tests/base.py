@@ -65,6 +65,7 @@ class IntegrationTestCase(TestCase):
         Session().execute("DROP TABLE question")
         Session().execute("DROP TABLE student")
         Session().execute("DROP TABLE answer")
+        Session().execute("DROP TABLE answerSummary")
         ORMBase.metadata.create_all(Session().bind)
 
 
@@ -99,4 +100,5 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         Session().execute("DROP TABLE question")
         Session().execute("DROP TABLE student")
         Session().execute("DROP TABLE answer")
+        Session().execute("DROP TABLE answerSummary")
         ORMBase.metadata.create_all(Session().bind)
