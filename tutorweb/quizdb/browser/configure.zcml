@@ -33,4 +33,10 @@
       class=".class.StudentResultsView"
       template="tw_class_student_results.pt"
       />
+
+    <browser:page name="quizdb-student-update"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".studentupdate.StudentUpdateView"
+      permission="zope2.View"
+      />
 </configure>
