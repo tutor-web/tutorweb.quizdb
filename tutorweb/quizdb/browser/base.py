@@ -49,11 +49,20 @@ class JSONBrowserView(BrowserView):
             ))
 
     def getCurrentStudent(self):
-        membership = self.context.portal_membership;
+        """Try fetching the current student, create if they don't exist"""
+        membership = self.context.portal_membership
         if membership.isAnonymousUser():
             raise Unauthorized
         mb = membership.getAuthenticatedMember()
-        return self.getDbStudent(mb.getUserName())
+        try:
+            dbStudent = Session.query(db.Student) \
+                .filter(db.Student.userName == mb.getUserName()).one()
+        except NoResultFound:
+            dbStudent = db.Student(userName=mb.getUserName())
+            Session.add(dbStudent)
+        dbStudent.eMail = mb.getProperty('email')
+        Session.flush()
+        return dbStudent
 
     def getLectureId(self):
         """Return database ID for the current lecture"""
@@ -79,13 +88,3 @@ class JSONBrowserView(BrowserView):
             pu = getToolByName(self.context, "portal_url")
             self._portal = pu.getPortalObject()
         return self._portal
-
-    def getDbStudent(self, username):
-        """Return the datbase student, creating if necessary"""
-        try:
-            return Session.query(db.Student) \
-                .filter(db.Student.userName == username).one()
-        except NoResultFound:
-            dbstudent = db.Student(userName=username)
-            Session.add(dbstudent)
-            return dbstudent

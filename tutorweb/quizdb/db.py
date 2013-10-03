@@ -80,6 +80,7 @@ class Lecture(ORMBase):
         index=True,
     )
 
+
 class Question(ORMBase):
     """Question table: Per-question stats"""
     __tablename__ = 'question'
@@ -145,6 +146,12 @@ class Student(ORMBase):
         unique=True,
         index=True,
     )
+    eMail = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
 
 class Answer(ORMBase):
@@ -201,6 +208,7 @@ class Answer(ORMBase):
         nullable=False,
         default=False,
     )
+
 
 class AnswerSummary(ORMBase):
     """Answer summary table: The latest results for student"""
