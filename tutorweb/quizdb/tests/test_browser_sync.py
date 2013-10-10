@@ -81,18 +81,23 @@ class SyncViewTest(FunctionalTestCase):
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
 
-        # Add a question3, appears in sync call
+        # Add a question3 & 4, appears in sync call
         login(portal, MANAGER_ID)
         portal['dept1']['tut1']['lec1'].invokeFactory(
             type_name="tw_latexquestion",
             id="qn3",
             title="Unittest D1 T1 L1 Q3",
         )
+        portal['dept1']['tut1']['lec1'].invokeFactory(
+            type_name="tw_latexquestion",
+            id="qn4",
+            title="Unittest D1 T1 L1 Q4",
+        )
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3'],
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
 
         # Delete question3, doesn't appear in sync
@@ -101,12 +106,12 @@ class SyncViewTest(FunctionalTestCase):
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
 
         # Recreate it
@@ -119,7 +124,7 @@ class SyncViewTest(FunctionalTestCase):
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3'],
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
 
     def test_settings(self):

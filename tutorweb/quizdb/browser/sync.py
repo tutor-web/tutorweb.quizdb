@@ -194,8 +194,9 @@ class SyncLectureView(JSONBrowserView):
         Session.flush()
 
         # Count questions that aren't allocated, and allocate more if needed
-        spareAllocs = [i for i in xrange(len(dbAllocs)) if dbQn.active and dbAllocs[i][1] is None]
+        spareAllocs = [i for i in xrange(len(dbAllocs)) if dbAllocs[i][0].active and dbAllocs[i][1] is None]
         neededAllocs = max(0, min(QUESTION_CAP, len(dbAllocs)) - (len(dbAllocs) - len(spareAllocs)))
+        #TODO: Negative neededAllocs implies some should be thrown away
         for i in random.sample(spareAllocs, neededAllocs):
             dbAlloc = db.Allocation(
                 studentId=student.studentId,
