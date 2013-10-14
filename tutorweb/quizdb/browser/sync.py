@@ -149,6 +149,8 @@ class SyncLectureView(JSONBrowserView):
         return out
 
     def getQuestionAllocation(self, student, questions):
+        removedQns = []
+
         # Get all plone questions, turn it into a dict by path
         listing = self.portalObject().portal_catalog.unrestrictedSearchResults(
             path={'query': '/'.join(self.context.getPhysicalPath()), 'depth': 1},
@@ -183,8 +185,10 @@ class SyncLectureView(JSONBrowserView):
             else:
                 # Question isn't in Plone, so deactivate in DB
                 dbQn.active = False
-                # Remove allocation, so users don't take this question any more
-                dbAllocs[i] = (dbQn, None)
+                if dbAlloc:
+                    # Remove allocation, so users don't take this question any more
+                    removedQns.append(dbAlloc.publicId)
+                    dbAllocs[i] = (dbQn, None)
 
         # Add any questions missing from DB
         for qn in ploneQns.values():
@@ -208,11 +212,14 @@ class SyncLectureView(JSONBrowserView):
 
         # Return all active questions
         portalUrl = self.portalObject().absolute_url()
-        return [dict(
-            uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
-            chosen=dbQn.timesAnswered,
-            correct=dbQn.timesCorrect,
-        ) for (dbQn, dbAlloc) in dbAllocs if dbAlloc is not None]
+        return (
+            [dict(
+                uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
+                chosen=dbQn.timesAnswered,
+                correct=dbQn.timesCorrect,
+            ) for (dbQn, dbAlloc) in dbAllocs if dbAlloc is not None],
+            [portalUrl + '/quizdb-get-question/' + id for id in removedQns],
+        )
 
     def asDict(self):
         student = self.getCurrentStudent()
@@ -229,6 +236,7 @@ class SyncLectureView(JSONBrowserView):
             lecture = dict()
 
         # Build lecture dict
+        (questions, removedQuestions) = self.getQuestionAllocation(student, lecture.get('questions', []))
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             user=student.userName,
@@ -240,5 +248,6 @@ class SyncLectureView(JSONBrowserView):
                 in (self.context.aq_parent.settings or []) + (self.context.settings or [])
             ),
             answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),
-            questions=self.getQuestionAllocation(student, lecture.get('questions', [])),
+            questions=questions,
+            removed_questions=removedQuestions,
         )

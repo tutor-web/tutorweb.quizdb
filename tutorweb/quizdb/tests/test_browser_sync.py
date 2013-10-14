@@ -99,6 +99,12 @@ class SyncViewTest(FunctionalTestCase):
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
+        self.assertEquals(aAlloc['removed_questions'], [])
+
+        # Work out which is question 3
+        for qn in aAlloc['questions']:
+            if self.getJson(qn['uri'])['title'] == u'Unittest D1 T1 L1 Q3':
+                qn3 = qn['uri']
 
         # Delete question3, doesn't appear in sync
         browser = self.getBrowser('http://nohost/plone/dept1/tut1/lec1/qn3/delete_confirmation', user=MANAGER_ID)
@@ -108,11 +114,13 @@ class SyncViewTest(FunctionalTestCase):
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
+        self.assertEquals(aAlloc['removed_questions'], [qn3])
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
+        self.assertEquals(aAlloc['removed_questions'], [qn3])
 
         # Recreate it
         portal['dept1']['tut1']['lec1'].invokeFactory(
@@ -126,6 +134,7 @@ class SyncViewTest(FunctionalTestCase):
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
+        self.assertEquals(aAlloc['removed_questions'], [])
 
     def test_settings(self):
         """Make sure settings are inherited from tutorial"""

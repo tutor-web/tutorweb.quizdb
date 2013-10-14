@@ -112,7 +112,7 @@ class StudentResultsViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        qns = syncView.getQuestionAllocation(student, [])
+        qns = syncView.getQuestionAllocation(student, [])[0]
         out = syncView.parseAnswerQueue(student, [dict(
             synced=False,
             uri=qns[0]['uri'],
