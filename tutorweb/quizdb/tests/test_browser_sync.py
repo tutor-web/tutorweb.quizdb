@@ -592,3 +592,10 @@ class SyncViewTest(FunctionalTestCase):
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 7)
         self.assertEquals(len(aAlloc['removed_questions']), 0)
+
+        # Delete some questions, should go back down again
+        for qn in [x.id for x in portal['dept1']['mediumtut']['largelec'].getChildNodes()][:15]:
+            browser = self.getBrowser('http://nohost/plone/dept1/mediumtut/largelec/%s/delete_confirmation' % qn, user=MANAGER_ID)
+            browser.getControl('Delete').click()
+        aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 5)

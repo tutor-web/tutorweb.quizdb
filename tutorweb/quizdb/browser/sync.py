@@ -187,11 +187,17 @@ class SyncLectureView(JSONBrowserView):
             .all()
 
         # Update / delete any existing questions
+        usedAllocs = []
+        spareAllocs = []
         for (i, (dbQn, dbAlloc)) in enumerate(dbAllocs):
             if dbQn.plonePath in ploneQns:
                 # Already have dbQn, don't need to create it
                 del ploneQns[dbQn.plonePath]
                 dbQn.active = True
+                if dbAlloc is not None:
+                    usedAllocs.append(i)
+                else:
+                    spareAllocs.append(i)
             else:
                 # Question isn't in Plone, so deactivate in DB
                 dbQn.active = False
@@ -204,13 +210,15 @@ class SyncLectureView(JSONBrowserView):
         for qn in ploneQns.values():
             dbQn = db.Question(**qn)
             Session.add(dbQn)
+            spareAllocs.append(len(dbAllocs))
             dbAllocs.append((dbQn, None))
         Session.flush()
 
         # Count questions that aren't allocated, and allocate more if needed
-        spareAllocs = [i for i in xrange(len(dbAllocs)) if dbAllocs[i][0].active and dbAllocs[i][1] is None]
-        neededAllocs = min(int(self.getSetting('question_cap', DEFAULT_QUESTION_CAP)), len(dbAllocs)) \
-                     - (len(dbAllocs) - len(spareAllocs))
+        neededAllocs = min(
+            int(self.getSetting('question_cap', DEFAULT_QUESTION_CAP)),
+            len(usedAllocs) + len(spareAllocs),
+        ) - len(usedAllocs)
         if neededAllocs > 0:
             # Need more questions, so assign randomly
             for i in random.sample(spareAllocs, neededAllocs):
@@ -222,7 +230,6 @@ class SyncLectureView(JSONBrowserView):
                 dbAllocs[i] = (dbAllocs[i][0], dbAlloc)
         elif neededAllocs < 0:
             # Need less questions
-            usedAllocs = [i for i in xrange(len(dbAllocs)) if dbAllocs[i][0].active and dbAllocs[i][1] is not None]
             for i in random.sample(usedAllocs, abs(neededAllocs)):
                 removedQns.append(dbAllocs[i][1].publicId)
                 Session.delete(dbAllocs[i][1])  # NB: Should probably mark as deleted instead
