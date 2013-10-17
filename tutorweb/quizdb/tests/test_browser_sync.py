@@ -572,3 +572,23 @@ class SyncViewTest(FunctionalTestCase):
         self.assertEquals(len(aAlloc['questions']), 15)
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/mediumlec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 10)
+
+        # Tune lecture down to 5, questions should be tossed away.
+        portal['dept1']['mediumtut']['largelec'].settings = [dict(key='question_cap', value='5')]
+        import transaction ; transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 5)
+        self.assertEquals(len(aAlloc['removed_questions']), 10)
+
+        # On the second round, we forget about the removed questions
+        # NB: This isn't brilliant behaviour, but saves cluttering the DB
+        aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 5)
+        self.assertEquals(len(aAlloc['removed_questions']), 0)
+
+        # Bump cap back up a bit, should get more questions
+        portal['dept1']['mediumtut']['largelec'].settings = [dict(key='question_cap', value='7')]
+        import transaction ; transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 7)
+        self.assertEquals(len(aAlloc['removed_questions']), 0)

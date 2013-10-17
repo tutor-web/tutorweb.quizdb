@@ -222,8 +222,11 @@ class SyncLectureView(JSONBrowserView):
                 dbAllocs[i] = (dbAllocs[i][0], dbAlloc)
         elif neededAllocs < 0:
             # Need less questions
-            #TODO:
-            pass
+            usedAllocs = [i for i in xrange(len(dbAllocs)) if dbAllocs[i][0].active and dbAllocs[i][1] is not None]
+            for i in random.sample(usedAllocs, abs(neededAllocs)):
+                removedQns.append(dbAllocs[i][1].publicId)
+                Session.delete(dbAllocs[i][1])  # NB: Should probably mark as deleted instead
+                dbAllocs[i] = (dbAllocs[i][0], None)
         Session.flush()
 
         # Return all active questions
