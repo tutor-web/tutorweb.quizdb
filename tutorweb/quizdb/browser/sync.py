@@ -20,7 +20,7 @@ from .base import JSONBrowserView
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-QUESTION_CAP = 100  # Maximum number of questions to assign to user
+DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
 
 
 class SyncTutorialView(JSONBrowserView):
@@ -37,6 +37,16 @@ class SyncTutorialView(JSONBrowserView):
 
 
 class SyncLectureView(JSONBrowserView):
+    def getSetting(self, key, default=None):
+        """Return the value for a lecture / tutorial setting"""
+        for i in (self.context.settings or []):
+            if i['key'] == key:
+                return i['value']
+        for i in (self.context.aq_parent.settings or []):
+            if i['key'] == key:
+                return i['value']
+        return default
+
     def parseAnswerQueue(self, student, answerQueue):
         newGrade = None
         for a in answerQueue:
@@ -199,15 +209,21 @@ class SyncLectureView(JSONBrowserView):
 
         # Count questions that aren't allocated, and allocate more if needed
         spareAllocs = [i for i in xrange(len(dbAllocs)) if dbAllocs[i][0].active and dbAllocs[i][1] is None]
-        neededAllocs = max(0, min(QUESTION_CAP, len(dbAllocs)) - (len(dbAllocs) - len(spareAllocs)))
-        #TODO: Negative neededAllocs implies some should be thrown away
-        for i in random.sample(spareAllocs, neededAllocs):
-            dbAlloc = db.Allocation(
-                studentId=student.studentId,
-                questionId=dbAllocs[i][0].questionId,
-            )
-            Session.add(dbAlloc)
-            dbAllocs[i] = (dbAllocs[i][0], dbAlloc)
+        neededAllocs = min(int(self.getSetting('question_cap', DEFAULT_QUESTION_CAP)), len(dbAllocs)) \
+                     - (len(dbAllocs) - len(spareAllocs))
+        if neededAllocs > 0:
+            # Need more questions, so assign randomly
+            for i in random.sample(spareAllocs, neededAllocs):
+                dbAlloc = db.Allocation(
+                    studentId=student.studentId,
+                    questionId=dbAllocs[i][0].questionId,
+                )
+                Session.add(dbAlloc)
+                dbAllocs[i] = (dbAllocs[i][0], dbAlloc)
+        elif neededAllocs < 0:
+            # Need less questions
+            #TODO:
+            pass
         Session.flush()
 
         # Return all active questions

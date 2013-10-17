@@ -3,7 +3,7 @@ from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
 
-from ..browser.sync import QUESTION_CAP
+from ..browser.sync import DEFAULT_QUESTION_CAP
 from .base import FunctionalTestCase
 from .base import USER_A_ID, USER_B_ID, MANAGER_ID
 
@@ -497,14 +497,14 @@ class SyncViewTest(FunctionalTestCase):
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 20)
 
-        # Create even more questions, shouldn't get any more than QUESTION_CAP
-        createQuestions(portal['dept1']['tut1']['megalec'], QUESTION_CAP)
+        # Create even more questions, shouldn't get any more than DEFAULT_QUESTION_CAP
+        createQuestions(portal['dept1']['tut1']['megalec'], DEFAULT_QUESTION_CAP)
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_A_ID)
-        self.assertEquals(len(aAlloc['questions']), QUESTION_CAP)
+        self.assertEquals(len(aAlloc['questions']), DEFAULT_QUESTION_CAP)
 
-        # Allocate to user B, only get QUESTION_CAP straight away
+        # Allocate to user B, only get DEFAULT_QUESTION_CAP straight away
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_B_ID)
-        self.assertEquals(len(bAlloc['questions']), QUESTION_CAP)
+        self.assertEquals(len(bAlloc['questions']), DEFAULT_QUESTION_CAP)
 
         # However, they're a different set of questions
         # NB: There's only 20 spare, so could flap
@@ -526,3 +526,49 @@ class SyncViewTest(FunctionalTestCase):
             sorted([qn['uri'] for qn in bAlloc['questions']]),
             sorted([qn['uri'] for qn in bAlloc1['questions']]),
         )
+
+    def test_questioncapsetting(self):
+        """Should be able to set question cap"""
+        def createQuestions(obj, count):
+            if not hasattr(self, 'createdQns'):
+                self.createdQns = 0
+            for i in xrange(count):
+                obj.invokeFactory(
+                    type_name="tw_latexquestion",
+                    id="qn%d" % (self.createdQns + i),
+                    title="Unittest megalec Q%d" % (self.createdQns + i),
+                    choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
+                    finalchoices=[],
+                )
+            self.createdQns = count
+            import transaction ; transaction.commit()
+
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create lectures to exercise settings
+        portal['dept1'].invokeFactory(
+            type_name="tw_tutorial",
+            id="mediumtut",
+            title="Tutorial with a question cap of 10",
+            settings=[dict(key='question_cap', value='10')],
+        )
+        portal['dept1']['mediumtut'].invokeFactory(
+            type_name="tw_lecture",
+            id="mediumlec",
+            title="Lecture with no question cap (but uses default of 10)",
+        )
+        portal['dept1']['mediumtut'].invokeFactory(
+            type_name="tw_lecture",
+            id="largelec",
+            title="Lecture with a question cap of 15",
+            settings=[dict(key='question_cap', value='15')],
+        )
+        createQuestions(portal['dept1']['mediumtut']['mediumlec'], 20)
+        createQuestions(portal['dept1']['mediumtut']['largelec'], 20)
+
+        # Should get 15 for large, 10 for medium
+        aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 15)
+        aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/mediumlec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 10)
