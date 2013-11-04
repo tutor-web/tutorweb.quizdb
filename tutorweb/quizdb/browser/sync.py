@@ -107,13 +107,12 @@ class SyncLectureView(JSONBrowserView):
             a['synced'] = True
         Session.flush()
 
-        # Get last 8 answers and send them back
+        # Get all previous real answers and send them back.
         dbAnswers = (Session.query(db.Answer)
             .filter(db.Answer.lectureId == self.getLectureId())
             .filter(db.Answer.studentId == student.studentId)
             .filter(db.Answer.practice == False)
             .order_by(db.Answer.answerId.desc())
-            .limit(8)
             .all())
         out = [dict(  # NB: Not fully recreating what JS creates, but shouldn't be a problem
             correct=dbAns.correct,

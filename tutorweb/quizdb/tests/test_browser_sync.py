@@ -450,8 +450,9 @@ class SyncViewTest(FunctionalTestCase):
             answerQueue=answerQueue,
         ))
 
-        # Only 8 return, skipping over practice values
+        # Skip over practice values
         self.assertEquals([a['quiz_time'] for a in aAlloc['answerQueue']], [
+            answerQueue[0]['quiz_time'],
             answerQueue[1]['quiz_time'],
             answerQueue[2]['quiz_time'],
             answerQueue[3]['quiz_time'],
