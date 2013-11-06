@@ -9,6 +9,8 @@
 
 <metal:content-core fill-slot="content-core">
 
+<a tal:attributes="href string:${context/absolute_url}/student-table">Download all student answers as spreadsheet</a>
+
 <table class="listing">
   <thead>
     <th>Student</th>

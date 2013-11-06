@@ -34,6 +34,12 @@
       template="tw_class_student_results.pt"
       />
 
+    <browser:page name="student-table"
+      for="tutorweb.content.schema.IClass"
+      permission="cmf.ModifyPortalContent"
+      class=".class.StudentTableView"
+      />
+
     <browser:page name="quizdb-student-update"
       for="Products.CMFCore.interfaces.ISiteRoot"
       class=".studentupdate.StudentUpdateView"

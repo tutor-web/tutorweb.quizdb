@@ -1,3 +1,6 @@
+import csv
+from StringIO import StringIO
+
 from collections import defaultdict
 # import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
@@ -44,3 +47,45 @@ class StudentResultsView(BrowserView):
             username=student,
             grades=[asDict[student][l] for l in lecturePaths],
         ) for student in self.context.students]
+
+
+class StudentTableView(BrowserView):
+    """Download a CSV file of all students' answers"""
+    def allStudentAnswers(self):
+        """
+        Get entries from Answer for the classes lectures / students
+        """
+        lecturePaths = [r.to_path for r in self.context.lectures]
+        return (
+            Session.query(db.Answer)
+            .add_columns(db.Student.userName, db.Lecture.plonePath, db.Question.plonePath)
+            .join(db.Student)
+            .filter(db.Student.userName.in_(self.context.students))
+            .join(db.Lecture)
+            .filter(db.Lecture.plonePath.in_(lecturePaths))
+            .join(db.Question, db.Question.questionId == db.Answer.questionId)
+            .order_by(db.Student.userName, db.Lecture.plonePath, db.Question.plonePath)
+            .all())
+
+    def __call__(self):
+        """Turn student answers into a CSV"""
+        out = StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['Student', 'Lecture', 'Question', 'Chosen answer', 'Correct', 'Time answered', 'Grade', 'Practice'])
+        for row in self.allStudentAnswers():
+            writer.writerow([
+                row[1],
+                row[2],
+                row[3],
+                row[0].chosenAnswer,
+                row[0].correct,
+                row[0].timeEnd,
+                row[0].grade,
+                row[0].practice,
+            ])
+
+        filename = "%s-results.csv" % self.context.id
+        self.request.response.setHeader('Content-Type', 'text/csv')
+        self.request.response.setHeader('Content-Disposition', 'attachment; filename="%s"' % filename)
+        #TODO: Streaming?
+        return out.getvalue()
