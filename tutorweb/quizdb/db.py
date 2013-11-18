@@ -74,7 +74,7 @@ class Lecture(ORMBase):
         primary_key=True,
     )
     plonePath = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(64),
+        sqlalchemy.types.String(128),
         nullable=False,
         unique=True,
         index=True,
@@ -95,7 +95,7 @@ class Question(ORMBase):
         primary_key=True,
     )
     plonePath = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(64),
+        sqlalchemy.types.String(128),
         nullable=False,
         unique=True,
     )
