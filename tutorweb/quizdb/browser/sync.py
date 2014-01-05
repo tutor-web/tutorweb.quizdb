@@ -73,7 +73,6 @@ class SyncLectureView(JSONBrowserView):
                     student.userName,
                 ))
                 continue
-            dbQn.timesAnswered += 1
 
             # Check against plone to ensure student was right
             try:
@@ -81,6 +80,7 @@ class SyncLectureView(JSONBrowserView):
                 a['correct'] = True if ploneQn.allChoices()[a['student_answer']]['correct'] else False
                 if a['correct']:
                     dbQn.timesCorrect += 1
+                dbQn.timesAnswered += 1  # NB: Do this once we know question is valid
                 #TODO: Recalculate grade at this point, instead of relying on JS?
                 # Write back stats to Plone
                 ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
