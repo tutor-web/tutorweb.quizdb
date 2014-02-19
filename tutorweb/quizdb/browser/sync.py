@@ -37,15 +37,14 @@ class SyncTutorialView(JSONBrowserView):
 
 
 class SyncLectureView(JSONBrowserView):
-    def getSetting(self, key, default=None):
-        """Return the value for a lecture / tutorial setting"""
-        for i in (self.context.settings or []):
-            if i['key'] == key:
-                return i['value']
-        for i in (self.context.aq_parent.settings or []):
-            if i['key'] == key:
-                return i['value']
-        return default
+    def getStudentSettings(self, student):
+        """Return a dict of lecture / tutorial settings, choosing a random value if required"""
+        settings=dict(
+            (i['key'], i['value'])
+            for i
+            in (self.context.aq_parent.settings or []) + (self.context.settings or [])
+        )
+        return settings
 
     def parseAnswerQueue(self, student, answerQueue):
         newGrade = None
@@ -157,7 +156,7 @@ class SyncLectureView(JSONBrowserView):
 
         return out
 
-    def getQuestionAllocation(self, student, questions):
+    def getQuestionAllocation(self, student, questions, settings):
         removedQns = []
 
         # Get all plone questions, turn it into a dict by path
@@ -215,7 +214,7 @@ class SyncLectureView(JSONBrowserView):
 
         # Count questions that aren't allocated, and allocate more if needed
         neededAllocs = min(
-            int(self.getSetting('question_cap', DEFAULT_QUESTION_CAP)),
+            int(settings.get('question_cap', DEFAULT_QUESTION_CAP)),
             len(usedAllocs) + len(spareAllocs),
         ) - len(usedAllocs)
         if neededAllocs > 0:
@@ -248,6 +247,7 @@ class SyncLectureView(JSONBrowserView):
 
     def asDict(self):
         student = self.getCurrentStudent()
+        settings = self.getStudentSettings(student)
 
         # Have we been handed a structure to update?
         if self.request.get_header('content_length') > 0:
@@ -261,17 +261,17 @@ class SyncLectureView(JSONBrowserView):
             lecture = dict()
 
         # Build lecture dict
-        (questions, removedQuestions) = self.getQuestionAllocation(student, lecture.get('questions', []))
+        (questions, removedQuestions) = self.getQuestionAllocation(
+            student,
+            lecture.get('questions', []),
+            settings,
+        )
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             user=student.userName,
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
             title=self.context.title,
-            settings=dict(
-                (i['key'], i['value'])
-                for i
-                in (self.context.aq_parent.settings or []) + (self.context.settings or [])
-            ),
+            settings=settings,
             answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),
             questions=questions,
             removed_questions=removedQuestions,
