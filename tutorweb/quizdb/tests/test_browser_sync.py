@@ -1,14 +1,119 @@
+import math
+
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
 
 from ..browser.sync import DEFAULT_QUESTION_CAP
-from .base import FunctionalTestCase
-from .base import USER_A_ID, USER_B_ID, MANAGER_ID
+from .base import FunctionalTestCase, IntegrationTestCase
+from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
 
-class SyncViewTest(FunctionalTestCase):
+class SyncViewIntegration(IntegrationTestCase):
+    def test_getStudentSettings(self):
+        """Can get student, and parameters get set if required"""
+        def getSettings(userId=USER_A_ID, lecSettings=None, tutSettings=None):
+            def toList(d):
+                # Bodge actual dicts into what we're storing.
+                return [dict(key=k, value=v) for (k, v) in d.items()]
+
+            portal = self.layer['portal']
+            if lecSettings:
+                portal.restrictedTraverse('dept1/tut1/lec1').settings = toList(lecSettings)
+                transaction.commit()
+            if tutSettings:
+                portal.restrictedTraverse('dept1/tut1').settings = toList(tutSettings)
+                transaction.commit()
+            login(portal, userId)
+            view = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync')
+            student = view.getCurrentStudent()
+            self.assertEqual(student.userName, userId)
+            return view.getStudentSettings(student)
+
+        # Get no settings when none are set
+        self.assertEquals(
+            getSettings(),
+            dict(),
+        )
+
+        # Lecture settings override tutorial settings
+        self.assertEquals(
+            getSettings(
+                tutSettings=dict(hist_sel=0.5),
+                lecSettings=dict(),
+            ),
+            dict(hist_sel=0.5),
+        )
+        self.assertEquals(
+            getSettings(
+                tutSettings=dict(hist_sel=0.5),
+                lecSettings=dict(hist_sel=0.3),
+            ),
+            dict(hist_sel=0.3),
+        )
+
+        # Random items we don't have columns for will be ignored
+        self.assertTrue('camel' not in getSettings(lecSettings={
+                'camel:min': '0.3',
+                'camel:max': '0.5',
+        }))
+
+        # Random items can be generated between ranges
+        alpha = {}
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID]:
+            alpha[userId] = getSettings(lecSettings={
+                'grade_alpha:min': '0.3',
+                'grade_alpha:max': '0.5',
+            }, userId=userId)['set_grade_alpha']
+
+        self.assertTrue(alpha[USER_A_ID] != alpha[USER_B_ID]
+            or alpha[USER_A_ID] != alpha[USER_C_ID]
+            or alpha[USER_B_ID] != alpha[USER_C_ID])
+
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID]:
+            self.assertTrue(isinstance(alpha[userId], basestring))
+            self.assertTrue(float(alpha[userId]) >= 0.3)
+            self.assertTrue(float(alpha[userId]) <= 0.5)
+
+        # Fetching again results in the same value
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID] * 10:
+            self.assertEqual(
+                alpha[userId],
+                getSettings(lecSettings={
+                    'grade_alpha:min': '0.3',
+                    'grade_alpha:max': '0.5',
+                }, userId=userId)['set_grade_alpha']
+            )
+
+        # As S is an integer column, should get back int values.
+        s = {}
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID]:
+            s[userId] = getSettings(lecSettings={
+                'grade_s:max': '90',  # NB: no min, assume 0
+            }, userId=userId)['set_grade_s']
+
+        self.assertTrue(s[USER_A_ID] != s[USER_B_ID]
+            or s[USER_A_ID] != s[USER_C_ID]
+            or s[USER_B_ID] != s[USER_C_ID])
+
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID]:
+            self.assertTrue(isinstance(s[userId], basestring))
+            self.assertEqual(int(s[userId]), float(s[userId]))
+            self.assertTrue(int(s[userId]) >= 0)
+            self.assertTrue(int(s[userId]) <= 90)
+
+        # Fetching again results in the same value
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID] * 10:
+            self.assertEqual(
+                s[userId],
+                getSettings(lecSettings={
+                    'grade_s:max': '91',  # NB: outside old range
+                    'grade_s:max': '99',  # NB: outside old range
+                }, userId=userId)['set_grade_s']
+            )
+
+class SyncViewFunctional(FunctionalTestCase):
     maxDiff = None
 
     def setUp(self):

@@ -9,6 +9,15 @@ from sqlalchemy.sql import func
 from tutorweb.quizdb import ORMBase
 
 
+class ForceInt(sqlalchemy.types.TypeDecorator):
+    """Round any passed parameter to int"""
+
+    impl = sqlalchemy.types.Integer
+
+    def process_bind_param(self, value, dialect):
+        return round(value) if value else value
+
+
 class Allocation(ORMBase):
     """Allocation table: Which students are working on which questions"""
     __tablename__ = 'allocation'
@@ -247,4 +256,14 @@ class AnswerSummary(ORMBase):
         sqlalchemy.types.Integer(),
         nullable=False,
         default=0,
+    )
+    set_grade_alpha = sqlalchemy.schema.Column(
+        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        nullable=True,
+        default=None,
+    )
+    set_grade_s = sqlalchemy.schema.Column(
+        ForceInt(),
+        nullable=True,
+        default=None,
     )

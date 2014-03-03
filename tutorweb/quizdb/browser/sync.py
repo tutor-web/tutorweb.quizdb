@@ -44,7 +44,52 @@ class SyncLectureView(JSONBrowserView):
             for i
             in (self.context.aq_parent.settings or []) + (self.context.settings or [])
         )
+
+        # For any :min & :max settings, choose a random value
+        dbAnsSummary = None
+        for max_key in (k for k in settings.keys() if k.endswith(':max')):
+            base_key = 'set_' + max_key.replace(":max", "")
+            min_val = settings.get(max_key.replace(":max", ":min"), 0)
+            max_val = settings[max_key]
+
+            # Do we have a column for this key?
+            if dbAnsSummary is None:
+                dbAnsSummary = self.getAnswerSummary(student)
+            if not hasattr(dbAnsSummary, base_key):
+                logger.warn("No column for %s in DB" % base_key)
+                continue
+
+            if getattr(dbAnsSummary, base_key) is None:
+                # Choose a random float between min and max
+                setattr(
+                    dbAnsSummary,
+                    base_key,
+                    random.uniform(float(min_val), float(max_val)),
+                )
+            # Write out current choice, string to be consistent
+            if isinstance(dbAnsSummary.__table__.columns[base_key].type, db.ForceInt):
+                # Ugly hack to get the return value to be rounded too
+                settings[base_key] = str(int(round(getattr(dbAnsSummary, base_key))))
+            else:
+                settings[base_key] = str(getattr(dbAnsSummary, base_key))
+
+        Session.flush()
         return settings
+
+    def getAnswerSummary(self, student):
+        """Fetch answerSummary row for student"""
+        try:
+            return (Session.query(db.AnswerSummary)
+                .filter(db.AnswerSummary.lectureId == self.getLectureId())
+                .filter(db.AnswerSummary.studentId == student.studentId)
+                .one())
+        except NoResultFound:
+            dbAnsSummary = db.AnswerSummary(
+                lectureId=self.getLectureId(),
+                studentId=student.studentId,
+            )
+            Session.add(dbAnsSummary)
+            return dbAnsSummary
 
     def parseAnswerQueue(self, student, answerQueue):
         newGrade = None
@@ -122,20 +167,8 @@ class SyncLectureView(JSONBrowserView):
             synced=True,
         ) for dbAns in reversed(dbAnswers)]
 
-        # Fetch answerSummary row for student
-        try:
-            dbAnsSummary = (Session.query(db.AnswerSummary)
-                .filter(db.AnswerSummary.lectureId == self.getLectureId())
-                .filter(db.AnswerSummary.studentId == student.studentId)
-                .one())
-        except NoResultFound:
-            dbAnsSummary = db.AnswerSummary(
-                lectureId=self.getLectureId(),
-                studentId=student.studentId,
-            )
-            Session.add(dbAnsSummary)
-
-        # Update row if we need to
+        # Update student's answerSummary
+        dbAnsSummary = self.getAnswerSummary(student)
         if newGrade is not None:
             dbAnsSummary.grade = newGrade
             dbAnsSummary.lecAnswered = (Session.query(func.count())
