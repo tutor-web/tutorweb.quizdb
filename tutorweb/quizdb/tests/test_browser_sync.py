@@ -1,5 +1,3 @@
-import math
-
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -65,7 +63,7 @@ class SyncViewIntegration(IntegrationTestCase):
             alpha[userId] = getSettings(lecSettings={
                 'grade_alpha:min': '0.3',
                 'grade_alpha:max': '0.5',
-            }, userId=userId)['set_grade_alpha']
+            }, userId=userId)['grade_alpha']
 
         self.assertTrue(alpha[USER_A_ID] != alpha[USER_B_ID]
             or alpha[USER_A_ID] != alpha[USER_C_ID]
@@ -83,7 +81,7 @@ class SyncViewIntegration(IntegrationTestCase):
                 getSettings(lecSettings={
                     'grade_alpha:min': '0.3',
                     'grade_alpha:max': '0.5',
-                }, userId=userId)['set_grade_alpha']
+                }, userId=userId)['grade_alpha']
             )
 
         # As S is an integer column, should get back int values.
@@ -91,7 +89,7 @@ class SyncViewIntegration(IntegrationTestCase):
         for userId in [USER_A_ID, USER_B_ID, USER_C_ID]:
             s[userId] = getSettings(lecSettings={
                 'grade_s:max': '90',  # NB: no min, assume 0
-            }, userId=userId)['set_grade_s']
+            }, userId=userId)['grade_s']
 
         self.assertTrue(s[USER_A_ID] != s[USER_B_ID]
             or s[USER_A_ID] != s[USER_C_ID]
@@ -110,7 +108,7 @@ class SyncViewIntegration(IntegrationTestCase):
                 getSettings(lecSettings={
                     'grade_s:max': '91',  # NB: outside old range
                     'grade_s:max': '99',  # NB: outside old range
-                }, userId=userId)['set_grade_s']
+                }, userId=userId)['grade_s']
             )
 
 class SyncViewFunctional(FunctionalTestCase):

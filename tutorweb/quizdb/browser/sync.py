@@ -48,30 +48,31 @@ class SyncLectureView(JSONBrowserView):
         # For any :min & :max settings, choose a random value
         dbAnsSummary = None
         for max_key in (k for k in settings.keys() if k.endswith(':max')):
-            base_key = 'set_' + max_key.replace(":max", "")
-            min_val = settings.get(max_key.replace(":max", ":min"), 0)
+            base_key = max_key.replace(":max", "")
+            db_key = 'set_' + base_key
+            min_val = settings.get(base_key + ":min", 0)
             max_val = settings[max_key]
 
             # Do we have a column for this key?
             if dbAnsSummary is None:
                 dbAnsSummary = self.getAnswerSummary(student)
-            if not hasattr(dbAnsSummary, base_key):
+            if not hasattr(dbAnsSummary, db_key):
                 logger.warn("No column for %s in DB" % base_key)
                 continue
 
-            if getattr(dbAnsSummary, base_key) is None:
+            if getattr(dbAnsSummary, db_key) is None:
                 # Choose a random float between min and max
                 setattr(
                     dbAnsSummary,
-                    base_key,
+                    db_key,
                     random.uniform(float(min_val), float(max_val)),
                 )
             # Write out current choice, string to be consistent
-            if isinstance(dbAnsSummary.__table__.columns[base_key].type, db.ForceInt):
+            if isinstance(dbAnsSummary.__table__.columns[db_key].type, db.ForceInt):
                 # Ugly hack to get the return value to be rounded too
-                settings[base_key] = str(int(round(getattr(dbAnsSummary, base_key))))
+                settings[base_key] = str(int(round(getattr(dbAnsSummary, db_key))))
             else:
-                settings[base_key] = str(getattr(dbAnsSummary, base_key))
+                settings[base_key] = str(getattr(dbAnsSummary, db_key))
 
         Session.flush()
         return settings
