@@ -9,7 +9,10 @@
 
 <metal:content-core fill-slot="content-core">
 
-<a tal:attributes="href string:${context/absolute_url}/student-table">Download all student answers as spreadsheet</a>
+<ul>
+  <li><a tal:attributes="href string:${context/absolute_url}/student-table">Download all student answers as spreadsheet</a></li>
+  <li><a tal:attributes="href string:${context/absolute_url}/student-summary">Download summary of student grades as spreadsheet</a></li>
+</ul>
 
 <table class="listing">
   <thead>

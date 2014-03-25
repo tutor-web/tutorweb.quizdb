@@ -105,6 +105,24 @@ class StudentResultsViewTest(IntegrationTestCase):
             dict(username=USER_B_ID, grades=[0.2, '-']),
         ])
 
+    def test_StudentSummaryTableView(self):
+        """Cheat and re-use test infrastructure for allStudentGrades()"""
+        portal = self.layer['portal']
+        lec1 = portal['dept1']['tut1']['lec1']
+        lec2 = portal['dept1']['tut1']['lec2']
+        login(portal, MANAGER_ID)
+
+        # Set a bunch of results, should appear in CSV
+        setRelations(portal['classa'], 'lectures', [lec2, lec1])
+        self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8])
+        self.updateAnswerQueue(USER_B_ID, lec2, [0.2])
+        self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8, 1.0])
+        self.assertEqual(self.getCSV(), [
+            {'Student': 'Arnold',   'lec1': '-', 'lec2': '1'},
+            {'Student': 'Caroline', 'lec1': '-', 'lec2': '-'},
+            {'Student': 'Betty',    'lec1': '-', 'lec2': '0.2'},
+        ])
+
     def updateAnswerQueue(self, user, lecture, grades):
         """Log in as user, run the answer queue part of sync"""
         login(self.layer['portal'], user)
@@ -134,6 +152,12 @@ class StudentResultsViewTest(IntegrationTestCase):
         """Look up view for class"""
         c = self.layer['portal']['classa']
         return c.restrictedTraverse('student-results')
+
+    def getCSV(self):
+        """Look up view for class, return CSV as array of dicts"""
+        c = self.layer['portal']['classa']
+        csvString = c.restrictedTraverse('student-summary')()
+        return [x for x in csv.DictReader(StringIO(csvString))]
 
 
 class StudentTableViewTest(IntegrationTestCase):
