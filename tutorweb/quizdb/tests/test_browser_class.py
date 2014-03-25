@@ -1,4 +1,5 @@
 import csv
+import random
 from StringIO import StringIO
 
 import transaction
@@ -179,16 +180,29 @@ class StudentTableViewTest(IntegrationTestCase):
         self.updateAnswerQueue(USER_A_ID, lec1, [0.3, 0.9])
         self.updateAnswerQueue(USER_B_ID, lec2, [0.41, 0.81])
         self.updateAnswerQueue(USER_A_ID, lec2, [0.31, 0.91])
+        for grade in [0.59, 0.51, 0.58, 0.52, 0.57, 0.53, 0.56, 0.55, 0.54]:
+            # Break up calls so we record a different time for each, enough
+            # here that some won't have the same question assigned.
+            self.updateAnswerQueue(USER_A_ID, lec1, [grade])
         c = self.getCSV()
-        self.assertEqual([[x['Student'], x['Lecture'], x['Grade']] for x in c], [
-            ['Arnold', '/plone/dept1/tut1/lec1', '0.3'],
-            ['Arnold', '/plone/dept1/tut1/lec1', '0.9'],
-            ['Arnold', '/plone/dept1/tut1/lec2', '0.31'],
-            ['Arnold', '/plone/dept1/tut1/lec2', '0.91'],
-            ['Betty', '/plone/dept1/tut1/lec1', '0.4'],
-            ['Betty', '/plone/dept1/tut1/lec1', '0.8'],
-            ['Betty', '/plone/dept1/tut1/lec2', '0.41'],
-            ['Betty', '/plone/dept1/tut1/lec2', '0.81']
+        self.assertEqual([[x['Student'], x['Lecture'][-4:], x['Grade'], x['Time answered']] for x in c], [
+            ['Arnold', 'lec1', '0.3', '2013-08-20 13:01:50'],
+            ['Arnold', 'lec1', '0.9', '2013-08-20 13:01:50'],
+            ['Arnold', 'lec1', '0.59', '2013-08-20 13:06:50'],
+            ['Arnold', 'lec1', '0.51', '2013-08-20 13:08:30'],
+            ['Arnold', 'lec1', '0.58', '2013-08-20 13:10:10'],
+            ['Arnold', 'lec1', '0.52', '2013-08-20 13:11:50'],
+            ['Arnold', 'lec1', '0.57', '2013-08-20 13:13:30'],
+            ['Arnold', 'lec1', '0.53', '2013-08-20 13:15:10'],
+            ['Arnold', 'lec1', '0.56', '2013-08-20 13:16:50'],
+            ['Arnold', 'lec1', '0.55', '2013-08-20 13:18:30'],
+            ['Arnold', 'lec1', '0.54', '2013-08-20 13:20:10'],
+            ['Arnold', 'lec2', '0.31', '2013-08-20 13:05:10'],
+            ['Arnold', 'lec2', '0.91', '2013-08-20 13:05:10'],
+            ['Betty', 'lec1', '0.4', '2013-08-20 13:00:10'],
+            ['Betty', 'lec1', '0.8', '2013-08-20 13:00:10'],
+            ['Betty', 'lec2', '0.41', '2013-08-20 13:03:30'],
+            ['Betty', 'lec2', '0.81', '2013-08-20 13:03:30'],
         ])
 
     def getCSV(self):
@@ -211,7 +225,7 @@ class StudentTableViewTest(IntegrationTestCase):
         qns = syncView.getQuestionAllocation(student, [], {})[0]
         out = syncView.parseAnswerQueue(student, [dict(
             synced=False,
-            uri=qns[0]['uri'],
+            uri=random.choice(qns)['uri'],
             student_answer=0,
             correct=True,
             quiz_time=self.timestamp,

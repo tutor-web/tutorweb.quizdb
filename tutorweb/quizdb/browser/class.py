@@ -64,7 +64,7 @@ class StudentTableView(BrowserView):
             .join(db.Lecture)
             .filter(db.Lecture.plonePath.in_(lecturePaths))
             .join(db.Question, db.Question.questionId == db.Answer.questionId)
-            .order_by(db.Student.userName, db.Lecture.plonePath, db.Question.plonePath)
+            .order_by(db.Student.userName, db.Lecture.plonePath, db.Answer.timeEnd)
             .all())
 
     def __call__(self):
