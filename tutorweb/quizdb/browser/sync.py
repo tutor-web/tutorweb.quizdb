@@ -181,12 +181,25 @@ class SyncLectureView(JSONBrowserView):
                 .filter(db.Answer.studentId == student.studentId)
                 .filter(db.Answer.correct == True)
                 .as_scalar())
+            dbAnsSummary.practiceAnswered = (Session.query(func.count())
+                .filter(db.Answer.lectureId == self.getLectureId())
+                .filter(db.Answer.studentId == student.studentId)
+                .filter(db.Answer.practice == True)
+                .as_scalar())
+            dbAnsSummary.practiceCorrect = (Session.query(func.count())
+                .filter(db.Answer.lectureId == self.getLectureId())
+                .filter(db.Answer.studentId == student.studentId)
+                .filter(db.Answer.practice == True)
+                .filter(db.Answer.correct == True)
+                .as_scalar())
             Session.flush()
 
         # Tell student how many questions they have answered
         if len(out) > 0:
             out[-1]['lec_answered'] = dbAnsSummary.lecAnswered
             out[-1]['lec_correct'] = dbAnsSummary.lecCorrect
+            out[-1]['practice_answered'] = dbAnsSummary.practiceAnswered
+            out[-1]['practice_correct'] = dbAnsSummary.practiceCorrect
 
         return out
 

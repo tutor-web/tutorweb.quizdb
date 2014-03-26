@@ -257,6 +257,16 @@ class AnswerSummary(ORMBase):
         nullable=False,
         default=0,
     )
+    practiceAnswered = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=0,
+    )
+    practiceCorrect = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=0,
+    )
     set_grade_alpha = sqlalchemy.schema.Column(
         sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
         nullable=True,
