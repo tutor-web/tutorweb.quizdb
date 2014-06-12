@@ -92,9 +92,12 @@ class SyncLectureView(JSONBrowserView):
             Session.add(dbAnsSummary)
             return dbAnsSummary
 
-    def parseAnswerQueue(self, student, answerQueue):
+    def parseAnswerQueue(self, student, rawAnswerQueue):
         newGrade = None
-        for a in answerQueue:
+
+        # Filter nonsense out of answerQueue
+        answerQueue = []
+        for a in rawAnswerQueue:
             if a.get('synced', False):
                 continue
             if 'student_answer' not in a:
@@ -102,17 +105,24 @@ class SyncLectureView(JSONBrowserView):
             if '/quizdb-get-question/' not in a['uri']:
                 logger.warn("Question ID %s malformed" % a['uri'])
                 continue
+            answerQueue.append((a['uri'].split('/quizdb-get-question/', 2)[1], a))
 
+        # Fetch all questions for allocations, locking for update
+        dbQns = {}
+        if len(answerQueue) > 0:
+            for (dbQn, publicId) in (Session.query(db.Question, db.Allocation.publicId)
+                .with_lockmode('update')
+                .join(db.Allocation)
+                .filter(db.Allocation.studentId == student.studentId)
+                .filter(db.Allocation.publicId.in_(publicId for (publicId, a) in answerQueue))
+                .all()):
+
+                dbQns[publicId] = dbQn
+
+        for (publicId, a) in answerQueue:
             # Fetch question for allocation
-            publicId = a['uri'].split('/quizdb-get-question/', 2)[1]
-            try:
-                dbQn = (Session.query(db.Question)
-                    .with_lockmode('update')
-                    .join(db.Allocation)
-                    .filter(db.Allocation.studentId == student.studentId)
-                    .filter(db.Allocation.publicId == publicId)
-                    .one())
-            except NoResultFound:
+            dbQn = dbQns.get(publicId, None)
+            if dbQn is None:
                 logger.error("No record of allocation %s for student %s" % (
                     publicId,
                     student.userName,
