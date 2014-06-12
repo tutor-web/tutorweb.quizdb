@@ -211,13 +211,7 @@ class SyncLectureView(JSONBrowserView):
             path={'query': '/'.join(self.context.getPhysicalPath()), 'depth': 1},
             object_provides=IQuestion.__identifier__
         )
-        ploneQns = dict((l.getPath(), dict(
-            plonePath=l.getPath(),
-            lectureId=self.getLectureId(),
-            lastUpdate=dateutil.parser.parse(l['ModificationDate']),
-            timesAnswered=l.getObject().timesanswered,  #TODO: Don't make object twice
-            timesCorrect=l.getObject().timescorrect,
-        )) for l in listing)
+        ploneQns = dict((b.getPath(), b) for b in listing)
 
         # Get all questions from DB and their allocations
         subquery = aliased(
@@ -252,8 +246,15 @@ class SyncLectureView(JSONBrowserView):
                     dbAllocs[i] = (dbQn, None)
 
         # Add any questions missing from DB
-        for qn in ploneQns.values():
-            dbQn = db.Question(**qn)
+        for (path, brain) in ploneQns.iteritems():
+            obj = brain.getObject()
+            dbQn = db.Question(
+                plonePath=path,
+                lectureId=self.getLectureId(),
+                lastUpdate=dateutil.parser.parse(brain['ModificationDate']),
+                timesAnswered=obj.timesanswered,
+                timesCorrect=obj.timescorrect,
+            )
             Session.add(dbQn)
             spareAllocs.append(len(dbAllocs))
             dbAllocs.append((dbQn, None))

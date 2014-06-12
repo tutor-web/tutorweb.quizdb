@@ -5,6 +5,8 @@ from AccessControl import Unauthorized
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
 
+from plone.memoize import view
+
 from sqlalchemy.orm.exc import NoResultFound
 
 from Products.CMFCore.utils import getToolByName
@@ -64,6 +66,7 @@ class JSONBrowserView(BrowserView):
         Session.flush()
         return dbStudent
 
+    @view.memoize
     def getLectureId(self):
         """Return database ID for the current lecture"""
         if self.context.portal_type != 'tw_lecture':
