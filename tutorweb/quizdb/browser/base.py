@@ -4,6 +4,7 @@ import logging
 from AccessControl import Unauthorized
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
+from zExceptions import Redirect
 
 from plone.memoize import view
 
@@ -33,6 +34,14 @@ class JSONBrowserView(BrowserView):
                 error=ex.__class__.__name__,
                 message=str(ex),
             ))
+        except Redirect, ex:
+            # Return as Unauthorized, so Javascript can redirect full page
+            self.request.response.setStatus(403)
+            self.request.response.setHeader("Content-type", "application/json")
+            return json.dumps(dict(
+                error=ex.__class__.__name__,
+                location=str(ex),
+            ))
         except NotFound, ex:
             self.request.response.setStatus(404)
             self.request.response.setHeader("Content-type", "application/json")
@@ -56,6 +65,12 @@ class JSONBrowserView(BrowserView):
         if membership.isAnonymousUser():
             raise Unauthorized
         mb = membership.getAuthenticatedMember()
+        if not mb.getProperty('accept', False):
+            raise Redirect, getToolByName(self.context, "portal_url")() + \
+                            "/@@personal-information"
+        if hasattr(self, 'dbStudent') and self.dbStudent.userName == mb.getUserName():
+            return self.dbStudent
+
         try:
             dbStudent = Session.query(db.Student) \
                 .filter(db.Student.userName == mb.getUserName()).one()
@@ -64,6 +79,7 @@ class JSONBrowserView(BrowserView):
             Session.add(dbStudent)
         dbStudent.eMail = mb.getProperty('email')
         Session.flush()
+        self.dbStudent = dbStudent
         return dbStudent
 
     @view.memoize

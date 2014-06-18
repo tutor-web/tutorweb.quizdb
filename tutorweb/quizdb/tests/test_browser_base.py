@@ -1,3 +1,5 @@
+from zExceptions import Redirect
+
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
@@ -37,6 +39,22 @@ class JSONBrowserViewTest(IntegrationTestCase):
             x for x in self.logs()
             if 'update student' in x.lower()
         ]) == 0)
+
+        # User cannot get a quiz without accepting terms
+        login(portal, MANAGER_ID)
+        mtool = getToolByName(portal, 'portal_membership')
+        mtool.getMemberById(USER_A_ID).setMemberProperties(dict(
+            accept=False,
+        ))
+        login(portal, USER_A_ID)
+        with self.assertRaisesRegexp(Redirect, '@@personal-information'):
+            st = self.getView().getCurrentStudent()
+        login(portal, MANAGER_ID)
+        mtool = getToolByName(portal, 'portal_membership')
+        mtool.getMemberById(USER_A_ID).setMemberProperties(dict(
+            accept=True,
+        ))
+        login(portal, USER_A_ID)
 
         # Updating email address caused an update
         login(portal, MANAGER_ID)
