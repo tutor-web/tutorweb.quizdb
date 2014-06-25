@@ -54,13 +54,14 @@ class GetQuestionView(QuestionView):
         if self.questionId is None:
             raise NotFound(self, None, self.request)
 
+        isAdmin = self.isAdmin()
         try:
             query = Session.query(db.Question) \
                 .join(db.Allocation) \
                 .filter(db.Allocation.publicId == self.questionId) \
                 .filter(db.Question.active == True)
             # If not an admin, ensure we're the right user
-            if not self.isAdmin():
+            if not isAdmin:
                 student = self.getCurrentStudent()
                 query = query.filter(db.Allocation.studentId == student.studentId)
             dbQn = query.one()
@@ -69,7 +70,10 @@ class GetQuestionView(QuestionView):
         except MultipleResultsFound:
             raise NotFound(self, self.questionId, self.request)
 
-        return self.getQuestionData(str(dbQn.plonePath), self.questionId)
+        qn = self.getQuestionData(str(dbQn.plonePath), self.questionId)
+        if isAdmin:
+            qn['path'] = dbQn.plonePath
+        return qn
 
 
 class GetLectureQuestionsView(QuestionView):

@@ -30,15 +30,17 @@ class GetQuestionViewTest(FunctionalTestCase):
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_B_ID)
 
-        # A can get A's question
+        # A can get A's question (but not the path to the question)
         self.assertTrue('/quizdb-get-question/' in aAlloc['questions'][0]['uri'])
         out = self.getJson(aAlloc['questions'][0]['uri'], expectedStatus=200, user=USER_A_ID)
+        self.assertTrue('path' not in out)
         self.assertTrue(out['title'].startswith('Unittest D1 T1 L1 Q'))
         out = self.getJson(aAlloc['questions'][0]['uri'], expectedStatus=404, user=USER_B_ID)
 
-        # B can get B's question
+        # B can get B's question (but not the path to the question)
         self.assertTrue('/quizdb-get-question/' in bAlloc['questions'][0]['uri'])
         out = self.getJson(bAlloc['questions'][0]['uri'], expectedStatus=200, user=USER_B_ID)
+        self.assertTrue('path' not in out)
         self.assertTrue(out['title'].startswith('Unittest D1 T1 L2 Q'))
         out = self.getJson(bAlloc['questions'][0]['uri'], expectedStatus=404, user=USER_A_ID)
 
@@ -49,8 +51,10 @@ class GetQuestionViewTest(FunctionalTestCase):
         # Manager can see everything
         out = self.getJson(aAlloc['questions'][0]['uri'], expectedStatus=200, user=MANAGER_ID)
         self.assertTrue(out['title'].startswith('Unittest D1 T1 L1 Q'))
+        self.assertEqual(out['path'], '/plone/dept1/tut1/lec1/qn' + out['title'][-1])
         out = self.getJson(bAlloc['questions'][0]['uri'], expectedStatus=200, user=MANAGER_ID)
         self.assertTrue(out['title'].startswith('Unittest D1 T1 L2 Q'))
+        self.assertEqual(out['path'], '/plone/dept1/tut1/lec2/qn' + out['title'][-1])
 
     def test_questionDeletion(self):
         """After a question is deleted, can't get it"""
