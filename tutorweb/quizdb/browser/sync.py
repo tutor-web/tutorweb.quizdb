@@ -132,7 +132,7 @@ class SyncLectureView(JSONBrowserView):
             # Check against plone to ensure student was right
             try:
                 ploneQn = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
-                a['correct'] = True if ploneQn.allChoices()[a['student_answer']]['correct'] else False
+                a['correct'] = True if a['student_answer'] is not None and ploneQn.allChoices()[a['student_answer']]['correct'] else False
                 if a['correct']:
                     dbQn.timesCorrect += 1
                 dbQn.timesAnswered += 1  # NB: Do this once we know question is valid

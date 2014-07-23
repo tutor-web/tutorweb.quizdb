@@ -194,7 +194,7 @@ class Answer(ORMBase):
     )
     chosenAnswer = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
-        nullable=False,
+        nullable=True,
     )
     correct = sqlalchemy.schema.Column(
         sqlalchemy.types.Boolean(),

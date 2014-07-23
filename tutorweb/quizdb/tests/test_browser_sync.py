@@ -423,6 +423,29 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 0)
         self.assertEqual(aAlloc['answerQueue'][-1]['correct'], True)
 
+        # Writing an empty answer is still synced
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][1]['uri'],
+                    student_answer=None,
+                    correct=False,  # NB: Sending back false even though question is really true
+                    quiz_time=1377000050,
+                    answer_time=1377000060,
+                    grade_after=0.1,
+                ),
+            ]
+        ))
+        self.assertEqual(len(aAlloc['answerQueue']), 4)
+        self.assertEqual(aAlloc['answerQueue'][-1]['answer_time'], 1377000060)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 4)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 2)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 0)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 0)
+        self.assertEqual(aAlloc['answerQueue'][-1]['correct'], False)
+
     def test_answerQueueIsolation(self):
         """Make sure answerQueues for students and lectures are separate"""
         # Allocate to user A
