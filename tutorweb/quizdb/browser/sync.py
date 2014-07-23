@@ -328,6 +328,7 @@ class SyncLectureView(JSONBrowserView):
             uri=self.context.absolute_url() + '/quizdb-sync',
             user=student.userName,
             question_uri=self.context.absolute_url() + '/quizdb-all-questions',
+            slide_uri=self.context.absolute_url() + '/slide-html',
             title=self.context.title,
             settings=settings,
             answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),

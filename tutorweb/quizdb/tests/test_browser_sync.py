@@ -135,6 +135,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(aAlloc['title'], u'Unittest D1 T1 L1')
         self.assertEquals(aAlloc['uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-sync')
         self.assertEquals(aAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-all-questions')
+        self.assertEquals(aAlloc['slide_uri'], u'http://nohost/plone/dept1/tut1/lec1/slide-html')
         self.assertEquals(aAlloc['user'], u'Arnold')
         self.assertEquals(len(aAlloc['questions']), 2)
         self.assertEquals(
@@ -147,6 +148,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(aAlloc2['title'], u'Unittest D1 T1 L2')
         self.assertEquals(aAlloc2['uri'], u'http://nohost/plone/dept1/tut1/lec2/quizdb-sync')
         self.assertEquals(aAlloc2['question_uri'], u'http://nohost/plone/dept1/tut1/lec2/quizdb-all-questions')
+        self.assertEquals(aAlloc2['slide_uri'], u'http://nohost/plone/dept1/tut1/lec2/slide-html')
         self.assertEquals(len(aAlloc2['questions']), 2)
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc2['questions']]),
