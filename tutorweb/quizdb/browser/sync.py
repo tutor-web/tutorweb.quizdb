@@ -262,8 +262,8 @@ class SyncLectureView(JSONBrowserView):
                 plonePath=path,
                 lectureId=self.getLectureId(),
                 lastUpdate=dateutil.parser.parse(brain['ModificationDate']),
-                timesAnswered=obj.timesanswered,
-                timesCorrect=obj.timescorrect,
+                timesAnswered=getattr(obj, 'timesanswered', 0),
+                timesCorrect=getattr(obj, 'timescorrect', 0),
             )
             Session.add(dbQn)
             spareAllocs.append(len(dbAllocs))

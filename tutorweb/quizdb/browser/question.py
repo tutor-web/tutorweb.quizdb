@@ -24,7 +24,8 @@ class QuestionView(JSONBrowserView):
         except KeyError:
             raise NotFound(self, publicId, self.request)
         # Obsfucate answer
-        out['answer'] = base64.b64encode(json.dumps(out['answer']))
+        if 'answer' in out:
+            out['answer'] = base64.b64encode(json.dumps(out['answer']))
         return out
 
 
