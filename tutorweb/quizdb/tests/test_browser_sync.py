@@ -750,3 +750,55 @@ class SyncViewFunctional(FunctionalTestCase):
             browser.getControl('Delete').click()
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 5)
+
+    def test_templatequestions(self):
+        """Crowd-sourced questions always come through"""
+        def createQuestions(obj, count):
+            if not hasattr(self, 'createdQns'):
+                self.createdQns = 0
+            for i in xrange(count):
+                obj.invokeFactory(
+                    type_name="tw_latexquestion",
+                    id="qn%d" % (self.createdQns + i),
+                    title="Unittest tmpllec mcQ%d" % (self.createdQns + i),
+                    choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
+                    finalchoices=[],
+                )
+            self.createdQns = count
+            import transaction ; transaction.commit()
+        def createQuestionTemplates(obj, count):
+            if not hasattr(self, 'createdTmplQns'):
+                self.createdTmplQns = 0
+            for i in xrange(count):
+                obj.invokeFactory(
+                    type_name="tw_questiontemplate",
+                    id="tmplqn%d" % (self.createdTmplQns + i),
+                    title="Unittest tmpllec tmplQ%d" % (self.createdTmplQns + i),
+                )
+            self.createdTmplQns = count
+            import transaction ; transaction.commit()
+
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create a lecture with more questions than capped
+        portal['dept1'].invokeFactory(
+            type_name="tw_tutorial",
+            id="tmpltut",
+            title=u"Tutorial with a question cap of 5",
+            settings=[dict(key='question_cap', value='5')],
+        )
+        portal['dept1']['tmpltut'].invokeFactory(
+            type_name="tw_lecture",
+            id="tmpllec",
+            title=u"Lecture with no question cap (but uses default of 5)",
+        )
+        createQuestions(portal['dept1']['tmpltut']['tmpllec'], 8)
+        createQuestionTemplates(portal['dept1']['tmpltut']['tmpllec'], 8)
+
+        # Should get 10 questions, 5 of each type
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(aAlloc['questions']), 10)
+        qnTitles = [self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]
+        self.assertEquals(len([t for t in qnTitles if 'tmplQ' in t]), 5)
+        self.assertEquals(len([t for t in qnTitles if 'mcQ' in t]), 5)

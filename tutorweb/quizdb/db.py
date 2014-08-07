@@ -103,6 +103,12 @@ class Question(ORMBase):
         autoincrement=True,
         primary_key=True,
     )
+    qnType = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(64),
+        nullable=False,
+        unique=False,
+        default='tw_latexquestion',
+    )
     plonePath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(128),
         nullable=False,
