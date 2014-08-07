@@ -50,6 +50,7 @@ class JSONBrowserView(BrowserView):
                 message=str(ex),
             ))
         except Exception, ex:
+            # import traceback
             logging.error("Failed call: " + self.request['URL'])
             logging.exception(ex)
             self.request.response.setStatus(500)
@@ -57,6 +58,7 @@ class JSONBrowserView(BrowserView):
             return json.dumps(dict(
                 error=ex.__class__.__name__,
                 message=str(ex),
+                # stacktrace=traceback.format_exc(),
             ))
 
     def getCurrentStudent(self):
