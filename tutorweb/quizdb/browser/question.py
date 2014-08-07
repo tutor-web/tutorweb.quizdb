@@ -92,7 +92,8 @@ class GetLectureQuestionsView(QuestionView):
             .filter(db.Question.lectureId == self.getLectureId()) \
             .filter(db.Question.active == True) \
             .filter(db.Allocation.studentId == student.studentId) \
-            .all()
+            .filter(db.Question.qnType != 'tw_questiontemplate') \
+            .all() # NB: qnType != '...' ~== online_only = false
 
         # Render each question into a dict
         portal = self.portalObject()

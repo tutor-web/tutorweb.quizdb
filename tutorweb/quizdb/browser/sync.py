@@ -303,6 +303,7 @@ class SyncLectureView(JSONBrowserView):
                 uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
                 chosen=dbQn.timesAnswered,
                 correct=dbQn.timesCorrect,
+                online_only = (dbQn.qnType == 'tw_questiontemplate'),
             ) for (dbQn, dbAlloc) in dbAllocs if dbAlloc is not None],
             [portalUrl + '/quizdb-get-question/' + id for id in removedQns],
         )
