@@ -16,13 +16,13 @@ from .base import JSONBrowserView
 
 class QuestionView(JSONBrowserView):
     """Base class: fetches questions and obsfucates"""
-    def getQuestionData(self, path, publicId):
+    def getQuestionData(self, dbQn):
         """Fetch dict for question, obsfucating the answer"""
         try:
             #NB: Unrestricted so we can see this even when direct access is banned
-            out = self.portalObject().unrestrictedTraverse(path + '/data').asDict()
+            out = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data').asDict()
         except KeyError:
-            raise NotFound(self, publicId, self.request)
+            raise NotFound(self, dbQn.plonePath, self.request)
         # Obsfucate answer
         if 'answer' in out:
             out['answer'] = base64.b64encode(json.dumps(out['answer']))
@@ -71,7 +71,11 @@ class GetQuestionView(QuestionView):
         except MultipleResultsFound:
             raise NotFound(self, self.questionId, self.request)
 
-        qn = self.getQuestionData(str(dbQn.plonePath), self.questionId)
+        try:
+            qn = self.getQuestionData(dbQn)
+        except NotFound:
+            # Mask question plonePath
+            raise NotFound(self, self.questionId, self.request)
         if isAdmin:
             qn['path'] = dbQn.plonePath
         return qn
@@ -96,7 +100,7 @@ class GetLectureQuestionsView(QuestionView):
         for (dbQn, dbAlloc) in dbAllocs:
             try:
                 uri = portal.absolute_url() + '/quizdb-get-question/' + dbAlloc.publicId
-                out[uri] = self.getQuestionData(str(dbQn.plonePath), dbAlloc.publicId)
+                out[uri] = self.getQuestionData(dbQn)
             except NotFound:
                 pass
         return out
