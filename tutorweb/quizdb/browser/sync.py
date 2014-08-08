@@ -130,22 +130,44 @@ class SyncLectureView(JSONBrowserView):
                 ))
                 continue
 
-            # Check against plone to ensure student was right
-            try:
-                ploneQn = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
-                a['correct'] = True if a['student_answer'] is not None and ploneQn.allChoices()[a['student_answer']]['correct'] else False
+            if dbQn.qnType == 'tw_questiontemplate':
                 if a['correct']:
-                    dbQn.timesCorrect += 1
-                dbQn.timesAnswered += 1  # NB: Do this once we know question is valid
-                #TODO: Recalculate grade at this point, instead of relying on JS?
-                # Write back stats to Plone
-                ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
-            except (KeyError, NotFound):
-                logger.error("Cannot find Plone question at %s" % dbQn.plonePath)
-                continue
-            except (TypeError, IndexError):
-                logger.warn("Student answer %d out of range" % a['student_answer'])
-                continue
+                    # Write question to database
+                    ugQn = db.UserGeneratedQuestion(
+                        studentId=student.studentId,
+                        questionId=dbQn.questionId,
+                        text=a['student_answer']['text'],
+                        explanation=a['student_answer']['explanation'],
+                    )
+                    for i, c in enumerate(a['student_answer']['choices']):
+                        setattr(ugQn, 'choice_%d_answer' % i, c['answer'])
+                        setattr(ugQn, 'choice_%d_correct' % i, c['correct'])
+                    Session.add(ugQn)
+
+                    # student_answer should contain the ID of our answer
+                    Session.flush()
+                    a['student_answer'] = ugQn.ugQuestionId
+                else:
+                    # Student skipped (and got an incorrect mark)
+                    a['student_answer'] = None
+
+            else: # A tw_latexquestion, probably
+                # Check against plone to ensure student was right
+                try:
+                    ploneQn = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
+                    a['correct'] = True if a['student_answer'] is not None and ploneQn.allChoices()[a['student_answer']]['correct'] else False
+                    if a['correct']:
+                        dbQn.timesCorrect += 1
+                    dbQn.timesAnswered += 1  # NB: Do this once we know question is valid
+                    #TODO: Recalculate grade at this point, instead of relying on JS?
+                    # Write back stats to Plone
+                    ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
+                except (KeyError, NotFound):
+                    logger.error("Cannot find Plone question at %s" % dbQn.plonePath)
+                    continue
+                except (TypeError, IndexError):
+                    logger.warn("Student answer %d out of range" % a['student_answer'])
+                    continue
 
             # Everything worked, so add private ID and update DB
             Session.add(db.Answer(

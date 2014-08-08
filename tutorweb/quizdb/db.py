@@ -283,3 +283,120 @@ class AnswerSummary(ORMBase):
         nullable=True,
         default=None,
     )
+
+
+class UserGeneratedQuestion(ORMBase):
+    """Table of questions submitted from question templates"""
+    __tablename__ = 'userGeneratedQuestions'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    ugQuestionId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        primary_key=True,
+        autoincrement=True,
+    )
+    questionId = sqlalchemy.schema.Column( # i.e. the question template
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('question.questionId'),
+        nullable=False,
+        index=True,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        nullable=False,
+        index=True,
+    )
+    text = sqlalchemy.schema.Column(
+        sqlalchemy.types.Text(),
+        nullable=False,
+        default='',
+    )
+    choice_0_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_0_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_1_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_1_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_2_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_2_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_3_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_3_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_4_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_4_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_5_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_5_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_6_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_6_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_7_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_7_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_8_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_8_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    choice_9_answer = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(1000),
+        nullable=True,
+    )
+    choice_9_correct = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=True,
+    )
+    explanation = sqlalchemy.schema.Column(
+        sqlalchemy.types.Text(),
+        nullable=False,
+        default='',
+    )

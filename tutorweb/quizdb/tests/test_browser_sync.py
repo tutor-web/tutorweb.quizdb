@@ -561,6 +561,123 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(len(bAlloc['answerQueue']), 1)
         self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
 
+    def test_answerQueueUgQuestions(self):
+        """User generated questions are stored too"""
+        def createQuestionTemplates(obj, count):
+            if not hasattr(self, 'createdTmplQns'):
+                self.createdTmplQns = 0
+            for i in xrange(count):
+                obj.invokeFactory(
+                    type_name="tw_questiontemplate",
+                    id="tmplqn%d" % (self.createdTmplQns + i),
+                    title="Unittest tmpllec tmplQ%d" % (self.createdTmplQns + i),
+                )
+            self.createdTmplQns = count
+            import transaction ; transaction.commit()
+
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create a lecture with more questions than capped
+        portal['dept1'].invokeFactory(
+            type_name="tw_tutorial",
+            id="tmpltut",
+            title=u"Tutorial with a question cap of 5",
+            settings=[dict(key='question_cap', value='5')],
+        )
+        portal['dept1']['tmpltut'].invokeFactory(
+            type_name="tw_lecture",
+            id="tmpllec",
+            title=u"Lecture with no question cap (but uses default of 5)",
+        )
+        createQuestionTemplates(portal['dept1']['tmpltut']['tmpllec'], 5)
+
+        # Allocate to user A
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest tmpllec tmplQ%d' % i for i in range(0,5)],
+        )
+
+        # Write some answers back
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=dict(
+                        text=u"My first question",
+                        explanation=u"I'm getting the hang of it",
+                        choices=[dict(answer="Good?", correct=True), dict(answer="Bad?", correct=False)],
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][1]['uri'],
+                    student_answer=dict(
+                        text=u"I bottled it",
+                    ),
+                    correct=False,
+                    quiz_time=1377000020,
+                    answer_time=1377000030,
+                    grade_after=0.3,
+                ),
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][2]['uri'],
+                    student_answer=dict(
+                        text=u"My second question",
+                        explanation=u"I'm getting better!",
+                        choices=[dict(answer="Good?", correct=True), dict(answer="Bad?", correct=False)],
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+        # Answers have been replaced by question IDs (if they were "correct")
+        self.assertEquals(
+            [[x['correct'], x['student_answer']] for x in aAlloc['answerQueue']],
+            [[True, 1], [False, None], [True, 2]],
+            )
+
+        # Allocate to user B
+        bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'], user=USER_B_ID)['title'] for qn in bAlloc['questions']]),
+            [u'Unittest tmpllec tmplQ%d' % i for i in range(0,5)],
+        )
+
+        # Write some answers back
+        bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=bAlloc['questions'][0]['uri'],
+                    student_answer=dict(
+                        text=u"My first question",
+                        explanation=u"I'm way better than Arthur",
+                        choices=[dict(answer="Good?", correct=True), dict(answer="Bad?", correct=False)],
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+        # IDs are global, since everything is going in one table
+        self.assertEquals(
+            [[x['correct'], x['student_answer']] for x in bAlloc['answerQueue']],
+            [[True, 3]],
+            )
+
     def test_practiceMode(self):
         """Practice mod answers are recorded, but not returned"""
         # Allocate to user A
