@@ -275,7 +275,7 @@ class SyncLectureView(JSONBrowserView):
                 dbQn.active = False
                 if dbAlloc:
                     # Remove allocation, so users don't take this question any more
-                    removedQns.append(dbAlloc.publicId)
+                    removedQns.append(self.questionUrl(dbQn, dbAlloc.publicId))
                     dbAllocs[i] = (dbQn, None)
 
         # Add any questions missing from DB
@@ -313,22 +313,26 @@ class SyncLectureView(JSONBrowserView):
             elif neededAllocs < 0:
                 # Need less questions
                 for i in random.sample(usedAllocs[qnType], abs(neededAllocs)):
-                    removedQns.append(dbAllocs[i][1].publicId)
+                    removedQns.append(self.questionUrl(dbAllocs[i][0], dbAllocs[i][1].publicId))
                     Session.delete(dbAllocs[i][1])  # NB: Should probably mark as deleted instead
                     dbAllocs[i] = (dbAllocs[i][0], None)
         Session.flush()
 
         # Return all active questions
-        portalUrl = self.portalObject().absolute_url()
         return (
             [dict(
-                uri=portalUrl + '/quizdb-get-question/' + dbAlloc.publicId,
+                uri=self.questionUrl(dbQn, dbAlloc.publicId),
                 chosen=dbQn.timesAnswered,
                 correct=dbQn.timesCorrect,
                 online_only = (dbQn.qnType == 'tw_questiontemplate'),
             ) for (dbQn, dbAlloc) in dbAllocs if dbAlloc is not None],
-            [portalUrl + '/quizdb-get-question/' + id for id in removedQns],
+            removedQns,
         )
+
+    def questionUrl(self, dbQn, id):
+        if not hasattr(self, '_portalUrl'):
+            self._portalUrl = self.portalObject().absolute_url()
+        return self._portalUrl + '/quizdb-get-question/' + id
 
     def asDict(self):
         student = self.getCurrentStudent()
