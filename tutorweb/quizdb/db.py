@@ -204,7 +204,7 @@ class Answer(ORMBase):
     )
     correct = sqlalchemy.schema.Column(
         sqlalchemy.types.Boolean(),
-        nullable=False,
+        nullable=True,
     )
     timeStart = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
