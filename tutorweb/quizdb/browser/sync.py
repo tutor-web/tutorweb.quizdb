@@ -332,10 +332,10 @@ class SyncLectureView(JSONBrowserView):
             removedQns,
         )
 
-    def questionUrl(self, dbQn, id):
+    def questionUrl(self, dbQn, publicId):
         if not hasattr(self, '_portalUrl'):
             self._portalUrl = self.portalObject().absolute_url()
-        return self._portalUrl + '/quizdb-get-question/' + id
+        return self._portalUrl + '/quizdb-get-question/' + publicId
 
     def asDict(self):
         student = self.getCurrentStudent()
