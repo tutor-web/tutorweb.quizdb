@@ -419,3 +419,48 @@ class UserGeneratedQuestion(ORMBase):
         nullable=False,
         default='',
     )
+
+
+class UserGeneratedAnswer(ORMBase):
+    """Answers from students evaluating user-generated questions"""
+    __tablename__ = 'userGeneratedAnswer'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    ugAnswerId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        primary_key=True,
+        autoincrement=True,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        nullable=False,
+        index=True,
+    )
+    ugQuestionId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionId'),
+        nullable=False,
+        index=True,
+    )
+    chosenAnswer = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=True,
+    )
+    questionRating = sqlalchemy.schema.Column( # -1 no sense 0 easy -- 50 -- 100 hard
+        sqlalchemy.types.Integer(),
+        nullable=True,
+    )
+    comments = sqlalchemy.schema.Column(
+        sqlalchemy.types.Text(),
+        nullable=False,
+        default='',
+    )
+    studentGrade = sqlalchemy.schema.Column(
+        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        nullable=False,
+        default=0,
+    )

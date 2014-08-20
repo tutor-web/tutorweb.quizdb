@@ -1,28 +1,99 @@
 import base64
 import json
+import logging
+import random
 
 from AccessControl import getSecurityManager
 from zope.interface import implements
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from z3c.saconfig import Session
 
+from sqlalchemy.sql.expression import func
+from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from Products.CMFCore import permissions
+from Products.CMFCore.utils import getToolByName
 
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
 
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+
 
 class QuestionView(JSONBrowserView):
     """Base class: fetches questions and obsfucates"""
+
+    def texToHTML(self, f):
+        if getattr(self, '_pt', None) is None:
+            self._pt = getToolByName(self.context, 'portal_transforms')
+        return self._pt.convertTo(
+            'text/html',
+            f.encode('utf-8'),
+            mimetype='text/x-tex',
+            encoding='utf-8',
+        ).getData().decode('utf-8')
+
     def getQuestionData(self, dbQn):
         """Fetch dict for question, obsfucating the answer"""
-        try:
-            #NB: Unrestricted so we can see this even when direct access is banned
-            out = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data').asDict()
-        except KeyError:
-            raise NotFound(self, dbQn.plonePath, self.request)
+        out = None
+
+        # If a questiontemplate, might want a student to evaluate a question
+        if dbQn.qnType == 'tw_questiontemplate':
+            student = self.getCurrentStudent()
+
+            # Fetch value of prob_template_eval setting
+            try:
+                tmplEval = float(Session.query(db.LectureSetting)
+                        .filter(db.LectureSetting.lectureId == dbQn.lectureId)
+                        .filter(db.LectureSetting.studentId == student.studentId)
+                        .filter(db.LectureSetting.key == 'prob_template_eval')
+                        .one().value)
+            except NoResultFound:
+                tmplEval = 0.8
+
+            if random.random() <= tmplEval:
+                ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer)
+                    .filter(db.UserGeneratedAnswer.studentId == student.studentId)
+                    ).subquery())
+                ugQn = (Session.query(db.UserGeneratedQuestion)
+                    .outerjoin(ugAnswerQuery)
+                    .filter(ugAnswerQuery.ugAnswerId == None)
+                    .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
+                    .filter(db.UserGeneratedQuestion.studentId != student.studentId)
+                    .order_by(func.random())
+                    .first())
+
+                if ugQn is not None:
+                    # Generate question dict
+                    out = dict(
+                        _type='usergenerated',
+                        question_id=ugQn.ugQuestionId,
+                        text=self.texToHTML(ugQn.text),
+                        choices=[],
+                        shuffle=[],
+                        answer=dict(
+                            explanation=self.texToHTML(ugQn.explanation),
+                            correct=[],
+                        )
+                    )
+                    for i in range(0, 10):
+                        ans = getattr(ugQn, 'choice_%d_answer' % i, None)
+                        corr = getattr(ugQn, 'choice_%d_correct' % i, None)
+                        if ans is not None:
+                            out['choices'].append(self.texToHTML(ans))
+                            out['shuffle'].append(i)  # Shuffle everything
+                        if corr:
+                            out['answer']['correct'].append(i)
+
+        # No custom techniques, fetch question @@data
+        if not out:
+            try:
+                #NB: Unrestricted so we can see this even when direct access is banned
+                out = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data').asDict()
+            except KeyError:
+                raise NotFound(self, dbQn.plonePath, self.request)
+
         # Obsfucate answer
         if 'answer' in out:
             out['answer'] = base64.b64encode(json.dumps(out['answer']))

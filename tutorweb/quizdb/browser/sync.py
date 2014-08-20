@@ -163,7 +163,27 @@ class SyncLectureView(JSONBrowserView):
                 ))
                 continue
 
-            if dbQn.qnType == 'tw_questiontemplate':
+            if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
+                # Evaluated a user-generated question, write it to the DB
+                if 'question_id' not in a:
+                    logger.warn("Missing ID of the question being answered")
+                    continue
+
+                ugAns = db.UserGeneratedAnswer(
+                        studentId=student.studentId,
+                        ugQuestionId=a['question_id'],
+                        chosenAnswer=a['student_answer'].get('choice', None),
+                        questionRating=a['student_answer'].get('rating', None),
+                        comments=a['student_answer'].get('comments', ""),
+                        studentGrade=a.get('grade_after', None),
+                )
+                Session.add(ugAns)
+
+                # Store ID of full answer row
+                Session.flush()
+                a['student_answer'] = ugAns.ugAnswerId
+
+            elif dbQn.qnType == 'tw_questiontemplate':
                 if a['correct']:
                     # Write question to database
                     ugQn = db.UserGeneratedQuestion(

@@ -596,7 +596,10 @@ class SyncViewFunctional(FunctionalTestCase):
             type_name="tw_tutorial",
             id="tmpltut",
             title=u"Tutorial with a question cap of 5",
-            settings=[dict(key='question_cap', value='5')],
+            settings=[
+                dict(key='question_cap', value='5'),
+                dict(key='prob_template_eval', value='0'),
+            ],
         )
         portal['dept1']['tmpltut'].invokeFactory(
             type_name="tw_lecture",
@@ -916,7 +919,10 @@ class SyncViewFunctional(FunctionalTestCase):
             type_name="tw_tutorial",
             id="tmpltut",
             title=u"Tutorial with a question cap of 5",
-            settings=[dict(key='question_cap', value='5')],
+            settings=[
+                dict(key='question_cap', value='5'),
+                dict(key='prob_template_eval', value='0'),
+            ],
         )
         portal['dept1']['tmpltut'].invokeFactory(
             type_name="tw_lecture",
