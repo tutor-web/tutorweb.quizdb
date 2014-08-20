@@ -273,15 +273,34 @@ class AnswerSummary(ORMBase):
         nullable=False,
         default=0,
     )
-    set_grade_alpha = sqlalchemy.schema.Column(
-        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
-        nullable=True,
-        default=None,
+
+
+class LectureSetting(ORMBase):
+    """Settings given to a student when answering questions"""
+    __tablename__ = 'lectureSetting'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
     )
-    set_grade_s = sqlalchemy.schema.Column(
-        ForceInt(),
-        nullable=True,
-        default=None,
+
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        primary_key=True,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        primary_key=True,
+    )
+    key = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+        primary_key=True,
+    )
+    value = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
     )
 
 

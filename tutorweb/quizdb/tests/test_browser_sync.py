@@ -38,24 +38,18 @@ class SyncViewIntegration(IntegrationTestCase):
         # Lecture settings override tutorial settings
         self.assertEquals(
             getSettings(
-                tutSettings=dict(hist_sel=0.5),
+                tutSettings=dict(hist_sel='0.5'),
                 lecSettings=dict(),
             ),
-            dict(hist_sel=0.5),
+            dict(hist_sel='0.5'),
         )
         self.assertEquals(
             getSettings(
-                tutSettings=dict(hist_sel=0.5),
-                lecSettings=dict(hist_sel=0.3),
+                tutSettings=dict(hist_sel='0.5'),
+                lecSettings=dict(hist_sel='0.3'),
             ),
-            dict(hist_sel=0.3),
+            dict(hist_sel='0.3'),
         )
-
-        # Random items we don't have columns for will be ignored
-        self.assertTrue('camel' not in getSettings(lecSettings={
-                'camel:min': '0.3',
-                'camel:max': '0.5',
-        }))
 
         # Random items can be generated between ranges
         alpha = {}
@@ -101,13 +95,32 @@ class SyncViewIntegration(IntegrationTestCase):
             self.assertTrue(int(s[userId]) >= 0)
             self.assertTrue(int(s[userId]) <= 90)
 
-        # Fetching again results in the same value
+        # Keeping the same range means we get the same value back
         for userId in [USER_A_ID, USER_B_ID, USER_C_ID] * 10:
             self.assertEqual(
                 s[userId],
                 getSettings(lecSettings={
-                    'grade_s:max': '91',  # NB: outside old range
-                    'grade_s:max': '99',  # NB: outside old range
+                    'grade_s:max': '90',
+                }, userId=userId)['grade_s']
+            )
+
+        # Changing range causes new value to be assigned
+        s2 = {}
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID]:
+            s2[userId] = getSettings(lecSettings={
+                'grade_s:min': '91',
+                'grade_s:max': '99',
+            }, userId=userId)['grade_s']
+            self.assertNotEqual(s[userId], s2[userId])
+            self.assertTrue(91 <= int(s2[userId]) <= 99)
+
+        # But still keep getting the same value back
+        for userId in [USER_A_ID, USER_B_ID, USER_C_ID] * 10:
+            self.assertEqual(
+                s2[userId],
+                getSettings(lecSettings={
+                    'grade_s:max': '91',
+                    'grade_s:max': '99',
                 }, userId=userId)['grade_s']
             )
 

@@ -22,6 +22,7 @@ from .base import JSONBrowserView
 logger = logging.getLogger(__name__)
 
 DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
+INTEGER_SETTINGS = ['grade_s']  # Randomly-chosen questions that should result in an integer value
 
 
 class SyncTutorialView(JSONBrowserView):
@@ -40,43 +41,72 @@ class SyncTutorialView(JSONBrowserView):
 class SyncLectureView(JSONBrowserView):
     def getStudentSettings(self, student):
         """Return a dict of lecture / tutorial settings, choosing a random value if required"""
+        lectureId = self.getLectureId()
+
+        # Fetch settings from lecture
         settings=dict(
             (i['key'], i['value'])
             for i
             in (self.context.aq_parent.settings or []) + (self.context.settings or [])
         )
 
-        # For any :min & :max settings, choose a random value
-        dbAnsSummary = None
-        for max_key in (k for k in settings.keys() if k.endswith(':max')):
-            base_key = max_key.replace(":max", "")
-            db_key = 'set_' + base_key
-            min_val = settings.get(base_key + ":min", 0)
-            max_val = settings[max_key]
+        # Get all current settings as a dict, removing old ones
+        allSettings = {}
+        for dbS in (Session.query(db.LectureSetting)
+                .filter(db.LectureSetting.lectureId == lectureId)
+                .filter(db.LectureSetting.studentId == student.studentId)
+                .all()):
+            if dbS.key not in settings.keys() and dbS.key + ':max' not in settings.keys():
+                # No longer in Plone, remove it here too
+                Session.delete(dbS)
+            else:
+                allSettings[dbS.key] = dbS.value
 
-            # Do we have a column for this key?
-            if dbAnsSummary is None:
-                dbAnsSummary = self.getAnswerSummary(student)
-            if not hasattr(dbAnsSummary, db_key):
-                logger.warn("No column for %s in DB" % base_key)
+        ignoreKey = {}
+        for k in settings.keys():
+            # Only update settings that have changed
+            if k in allSettings and allSettings[k] == settings[k]:
                 continue
 
-            if getattr(dbAnsSummary, db_key) is None:
-                # Choose a random float between min and max
-                setattr(
-                    dbAnsSummary,
-                    db_key,
-                    random.uniform(float(min_val), float(max_val)),
+            # If a variable setting has changed, assign a value and write this also
+            if not(ignoreKey.get(k, False)) and (k.endswith(':max') or k.endswith(':min')):
+                base_key = k.replace(":max", "").replace(":min", "")
+                if base_key + ":max" not in settings:
+                    raise ValueError(base_key + ":max not set in lecture")
+
+                # Don't assign another value if/when other half shows up
+                ignoreKey[base_key + ":min"] = True
+                ignoreKey[base_key + ":max"] = True
+
+                # Assign new value, rounding if appropriate
+                new_value = random.uniform(
+                    float(settings.get(base_key + ":min", 0)),
+                    float(settings.get(base_key + ":max", None)),
                 )
-            # Write out current choice, string to be consistent
-            if isinstance(dbAnsSummary.__table__.columns[db_key].type, db.ForceInt):
-                # Ugly hack to get the return value to be rounded too
-                settings[base_key] = str(int(round(getattr(dbAnsSummary, db_key))))
-            else:
-                settings[base_key] = str(getattr(dbAnsSummary, db_key))
+                if base_key in INTEGER_SETTINGS:
+                    new_value = str(int(round(new_value)))
+                else:
+                    new_value = str(round(new_value, 3))
+
+                Session.merge(db.LectureSetting(
+                    lectureId=lectureId,
+                    studentId=student.studentId,
+                    key=base_key,
+                    value=new_value,
+                ))
+                allSettings[base_key] = new_value
+
+            # Add / update DB
+            Session.merge(db.LectureSetting(
+                lectureId=lectureId,
+                studentId=student.studentId,
+                key=k,
+                value=settings[k],
+            ))
+            allSettings[k] = settings[k]
 
         Session.flush()
-        return settings
+        return allSettings
 
     def getAnswerSummary(self, student):
         """Fetch answerSummary row for student"""
