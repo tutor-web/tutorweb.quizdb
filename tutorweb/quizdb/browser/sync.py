@@ -136,7 +136,7 @@ class SyncLectureView(JSONBrowserView):
             if 'student_answer' not in a:
                 continue
             if 'answer_time' not in a:
-                logger.warn("Question should have answer_time")
+                logger.info("Unanswered question passed to sync")
                 continue
             if '/quizdb-get-question/' not in a['uri']:
                 logger.warn("Question ID %s malformed" % a['uri'])
