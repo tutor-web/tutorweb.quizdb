@@ -179,6 +179,18 @@ class GetQuestionViewTest(FunctionalTestCase):
         self.assertTrue('So you can get the keys' in answer['explanation'])
         self.assertEqual(answer['correct'], [0])
 
+        # The URI generated has the question_id appended to the end
+        self.assertEqual(
+            qns['usergenerated'][0]['uri'],
+            '%s?question_id=%d' % (bAlloc['questions'][0]['uri'], qns['usergenerated'][0]['question_id']),
+        )
+
+        # Can fetch it directly using this URL
+        self.assertEqual(
+            self.getJson(qns['usergenerated'][0]['uri'], user=USER_B_ID),
+            qns['usergenerated'][0],
+        )
+
         # If B answers it, doesn't get to answer it again
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID, body=dict(
             answerQueue=[

@@ -24,22 +24,66 @@ from .base import JSONBrowserView
 class QuestionView(JSONBrowserView):
     """Base class: fetches questions and obsfucates"""
 
-    def texToHTML(self, f):
-        if getattr(self, '_pt', None) is None:
-            self._pt = getToolByName(self.context, 'portal_transforms')
-        return self._pt.convertTo(
-            'text/html',
-            f.encode('utf-8'),
-            mimetype='text/x-tex',
-            encoding='utf-8',
-        ).getData().decode('utf-8')
+    def ugQuestionToJson(self, ugQn):
+        """Turn a db.ugQuestion object into a JSON representation"""
+        def texToHTML(f):
+            if getattr(self, '_pt', None) is None:
+                self._pt = getToolByName(self.context, 'portal_transforms')
+            return self._pt.convertTo(
+                'text/html',
+                f.encode('utf-8'),
+                mimetype='text/x-tex',
+                encoding='utf-8',
+            ).getData().decode('utf-8')
+
+        qnUri = self.request.getURL()
+        if '?' in qnUri:
+            qnUri = qnUri.split('?')[0]
+        qnUri = qnUri + '?question_id=%d' % ugQn.ugQuestionId
+
+        out = dict(
+            _type='usergenerated',
+            uri=qnUri,
+            question_id=ugQn.ugQuestionId,
+            text=texToHTML(ugQn.text),
+            choices=[],
+            shuffle=[],
+            answer=dict(
+                explanation=texToHTML(ugQn.explanation),
+                correct=[],
+            )
+        )
+        for i in range(0, 10):
+            ans = getattr(ugQn, 'choice_%d_answer' % i, None)
+            corr = getattr(ugQn, 'choice_%d_correct' % i, None)
+            if ans is not None:
+                out['choices'].append(texToHTML(ans))
+                out['shuffle'].append(i)  # Shuffle everything
+            if corr:
+                out['answer']['correct'].append(i)
+        return out
 
     def getQuestionData(self, dbQn):
         """Fetch dict for question, obsfucating the answer"""
         out = None
 
+        # Is the student requesting a particular question they've done before?
+        if not out and dbQn.qnType == 'tw_questiontemplate' and 'question_id' in self.request.form:
+            student = self.getCurrentStudent()
+
+            ugQn = (Session.query(db.UserGeneratedQuestion)
+                .filter(db.UserGeneratedQuestion.ugQuestionId == self.request.form['question_id'])
+                .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
+                .filter(db.UserGeneratedQuestion.studentId != student.studentId)
+                .first())
+            if ugQn is not None:
+                # Found one, should return it
+                out = self.ugQuestionToJson(ugQn)
+            else:
+                raise NotFound(self, self.request.form['question_id'], self.request)
+
         # If a questiontemplate, might want a student to evaluate a question
-        if dbQn.qnType == 'tw_questiontemplate':
+        if not out and dbQn.qnType == 'tw_questiontemplate':
             student = self.getCurrentStudent()
 
             # Fetch value of prob_template_eval setting
@@ -53,6 +97,7 @@ class QuestionView(JSONBrowserView):
                 tmplEval = 0.8
 
             if random.random() <= tmplEval:
+                # Try and find a user-generated question that student hasn't answered before
                 ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer)
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
                     ).subquery())
@@ -63,28 +108,9 @@ class QuestionView(JSONBrowserView):
                     .filter(db.UserGeneratedQuestion.studentId != student.studentId)
                     .order_by(func.random())
                     .first())
-
                 if ugQn is not None:
-                    # Generate question dict
-                    out = dict(
-                        _type='usergenerated',
-                        question_id=ugQn.ugQuestionId,
-                        text=self.texToHTML(ugQn.text),
-                        choices=[],
-                        shuffle=[],
-                        answer=dict(
-                            explanation=self.texToHTML(ugQn.explanation),
-                            correct=[],
-                        )
-                    )
-                    for i in range(0, 10):
-                        ans = getattr(ugQn, 'choice_%d_answer' % i, None)
-                        corr = getattr(ugQn, 'choice_%d_correct' % i, None)
-                        if ans is not None:
-                            out['choices'].append(self.texToHTML(ans))
-                            out['shuffle'].append(i)  # Shuffle everything
-                        if corr:
-                            out['answer']['correct'].append(i)
+                    # Found one, should return it
+                    out = self.ugQuestionToJson(ugQn)
 
         # No custom techniques, fetch question @@data
         if not out:

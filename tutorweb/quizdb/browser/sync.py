@@ -4,6 +4,7 @@ import dateutil.parser
 import json
 import logging
 import random
+import re
 import time
 
 from sqlalchemy import func
@@ -128,6 +129,7 @@ class SyncLectureView(JSONBrowserView):
 
         # Filter nonsense out of answerQueue
         answerQueue = []
+        uriSplit = re.compile('\/quizdb-get-question\/|\?')
         for a in rawAnswerQueue:
             if a.get('synced', False):
                 continue
@@ -139,7 +141,7 @@ class SyncLectureView(JSONBrowserView):
             if '/quizdb-get-question/' not in a['uri']:
                 logger.warn("Question ID %s malformed" % a['uri'])
                 continue
-            answerQueue.append((a['uri'].split('/quizdb-get-question/', 2)[1], a))
+            answerQueue.append((uriSplit.split(a['uri'])[1], a))
 
         # Fetch all questions for allocations, locking for update
         dbQns = {}
