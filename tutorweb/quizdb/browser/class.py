@@ -41,7 +41,7 @@ class StudentResultsView(BrowserView):
         lectures = [r.to_object for r in self.context.lectures]
         return [dict(
             url=lec.absolute_url(),
-            id=lec.id,
+            id='/'.join(lec.getPhysicalPath()[2:]),
         ) for lec in lectures]
 
     def allStudentGrades(self):

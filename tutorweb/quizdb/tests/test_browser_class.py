@@ -54,8 +54,8 @@ class StudentResultsViewTest(IntegrationTestCase):
             portal['dept1']['tut1']['lec1'],
         ])
         self.assertEqual(self.getView().lecturesInClass(), [
-            {'id': 'lec2', 'url': 'http://nohost/plone/dept1/tut1/lec2'},
-            {'id': 'lec1', 'url': 'http://nohost/plone/dept1/tut1/lec1'},
+            {'id': 'dept1/tut1/lec2', 'url': 'http://nohost/plone/dept1/tut1/lec2'},
+            {'id': 'dept1/tut1/lec1', 'url': 'http://nohost/plone/dept1/tut1/lec1'},
         ])
 
     def test_allStudentGrades(self):
@@ -118,9 +118,9 @@ class StudentResultsViewTest(IntegrationTestCase):
         self.updateAnswerQueue(USER_B_ID, lec2, [0.2])
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8, 1.0])
         self.assertEqual(self.getCSV(), [
-            {'Student': 'Arnold',   'lec1': '-', 'lec2': '1'},
-            {'Student': 'Caroline', 'lec1': '-', 'lec2': '-'},
-            {'Student': 'Betty',    'lec1': '-', 'lec2': '0.2'},
+            {'Student': 'Arnold',   'dept1/tut1/lec1': '-', 'dept1/tut1/lec2': '1'},
+            {'Student': 'Caroline', 'dept1/tut1/lec1': '-', 'dept1/tut1/lec2': '-'},
+            {'Student': 'Betty',    'dept1/tut1/lec1': '-', 'dept1/tut1/lec2': '0.2'},
         ])
 
     def updateAnswerQueue(self, user, lecture, grades):
