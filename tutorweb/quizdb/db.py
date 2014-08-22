@@ -223,6 +223,11 @@ class Answer(ORMBase):
         nullable=False,
         default=False,
     )
+    coinsAwarded = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=0,
+    )
 
 
 class AnswerSummary(ORMBase):
@@ -249,6 +254,11 @@ class AnswerSummary(ORMBase):
         nullable=False,
     )
     grade = sqlalchemy.schema.Column(
+        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        nullable=False,
+        default=0,
+    )
+    gradeHighWaterMark = sqlalchemy.schema.Column(
         sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
         nullable=False,
         default=0,

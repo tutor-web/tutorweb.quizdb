@@ -694,6 +694,112 @@ class SyncViewFunctional(FunctionalTestCase):
             [[True, 3]],
             )
 
+    def test_answerQueue_getCoinAward(self):
+        """Questions should get a suitable award"""
+        # Shortcut for making answerQueue entries
+        aqTime = [1377000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after):
+            qnData = self.getJson(alloc['questions'][qnIndex]['uri'], user=USER_A_ID)
+            aqTime[0] += 100
+            return dict(
+                uri=qnData.get('uri', alloc['questions'][qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 50,
+                answer_time=aqTime[0] - 20,
+                grade_after=grade_after,
+            )
+
+        # Get an allocation to start things off
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+
+        # Get 5 right, no points
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, True, 0.1),
+                aqEntry(lec1Alloc, 0, True, 0.2),
+                aqEntry(lec1Alloc, 0, True, 0.3),
+                aqEntry(lec1Alloc, 0, True, 0.4),
+                aqEntry(lec1Alloc, 0, True, 0.5),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            dict(totalAwarded=0, lastUpdate=u'2013-08-20T13:08:00'),
+        )
+
+        # Get 5 more right, get a point
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, True, 0.6),
+                aqEntry(lec1Alloc, 0, True, 0.7),
+                aqEntry(lec1Alloc, 0, True, 0.8),
+                aqEntry(lec1Alloc, 0, True, 0.9),
+                aqEntry(lec1Alloc, 0, True, 1.0),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            dict(totalAwarded=1, lastUpdate=u'2013-08-20T13:16:20'),
+        )
+
+        # Another 10 makes no difference
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, True, 9.9),
+            ] * 10,
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            dict(totalAwarded=1, lastUpdate=u'2013-08-20T13:18:00'),
+        )
+
+        # Acing the lecture gets more points
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, True, 10.0),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            dict(totalAwarded=11, lastUpdate=u'2013-08-20T13:19:40'),
+        )
+
+        # We can't get these points again
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, False, 9.0),
+                aqEntry(lec1Alloc, 0, False, 8.0),
+                aqEntry(lec1Alloc, 0, True, 9.0),
+                aqEntry(lec1Alloc, 0, True, 10.0),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            dict(totalAwarded=11, lastUpdate=u'2013-08-20T13:26:20'),
+        )
+
+        # Ace lec2 too and we get everything in one hit
+        lec2Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_A_ID)
+        lec2Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(lec2Alloc, 0, True, 10.0),
+            ] * 10,
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            dict(totalAwarded=122, lastUpdate=u'2013-08-20T13:28:00'),
+        )
+
+
     def test_practiceMode(self):
         """Practice mod answers are recorded, but not returned"""
         # Allocate to user A

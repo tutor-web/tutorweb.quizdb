@@ -113,6 +113,7 @@ class SyncLectureView(JSONBrowserView):
         """Fetch answerSummary row for student"""
         try:
             return (Session.query(db.AnswerSummary)
+                .with_lockmode('update')
                 .filter(db.AnswerSummary.lectureId == self.getLectureId())
                 .filter(db.AnswerSummary.studentId == student.studentId)
                 .one())
@@ -122,11 +123,44 @@ class SyncLectureView(JSONBrowserView):
                 studentId=student.studentId,
             )
             Session.add(dbAnsSummary)
+            dbAnsSummary.lecAnswered = 0
+            dbAnsSummary.lecCorrect = 0
+            dbAnsSummary.practiceAnswered = 0
+            dbAnsSummary.practiceCorrect = 0
             return dbAnsSummary
 
-    def parseAnswerQueue(self, student, rawAnswerQueue):
-        newGrade = None
+    def getCoinAward(self, student, dbAnsSummary, a, settings):
+        """How many coins does this earn a student?"""
+        newGrade = a.get('grade_after', None)
+        out = 0
 
+        # Got 8 questions right
+        if dbAnsSummary.lecCorrect == 8:
+            out += settings.get('award_lecture_answered', 1)
+
+        # Has the lecture just been aced?
+        if dbAnsSummary.gradeHighWaterMark < 10.0 and newGrade >= 10.0:
+            out += settings.get('award_lecture_aced', 10)
+
+            # Fetch all sibling lectures
+            siblingPaths = [
+                b.getPath()
+                for b
+                in self.context.aq_parent.restrictedTraverse('@@folderListing')(portal_type='tw_lecture')
+                if b.getPath() != '/'.join(self.context.getPhysicalPath())
+            ]
+
+            # Is every other lecture aced?
+            if (Session.query(db.AnswerSummary)
+                    .join(db.Lecture)
+                    .filter(db.AnswerSummary.studentId == student.studentId)
+                    .filter(db.Lecture.plonePath.in_(siblingPaths))
+                    .filter(db.AnswerSummary.gradeHighWaterMark >= 10.0)
+                    .count() > 0):
+                out += settings.get('award_tutorial_aced', 100)
+        return out
+
+    def parseAnswerQueue(self, student, rawAnswerQueue, settings):
         # Filter nonsense out of answerQueue
         answerQueue = []
         uriSplit = re.compile('\/quizdb-get-question\/|\?')
@@ -154,6 +188,9 @@ class SyncLectureView(JSONBrowserView):
                 .all()):
 
                 dbQns[publicId] = dbQn
+
+        # Fetch summary
+        dbAnsSummary = self.getAnswerSummary(student)
 
         for (publicId, a) in answerQueue:
             # Fetch question for allocation
@@ -224,7 +261,25 @@ class SyncLectureView(JSONBrowserView):
                     logger.warn("Student answer %d out of range" % a['student_answer'])
                     continue
 
-            # Everything worked, so add private ID and update DB
+            # Update student summary rows
+            dbAnsSummary.lecAnswered += 1 # NB: Including practice questions is intentional
+            if a.get('correct', None):
+                dbAnsSummary.lecCorrect += 1
+            if a.get('practice', False):
+                dbAnsSummary.practiceAnswered += 1
+                if a.get('correct', None):
+                    dbAnsSummary.practiceCorrect += 1
+
+            # Does this earn the student any coins?
+            coinsAwarded = self.getCoinAward(student, dbAnsSummary, a, settings)
+
+            # Post-awards, update grade
+            if a.get('grade_after', None) is not None:
+                dbAnsSummary.grade = a['grade_after']
+                if a['grade_after'] > dbAnsSummary.gradeHighWaterMark:
+                    dbAnsSummary.gradeHighWaterMark = a['grade_after']
+
+            # Update database with this answer
             Session.add(db.Answer(
                 lectureId=self.getLectureId(),
                 studentId=student.studentId,
@@ -235,8 +290,8 @@ class SyncLectureView(JSONBrowserView):
                 timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),
                 timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
                 practice=a.get('practice', False),
+                coinsAwarded=coinsAwarded,
             ))
-            newGrade = a.get('grade_after', newGrade)
             a['synced'] = True
         Session.flush()
 
@@ -255,32 +310,6 @@ class SyncLectureView(JSONBrowserView):
             grade_after=dbAns.grade,
             synced=True,
         ) for dbAns in reversed(dbAnswers)]
-
-        # Update student's answerSummary
-        dbAnsSummary = self.getAnswerSummary(student)
-        if newGrade is not None:
-            dbAnsSummary.grade = newGrade
-            dbAnsSummary.lecAnswered = (Session.query(func.count())
-                .filter(db.Answer.lectureId == self.getLectureId())
-                .filter(db.Answer.studentId == student.studentId)
-                .as_scalar())
-            dbAnsSummary.lecCorrect = (Session.query(func.count())
-                .filter(db.Answer.lectureId == self.getLectureId())
-                .filter(db.Answer.studentId == student.studentId)
-                .filter(db.Answer.correct == True)
-                .as_scalar())
-            dbAnsSummary.practiceAnswered = (Session.query(func.count())
-                .filter(db.Answer.lectureId == self.getLectureId())
-                .filter(db.Answer.studentId == student.studentId)
-                .filter(db.Answer.practice == True)
-                .as_scalar())
-            dbAnsSummary.practiceCorrect = (Session.query(func.count())
-                .filter(db.Answer.lectureId == self.getLectureId())
-                .filter(db.Answer.studentId == student.studentId)
-                .filter(db.Answer.practice == True)
-                .filter(db.Answer.correct == True)
-                .as_scalar())
-            Session.flush()
 
         # Tell student how many questions they have answered
         if len(out) > 0:
@@ -417,7 +446,7 @@ class SyncLectureView(JSONBrowserView):
             slide_uri=self.context.absolute_url() + '/slide-html',
             title=self.context.title,
             settings=settings,
-            answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', [])),
+            answerQueue=self.parseAnswerQueue(student, lecture.get('answerQueue', []), settings),
             questions=questions,
             removed_questions=removedQuestions,
         )

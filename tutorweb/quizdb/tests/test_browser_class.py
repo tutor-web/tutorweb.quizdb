@@ -143,7 +143,7 @@ class StudentResultsViewTest(IntegrationTestCase):
             quiz_time=self.timestamp,
             answer_time=self.timestamp + 10,
             grade_after=grade,
-        ) for grade in grades])
+        ) for grade in grades], {})
         login(self.layer['portal'], MANAGER_ID)
         transaction.commit()
         return out
@@ -255,7 +255,7 @@ class StudentTableViewTest(IntegrationTestCase):
             quiz_time=self.timestamp,
             answer_time=self.timestamp + 10,
             grade_after=grade,
-        ) for grade in grades])
+        ) for grade in grades], {})
         login(self.layer['portal'], MANAGER_ID)
         transaction.commit()
         return out

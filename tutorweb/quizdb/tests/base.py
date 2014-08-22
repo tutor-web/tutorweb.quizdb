@@ -1,3 +1,4 @@
+import base64
 import os
 import tempfile
 from unittest import TestCase
@@ -108,3 +109,13 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         Session().execute("DROP TABLE userGeneratedQuestions")
         Session().execute("DROP TABLE userGeneratedAnswer")
         ORMBase.metadata.create_all(Session().bind)
+
+    def findAnswer(self, qnData, correct=True):
+        """Return the first correct/incorrect answer for given question"""
+        corrAns = json.loads(base64.b64decode(qnData['answer']))['correct']
+        if correct:
+            return corrAns[0]
+        for i in range(len(qnData['choices'])):
+            if i not in corrAns:
+                return i
+        raise ValueError("No incorrect answer");
