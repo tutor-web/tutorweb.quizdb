@@ -405,6 +405,7 @@ class SyncLectureView(JSONBrowserView):
         # Return all active questions
         return (
             [dict(
+                _type="template" if dbQn.qnType else None,
                 uri=self.questionUrl(dbQn, dbAlloc.publicId),
                 chosen=dbQn.timesAnswered,
                 correct=dbQn.timesCorrect,
