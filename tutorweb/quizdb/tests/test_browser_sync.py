@@ -1052,6 +1052,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 self.assertEquals(qn['online_only'], True)
             if 'mcQ' in title:
                 counts['mcQ'] += 1
+                self.assertNotEquals(qn['_type'], "template")
                 self.assertEquals(qn['online_only'], False)
         self.assertEquals(counts['tmplQ'], 5)
         self.assertEquals(counts['mcQ'], 5)
