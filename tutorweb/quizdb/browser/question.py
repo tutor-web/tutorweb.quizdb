@@ -13,7 +13,6 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from Products.CMFCore import permissions
-from Products.CMFCore.utils import getToolByName
 
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
@@ -26,15 +25,6 @@ class QuestionView(JSONBrowserView):
 
     def ugQuestionToJson(self, ugQn):
         """Turn a db.ugQuestion object into a JSON representation"""
-        def texToHTML(f):
-            if getattr(self, '_pt', None) is None:
-                self._pt = getToolByName(self.context, 'portal_transforms')
-            return self._pt.convertTo(
-                'text/html',
-                f.encode('utf-8'),
-                mimetype='text/x-tex',
-                encoding='utf-8',
-            ).getData().decode('utf-8')
 
         qnUri = self.request.getURL()
         if '?' in qnUri:
@@ -45,11 +35,11 @@ class QuestionView(JSONBrowserView):
             _type='usergenerated',
             uri=qnUri,
             question_id=ugQn.ugQuestionId,
-            text=texToHTML(ugQn.text),
+            text=self.texToHTML(ugQn.text),
             choices=[],
             shuffle=[],
             answer=dict(
-                explanation=texToHTML(ugQn.explanation),
+                explanation=self.texToHTML(ugQn.explanation),
                 correct=[],
             )
         )
@@ -57,7 +47,7 @@ class QuestionView(JSONBrowserView):
             ans = getattr(ugQn, 'choice_%d_answer' % i, None)
             corr = getattr(ugQn, 'choice_%d_correct' % i, None)
             if ans is not None:
-                out['choices'].append(texToHTML(ans))
+                out['choices'].append(self.texToHTML(ans))
                 out['shuffle'].append(i)  # Shuffle everything
             if corr:
                 out['answer']['correct'].append(i)

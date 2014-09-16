@@ -101,6 +101,19 @@ class JSONBrowserView(BrowserView):
             Session.flush()
             return dbLec.lectureId
 
+    def texToHTML(self, f):
+        """Encode TeX in f into HTML"""
+        if not f:
+            return f
+        if getattr(self, '_pt', None) is None:
+            self._pt = getToolByName(self.context, 'portal_transforms')
+        return self._pt.convertTo(
+            'text/html',
+            f.encode('utf-8'),
+            mimetype='text/x-tex',
+            encoding='utf-8',
+        ).getData().decode('utf-8')
+
     ### Database operations (move these elsewhere?)
 
     def portalObject(self):

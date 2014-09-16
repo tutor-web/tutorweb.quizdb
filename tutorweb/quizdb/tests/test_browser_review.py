@@ -28,6 +28,20 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         out = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-review-ugqn', user=USER_A_ID)
         self.assertEqual(out, [])
 
+    def texToHTML(self, f):
+        """Encode TeX in f into HTML"""
+        from Products.CMFCore.utils import getToolByName
+        if not f:
+            return f
+        if getattr(self, '_pt', None) is None:
+            self._pt = getToolByName(self.layer['portal'], 'portal_transforms')
+        return self._pt.convertTo(
+            'text/html',
+            f.encode('utf-8'),
+            mimetype='text/x-tex',
+            encoding='utf-8',
+        ).getData().decode('utf-8')
+
     def test_writeQuestions(self):
         """User generated questions are stored and displayed in review"""
         def createQuestionTemplates(obj, count):
@@ -113,8 +127,18 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         self.assertEquals(
             self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID),
             [
-                dict(id=1, text=u"Want some rye?", choices=[dict(answer=u'Course you do', correct=True), dict(answer=u'You keep that.', correct=False)], answers=[]),
-                dict(id=2, text=u"Who's like us?", choices=[dict(answer="Here's to us.", correct=False), dict(answer="Who's like us?", correct=False), dict(answer="Damn few!", correct=True), dict(answer="And they're all dead!", correct=False)], answers=[]),
+                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'choices':[
+                    {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
+                    {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
+                ], u'answers': [
+                ]},
+                {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'choices':[
+                    {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
+                    {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
+                    {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
+                    {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
+                ], u'answers': [
+                ]},
             ]
         )
         # A has nothing in another lecture
@@ -180,17 +204,17 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         self.assertEquals(
             self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID),
             [
-                {u'id':1, u'text':u"Want some rye?", u'choices':[
-                    {u'answer':u'Course you do', u'correct':True},
-                    {u'answer':u'You keep that.', u'correct':False}
+                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'choices':[
+                    {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
+                    {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"I've never played Return to Zork", u'id': 1, u'rating': 25},
                 ]},
-                {u'id':2, u'text':u"Who's like us?", u'choices':[
-                    {u'answer':u"Here's to us.", u'correct':False},
-                    {u'answer':u"Who's like us?", u'correct':False},
-                    {u'answer':u"Damn few!", u'correct':True},
-                    {u'answer':u"And they're all dead!", u'correct':False}
+                {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'choices':[
+                    {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
+                    {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
+                    {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
+                    {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"You don't actually respond like this, you tip the drink into the plant pot", u'id': 2, u'rating': -1},
                 ]},
