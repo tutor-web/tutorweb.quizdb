@@ -27,6 +27,12 @@
       permission="zope2.View"
       />
 
+    <browser:page name="quizdb-review-ugqn"
+      for="tutorweb.content.schema.ILecture"
+      class=".review.ReviewUgQnView"
+      permission="zope2.View"
+      />
+
     <browser:page name="student-results"
       for="tutorweb.content.schema.IClass"
       permission="cmf.ModifyPortalContent"
