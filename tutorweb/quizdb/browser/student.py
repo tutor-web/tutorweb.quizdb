@@ -13,7 +13,7 @@ from .base import JSONBrowserView
 class StudentUpdateView(JSONBrowserView):
     """Update all student email addresses"""
 
-    def asDict(self):
+    def asDict(self, data):
         """For all students already in DB, update details"""
         mtool = getToolByName(self.context, 'portal_membership')
         for dbStudent in Session.query(db.Student).all():
@@ -26,7 +26,7 @@ class StudentUpdateView(JSONBrowserView):
 class StudentAwardView(JSONBrowserView):
     """Show coins awarded to student"""
 
-    def asDict(self):
+    def asDict(self, data):
         """Show coins given to student"""
         student = self.getCurrentStudent()
         vals = (Session.query(

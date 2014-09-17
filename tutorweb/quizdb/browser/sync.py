@@ -27,7 +27,7 @@ INTEGER_SETTINGS = ['grade_s']  # Randomly-chosen questions that should result i
 
 
 class SyncTutorialView(JSONBrowserView):
-    def asDict(self):
+    def asDict(self, data):
         listing = self.context.restrictedTraverse('@@folderListing')(
             portal_type='tw_lecture',
             sort_on='id',
@@ -35,7 +35,7 @@ class SyncTutorialView(JSONBrowserView):
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             title=self.context.title,
-            lectures=[self.context.restrictedTraverse(l.id + '/quizdb-sync').asDict() for l in listing],
+            lectures=[self.context.restrictedTraverse(l.id + '/quizdb-sync').asDict(None) for l in listing],
         )
 
 
@@ -419,20 +419,14 @@ class SyncLectureView(JSONBrowserView):
             self._portalUrl = self.portalObject().absolute_url()
         return self._portalUrl + '/quizdb-get-question/' + publicId
 
-    def asDict(self):
+    def asDict(self, data):
         student = self.getCurrentStudent()
         settings = self.getStudentSettings(student)
 
-        # Have we been handed a structure to update?
-        if self.request.get_header('content_length') > 0:
-            # NB: Should be checking self.request.getHeader('Content-Type') ==
-            # 'application/json' but zope.testbrowser cannae do that.
-            self.request.stdin.seek(0)
-            lecture = json.loads(self.request.stdin.read())
-            if lecture.get('user', None) and lecture['user'] != student.userName:
-                raise Unauthorized('Quiz for user ' + lecture['user'])
-        else:
-            lecture = dict()
+        # Check we're the right user, given the data
+        lecture = data or dict()
+        if lecture.get('user', None) and lecture['user'] != student.userName:
+            raise Unauthorized('Quiz for user ' + lecture['user'])
 
         # Build lecture dict
         (questions, removedQuestions) = self.getQuestionAllocation(

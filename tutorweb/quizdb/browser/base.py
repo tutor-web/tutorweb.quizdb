@@ -17,13 +17,22 @@ from tutorweb.quizdb import db
 
 
 class JSONBrowserView(BrowserView):
-    def asDict(self):
+    def asDict(self, data):
         """Return dict to be turned into JSON"""
         raise NotImplementedError
 
     def __call__(self):
         try:
-            out = self.asDict()
+            # Is there a request body?
+            if self.request.get_header('content_length') > 0:
+                # NB: Should be checking self.request.getHeader('Content-Type') ==
+                # 'application/json' but zope.testbrowser cannae do that.
+                self.request.stdin.seek(0)
+                data = json.loads(self.request.stdin.read())
+            else:
+                data = None
+
+            out = self.asDict(data)
             self.request.response.setStatus(200)
             self.request.response.setHeader("Content-type", "application/json")
             return json.dumps(out)

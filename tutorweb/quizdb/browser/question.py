@@ -138,7 +138,7 @@ class GetQuestionView(QuestionView):
             self.context,
         )
 
-    def asDict(self):
+    def asDict(self, data):
         if self.questionId is None:
             raise NotFound(self, None, self.request)
 
@@ -170,7 +170,7 @@ class GetQuestionView(QuestionView):
 
 class GetLectureQuestionsView(QuestionView):
     """Fetch all questions for a lecture"""
-    def asDict(self):
+    def asDict(self, data):
         student = self.getCurrentStudent()
 
         # Get all questions from DB and their allocations

@@ -43,7 +43,7 @@ class StudentUpdateViewTest(IntegrationTestCase):
         mtool.getMemberById(USER_C_ID).setMemberProperties(dict(
             email='catherine@example.com',
         ))
-        update = portal.restrictedTraverse('quizdb-student-update').asDict()
+        update = portal.restrictedTraverse('quizdb-student-update').asDict(None)
         self.assertEqual(update['success'], True)
 
         # Email addresses have already changed, apart from B who wasn't there

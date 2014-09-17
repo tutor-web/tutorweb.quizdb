@@ -11,7 +11,7 @@ from .base import JSONBrowserView
 class ReviewUgQnView(JSONBrowserView):
     """Look back on your questions"""
 
-    def asDict(self):
+    def asDict(self, data):
         student = self.getCurrentStudent()
 
         # Get all answers for our questions, index by ID.
