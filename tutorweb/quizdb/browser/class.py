@@ -59,14 +59,14 @@ class StudentResultsView(BrowserView):
             .all())
 
         # First convert to deep dict: user -> lecture -> results
-        asDict = defaultdict(lambda: defaultdict(lambda: '-'))
+        toDict = defaultdict(lambda: defaultdict(lambda: '-'))
         for t in dbTotals:
-            asDict[t[1]][t[2]] = t[0].grade
+            toDict[t[1]][t[2]] = t[0].grade
 
         # Next, rearrange into a convenient table
         return [dict(
             username=student,
-            grades=[asDict[student][l] for l in lecturePaths],
+            grades=[toDict[student][l] for l in lecturePaths],
         ) for student in self.context.students]
 
 
