@@ -28,14 +28,32 @@ INTEGER_SETTINGS = ['grade_s']  # Randomly-chosen questions that should result i
 
 class SyncTutorialView(JSONBrowserView):
     def asDict(self, data):
-        listing = self.context.restrictedTraverse('@@folderListing')(
-            portal_type='tw_lecture',
-            sort_on='id',
+        # If there's a incoming tutorial, break up lectures so each can be updated
+        tutorial = data or dict()
+        lectureDict = dict(
+            (l['uri'].replace(self.context.absolute_url() + '/', ''), l)
+            for l
+            in tutorial.get('lectures', [])
         )
+
+        # Fetch a list of all lectures
+        lectureUrls = (
+            l.id + '/quizdb-sync'
+            for l
+            in self.context.restrictedTraverse('@@folderListing')(
+                portal_type='tw_lecture',
+                sort_on='id',
+            )
+        )
+
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             title=self.context.title,
-            lectures=[self.context.restrictedTraverse(l.id + '/quizdb-sync').asDict(None) for l in listing],
+            lectures=[
+                self.context.restrictedTraverse(url).asDict(lectureDict.get(url, None))
+                for url
+                in lectureUrls
+            ],
         )
 
 

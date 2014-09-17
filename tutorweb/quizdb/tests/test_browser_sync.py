@@ -574,6 +574,65 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(len(bAlloc['answerQueue']), 1)
         self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
 
+    def test_answerQueueTutorial(self):
+        """Make sure answerQueues for entire tutorials get synced"""
+        # Allocate tutorial to user A
+        tutAlloc = self.getJson('http://nohost/plone/dept1/tut1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(len(tutAlloc['lectures']), 2)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in tutAlloc['lectures'][0]['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in tutAlloc['lectures'][1]['questions']]),
+            [u'Unittest D1 T1 L2 Q1', u'Unittest D1 T1 L2 Q2'],
+        )
+
+        #TODO: Create lecture here, to confuse it.
+
+        # Write answers back to both lectures simultaneously
+        tutAlloc = self.getJson('http://nohost/plone/dept1/tut1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            lectures=[
+                dict(uri=tutAlloc['lectures'][0]['uri'], answerQueue=[
+                    dict(
+                        synced=False,
+                        uri=tutAlloc['lectures'][0]['questions'][0]['uri'],
+                        student_answer=0,
+                        correct='wibble',
+                        quiz_time=1379900000,
+                        answer_time=1379900010,
+                        grade_after=0.1,
+                    ),
+                ]),
+                dict(uri=tutAlloc['lectures'][1]['uri'], answerQueue=[
+                    dict(
+                        synced=False,
+                        uri=tutAlloc['lectures'][1]['questions'][0]['uri'],
+                        student_answer=0,
+                        correct='wibble',
+                        quiz_time=1373300020,
+                        answer_time=1373300030,
+                        grade_after=0.1,
+                    ),
+                ]),
+            ],
+        ))
+        self.assertEquals(
+            [a['answer_time'] for a in tutAlloc['lectures'][0]['answerQueue']],
+            [1379900010],
+        )
+        self.assertEquals(
+            [a['answer_time'] for a in tutAlloc['lectures'][1]['answerQueue']],
+            [1373300030],
+        )
+
+        # Will see results when syncing just one lecture too
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict())
+        self.assertEquals(
+            [a['answer_time'] for a in aAlloc['answerQueue']],
+            [1379900010],
+        )
+
     def test_answerQueueUgQuestions(self):
         """User generated questions are stored too"""
         def createQuestionTemplates(obj, count):
