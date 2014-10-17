@@ -444,7 +444,7 @@ class SyncLectureView(JSONBrowserView):
         # Check we're the right user, given the data
         lecture = data or dict()
         if lecture.get('user', None) and lecture['user'] != student.userName:
-            raise Unauthorized('Quiz for user ' + lecture['user'])
+            raise Unauthorized('This drill is for user ' + lecture['user'])
 
         # Build lecture dict
         (questions, removedQuestions) = self.getQuestionAllocation(

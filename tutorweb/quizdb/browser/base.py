@@ -74,7 +74,7 @@ class JSONBrowserView(BrowserView):
         """Try fetching the current student, create if they don't exist"""
         membership = self.context.portal_membership
         if membership.isAnonymousUser():
-            raise Unauthorized
+            raise Unauthorized('You are not logged in')
         mb = membership.getAuthenticatedMember()
         if not mb.getProperty('accept', False):
             raise Redirect, getToolByName(self.context, "portal_url")() + \
