@@ -150,12 +150,12 @@ class SyncLectureView(JSONBrowserView):
             dbAnsSummary.lecCorrect,
             dbAnsSummary.practiceAnswered,
             dbAnsSummary.practiceCorrect,
-        ) = Session.query(
+        ) = (int(x) for x in Session.query(
             func.count(),
             func.ifnull(func.sum(db.Answer.correct), 0),
             func.ifnull(func.sum(db.Answer.practice), 0),
             func.ifnull(func.sum(expression.case([(db.Answer.practice & db.Answer.correct, 1)], else_=0)), 0),
-        ).filter(db.Answer.lectureId == self.getLectureId()).filter(db.Answer.studentId == student.studentId).one()
+        ).filter(db.Answer.lectureId == self.getLectureId()).filter(db.Answer.studentId == student.studentId).one())
         return dbAnsSummary
 
     def getCoinAward(self, student, dbAnsSummary, a, settings):
