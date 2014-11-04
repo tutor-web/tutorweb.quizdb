@@ -10,6 +10,7 @@ import time
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql import expression
 
 from AccessControl import Unauthorized
 from zope.publisher.interfaces import NotFound
@@ -130,7 +131,7 @@ class SyncLectureView(JSONBrowserView):
     def getAnswerSummary(self, student):
         """Fetch answerSummary row for student"""
         try:
-            return (Session.query(db.AnswerSummary)
+            dbAnsSummary = (Session.query(db.AnswerSummary)
                 .with_lockmode('update')
                 .filter(db.AnswerSummary.lectureId == self.getLectureId())
                 .filter(db.AnswerSummary.studentId == student.studentId)
@@ -139,13 +140,23 @@ class SyncLectureView(JSONBrowserView):
             dbAnsSummary = db.AnswerSummary(
                 lectureId=self.getLectureId(),
                 studentId=student.studentId,
+                grade=0,
             )
             Session.add(dbAnsSummary)
-            dbAnsSummary.lecAnswered = 0
-            dbAnsSummary.lecCorrect = 0
-            dbAnsSummary.practiceAnswered = 0
-            dbAnsSummary.practiceCorrect = 0
-            return dbAnsSummary
+
+        # Update based on answer table
+        (
+            dbAnsSummary.lecAnswered,
+            dbAnsSummary.lecCorrect,
+            dbAnsSummary.practiceAnswered,
+            dbAnsSummary.practiceCorrect,
+        ) = Session.query(
+            func.count(),
+            func.ifnull(func.sum(db.Answer.correct), 0),
+            func.ifnull(func.sum(db.Answer.practice), 0),
+            func.ifnull(func.sum(expression.case([(db.Answer.practice & db.Answer.correct, 1)], else_=0)), 0),
+        ).filter(db.Answer.lectureId == self.getLectureId()).filter(db.Answer.studentId == student.studentId).one()
+        return dbAnsSummary
 
     def getCoinAward(self, student, dbAnsSummary, a, settings):
         """How many coins does this earn a student?"""
@@ -318,7 +329,7 @@ class SyncLectureView(JSONBrowserView):
             .filter(db.Answer.lectureId == self.getLectureId())
             .filter(db.Answer.studentId == student.studentId)
             .filter(db.Answer.practice == False)
-            .order_by(db.Answer.answerId.desc())
+            .order_by(db.Answer.timeEnd.desc())
             .all())
         out = [dict(  # NB: Not fully recreating what JS creates, but shouldn't be a problem
             correct=dbAns.correct,

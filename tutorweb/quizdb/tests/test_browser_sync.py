@@ -1,3 +1,4 @@
+import random
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -711,7 +712,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     ),
                     correct=True,
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000040,
                     grade_after=0.1,
                 ),
             ],
@@ -858,6 +859,96 @@ class SyncViewFunctional(FunctionalTestCase):
             dict(totalAwarded=122, lastUpdate=u'2013-08-20T13:28:00'),
         )
 
+    def test_answerQueueSummary(self):
+        """Make sure answerQueueSummary stays up to date"""
+        def answer(alloc, time, correct, grade, practice=False):
+            qn = random.sample(aAlloc['questions'], 1)[0]
+            title = self.getJson(qn['uri'])['title']
+
+            if title == u'Unittest D1 T1 L1 Q1':
+                answer = 1 if correct else 0
+            elif title == u'Unittest D1 T1 L1 Q2':
+                answer = 2 if correct else 1
+            else:
+                raise ValueError("Unknown Question " + title)
+
+            return dict(
+                synced=False,
+                uri=qn['uri'],
+                student_answer=answer,
+                correct=correct,
+                quiz_time=time - 5,
+                answer_time=time,
+                grade_after=grade,
+                practice=practice,
+            )
+
+        # Allocate lecture to user A
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+        ))
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
+        )
+
+        # Write some answers back, stats were filled in on the last item
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                answer(aAlloc, 1379900100, True,  0.1),
+                answer(aAlloc, 1379900200, True,  0.2),
+                answer(aAlloc, 1379900300, True,  0.13, practice=True),
+                answer(aAlloc, 1379900400, False, 0.15),
+            ],
+        ))
+        self.assertEqual(
+            [a['answer_time'] for a in aAlloc['answerQueue']],
+            [1379900100, 1379900200, 1379900400],  # NB: No practice questions in answerQueue
+        )
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 4)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 3)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 1)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 1)
+        self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.15)
+
+        # Insert answers that predate current work. Should get valid stats
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                answer(aAlloc, 1379900110, True,  0.11),
+                answer(aAlloc, 1379900120, False, 0.12),
+                answer(aAlloc, 1379900130, False, 0.12, practice=True),
+            ],
+        ))
+        self.assertEqual(
+            [a['answer_time'] for a in aAlloc['answerQueue']],
+            [1379900100, 1379900110, 1379900120, 1379900200, 1379900400],
+        )
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 7)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 4)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 2)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 1)
+        self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.15)
+
+        # Destroy answerSummary
+        from tutorweb.quizdb import ORMBase
+        from z3c.saconfig import Session
+        Session().execute("DROP TABLE answerSummary")
+        ORMBase.metadata.create_all(Session().bind)
+
+        # answerSummary row was recreated
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                answer(aAlloc, 1379900510, True,  0.41),
+            ],
+        ))
+        self.assertEqual(
+            [a['answer_time'] for a in aAlloc['answerQueue']],
+            [1379900100, 1379900110, 1379900120, 1379900200, 1379900400, 1379900510],
+        )
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 8)
+        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 5)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 2)
+        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 1)
+        self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.41)
 
     def test_practiceMode(self):
         """Practice mod answers are recorded, but not returned"""
