@@ -76,17 +76,27 @@ class QuestionView(JSONBrowserView):
         if not out and dbQn.qnType == 'tw_questiontemplate':
             student = self.getCurrentStudent()
 
-            # Fetch value of prob_template_eval setting
-            try:
-                tmplEval = float(Session.query(db.LectureSetting)
-                        .filter(db.LectureSetting.lectureId == dbQn.lectureId)
-                        .filter(db.LectureSetting.studentId == student.studentId)
-                        .filter(db.LectureSetting.key == 'prob_template_eval')
-                        .one().value)
-            except NoResultFound:
-                tmplEval = 0.8
+            # Fetch value of required settings
+            settings = dict(
+                prob_template_eval=0.8,
+                cap_template_qns=0,
+            )
+            for row in (Session.query(db.LectureSetting)
+                    .filter(db.LectureSetting.lectureId == dbQn.lectureId)
+                    .filter(db.LectureSetting.studentId == student.studentId)
+                    .filter(db.LectureSetting.key.in_(settings.keys()))):
+                settings[row.key] = float(row.value)
 
-            if random.random() <= tmplEval:
+            # Has the user answered enough questions aready?
+            if settings['cap_template_qns'] > 0:
+                hadFill = (Session.query(db.UserGeneratedQuestion)
+                    .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
+                    .filter(db.UserGeneratedQuestion.studentId == student.studentId)
+                    .count()) >= settings['cap_template_qns']
+            else:
+                hadFill = False
+
+            if hadFill or (random.random() <= settings['prob_template_eval']):
                 # Try and find a user-generated question that student hasn't answered before
                 ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer)
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
@@ -101,6 +111,9 @@ class QuestionView(JSONBrowserView):
                 if ugQn is not None:
                     # Found one, should return it
                     out = self.ugQuestionToJson(ugQn)
+                elif hadFill:
+                    # Don't fall back to writing questions
+                    raise ValueError("User has written %d questions already" % settings['cap_template_qns'])
 
         # No custom techniques, fetch question @@data
         if not out:

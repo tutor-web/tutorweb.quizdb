@@ -106,6 +106,7 @@ class GetQuestionViewTest(FunctionalTestCase):
             settings=[
                 dict(key='question_cap', value='5'),
                 dict(key='prob_template_eval', value='0.8'),
+                dict(key='cap_template_qns', value='3'),
             ],
         )
         portal['dept1']['tmpltut'].invokeFactory(
@@ -209,6 +210,56 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
+        qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
+        self.assertTrue(qns.keys(), ['template'])
+
+        # Keep on answering, will eventually hit cap
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=dict(
+                        text=u"Here's to us!",
+                        choices=[
+                            dict(answer="Course you do", correct=True),
+                            dict(answer="No thanks", correct=False),
+                        ],
+                        explanation=u'So you can get the keys',
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+        self.assertTrue(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys(), ['template'])
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aAlloc['questions'][0]['uri'],
+                    student_answer=dict(
+                        text=u"Damn Few!",
+                        choices=[
+                            dict(answer="Course you do", correct=True),
+                            dict(answer="No thanks", correct=False),
+                        ],
+                        explanation=u'So you can get the keys',
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+        self.assertTrue(
+            self.getJson(aAlloc['questions'][0]['uri'], user=USER_A_ID, expectedStatus=500),
+            u'User has written 3 questions already')
+
+        # B is still going
         qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
         self.assertTrue(qns.keys(), ['template'])
 
