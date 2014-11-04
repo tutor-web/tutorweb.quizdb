@@ -92,7 +92,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
             msg="Status %s didn't match %s: %s" % (
                 browser.headers['Status'][0:3],
                 str(expectedStatus),
-                browser.contents,
+                json.loads(browser.contents),
             )
         )
         return json.loads(browser.contents)

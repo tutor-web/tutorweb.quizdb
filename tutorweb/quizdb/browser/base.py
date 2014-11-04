@@ -2,6 +2,7 @@ import json
 import logging
 
 from AccessControl import Unauthorized
+from Globals import DevelopmentMode
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
 from zExceptions import Redirect
@@ -59,7 +60,8 @@ class JSONBrowserView(BrowserView):
                 message=str(ex),
             ))
         except Exception, ex:
-            # import traceback
+            if DevelopmentMode:
+                import traceback
             logging.error("Failed call: " + self.request['URL'])
             logging.exception(ex)
             self.request.response.setStatus(500)
@@ -67,7 +69,7 @@ class JSONBrowserView(BrowserView):
             return json.dumps(dict(
                 error=ex.__class__.__name__,
                 message=str(ex),
-                # stacktrace=traceback.format_exc(),
+                stacktrace=traceback.format_exc() if DevelopmentMode else '',
             ))
 
     def getCurrentStudent(self):
