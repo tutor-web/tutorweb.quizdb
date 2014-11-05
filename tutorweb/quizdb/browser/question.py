@@ -7,6 +7,7 @@ from AccessControl import getSecurityManager
 from zope.interface import implements
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from z3c.saconfig import Session
+from zExceptions import BadRequest
 
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import aliased
@@ -113,7 +114,7 @@ class QuestionView(JSONBrowserView):
                     out = self.ugQuestionToJson(ugQn)
                 elif hadFill:
                     # Don't fall back to writing questions
-                    raise ValueError("User has written %d questions already" % settings['cap_template_qns'])
+                    raise BadRequest("User has written %d questions already" % settings['cap_template_qns'])
 
         # No custom techniques, fetch question @@data
         if not out:

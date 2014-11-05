@@ -5,7 +5,7 @@ from AccessControl import Unauthorized
 from Globals import DevelopmentMode
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
-from zExceptions import Redirect
+from zExceptions import Redirect, BadRequest
 
 from plone.memoize import view
 
@@ -54,6 +54,13 @@ class JSONBrowserView(BrowserView):
             ))
         except NotFound, ex:
             self.request.response.setStatus(404)
+            self.request.response.setHeader("Content-type", "application/json")
+            return json.dumps(dict(
+                error=ex.__class__.__name__,
+                message=str(ex),
+            ))
+        except BadRequest, ex:
+            self.request.response.setStatus(400)
             self.request.response.setHeader("Content-type", "application/json")
             return json.dumps(dict(
                 error=ex.__class__.__name__,

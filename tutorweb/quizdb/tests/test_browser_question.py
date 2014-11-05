@@ -256,7 +256,7 @@ class GetQuestionViewTest(FunctionalTestCase):
             ],
         ))
         self.assertTrue(
-            self.getJson(aAlloc['questions'][0]['uri'], user=USER_A_ID, expectedStatus=500),
+            self.getJson(aAlloc['questions'][0]['uri'], user=USER_A_ID, expectedStatus=400),
             u'User has written 3 questions already')
 
         # B is still going
