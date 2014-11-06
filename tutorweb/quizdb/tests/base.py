@@ -86,17 +86,20 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         browser = self.getBrowser(None, user=user)
         browser.handleErrors = False
         browser.raiseHttpErrors = False
+        if isinstance(expectedStatus, list):
+            expectedStatuses = [str(x) for x in expectedStatus]
+        else:
+            expectedStatuses = [str(expectedStatus)]
         if body:
             browser.post(path, json.dumps(body))
         else:
             browser.open(path)
         self.assertEqual(browser.headers['content-type'], 'application/json')
-        self.assertEqual(
-            browser.headers['Status'][0:3],
-            str(expectedStatus),
+        self.assertTrue(
+            browser.headers['Status'][0:3] in expectedStatuses,
             msg="Status %s didn't match %s: %s" % (
                 browser.headers['Status'][0:3],
-                str(expectedStatus),
+                "/".join(expectedStatuses),
                 json.loads(browser.contents),
             )
         )
