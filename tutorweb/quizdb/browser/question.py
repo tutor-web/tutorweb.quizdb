@@ -80,8 +80,8 @@ class QuestionView(JSONBrowserView):
             # Fetch value of required settings
             settings = dict(
                 prob_template_eval=0.8,
-                cap_template_qns=0,
-                cap_template_qn_reviews=5,
+                cap_template_qns=5,
+                cap_template_qn_reviews=10,
             )
             for row in (Session.query(db.LectureSetting)
                     .filter(db.LectureSetting.lectureId == dbQn.lectureId)
