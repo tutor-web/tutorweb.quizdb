@@ -6,7 +6,7 @@ import transaction
 from plone.app.testing import login
 
 from .base import FunctionalTestCase
-from .base import USER_A_ID, USER_B_ID, MANAGER_ID
+from .base import USER_A_ID, USER_B_ID, USER_C_ID, USER_D_ID, MANAGER_ID
 
 
 class GetQuestionViewTest(FunctionalTestCase):
@@ -107,6 +107,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                 dict(key='question_cap', value='5'),
                 dict(key='prob_template_eval', value='0.8'),
                 dict(key='cap_template_qns', value='3'),
+                dict(key='cap_template_qn_reviews', value='2'),
             ],
         )
         portal['dept1']['tmpltut'].invokeFactory(
@@ -180,6 +181,12 @@ class GetQuestionViewTest(FunctionalTestCase):
         self.assertTrue('So you can get the keys' in answer['explanation'])
         self.assertEqual(answer['correct'], [0])
 
+        # So might user C & D
+        cAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_C_ID)
+        self.assertTrue(qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID).keys(), ['template', 'usergenerated'])
+        dAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_D_ID)
+        self.assertTrue(qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID).keys(), ['template', 'usergenerated'])
+
         # The URI generated has the question_id appended to the end
         self.assertEqual(
             qns['usergenerated'][0]['uri'],
@@ -199,6 +206,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                     synced=False,
                     uri=bAlloc['questions'][0]['uri'],
                     question_type='usergenerated',
+                    question_id=self.getJson(bAlloc['questions'][0]['uri'], user=USER_B_ID)['question_id'],
                     selected_answer=1,
                     student_answer=dict(
                         rating=75,
@@ -213,7 +221,7 @@ class GetQuestionViewTest(FunctionalTestCase):
         qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
         self.assertTrue(qns.keys(), ['template'])
 
-        # Keep on answering, will eventually hit cap
+        # Keep on writing questions, will eventually hit cap
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
@@ -259,9 +267,58 @@ class GetQuestionViewTest(FunctionalTestCase):
             self.getJson(aAlloc['questions'][0]['uri'], user=USER_A_ID, expectedStatus=400),
             u'User has written 3 questions already')
 
-        # B is still going
-        qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
-        self.assertTrue(qns.keys(), ['template'])
+        # B, C & D are still going
+        self.assertEqual(set(qn['text'] for qn in qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few!</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            # NB: Already answered first question
+        ]))
+        self.assertEqual(set(qn['text'] for qn in qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID, loops=40)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few!</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            u'<div class="parse-as-tex">Want some rye?</div>',
+        ]))
+        self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID, loops=40)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few!</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            u'<div class="parse-as-tex">Want some rye?</div>',
+        ]))
+
+        # If C answers first question too, then nobody gets to take it.
+        qn = [qn for qn in qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID)['usergenerated'] if 'rye?' in qn['text']][0]
+        cAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_C_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=qn['uri'],
+                    question_type='usergenerated',
+                    question_id=qn['question_id'],
+                    selected_answer=1,
+                    student_answer=dict(
+                        rating=0,
+                        comments="Really easy",
+                    ),
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+        self.assertEqual(set(qn['text'] for qn in qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few!</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            # NB: Already answered first question
+        ]))
+        self.assertEqual(set(qn['text'] for qn in qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few!</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            # NB: Already answered first question
+        ]))
+        self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few!</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            # NB: Haven't answered first, but hit review cap
+        ]))
 
 class GetLectureQuestionsViewTest(FunctionalTestCase):
     maxDiff = None

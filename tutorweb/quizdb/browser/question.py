@@ -81,6 +81,7 @@ class QuestionView(JSONBrowserView):
             settings = dict(
                 prob_template_eval=0.8,
                 cap_template_qns=0,
+                cap_template_qn_reviews=5,
             )
             for row in (Session.query(db.LectureSetting)
                     .filter(db.LectureSetting.lectureId == dbQn.lectureId)
@@ -99,12 +100,15 @@ class QuestionView(JSONBrowserView):
 
             if hadFill or (random.random() <= settings['prob_template_eval']):
                 # Try and find a user-generated question that student hasn't answered before
-                ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer)
+                ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer.ugQuestionId)
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
-                    ).subquery())
+                ).union(Session.query(db.UserGeneratedAnswer.ugQuestionId)
+                    .group_by(db.UserGeneratedAnswer.ugQuestionId)
+                    .having(func.count(db.UserGeneratedAnswer.ugAnswerId) >= settings['cap_template_qn_reviews'])).subquery())
+
                 ugQn = (Session.query(db.UserGeneratedQuestion)
                     .outerjoin(ugAnswerQuery)
-                    .filter(ugAnswerQuery.ugAnswerId == None)
+                    .filter(ugAnswerQuery.ugQuestionId == None)
                     .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                     .filter(db.UserGeneratedQuestion.studentId != student.studentId)
                     .order_by(func.random())

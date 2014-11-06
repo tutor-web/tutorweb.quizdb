@@ -13,6 +13,7 @@ from tutorweb.content.tests.base import (
     USER_A_ID,
     USER_B_ID,
     USER_C_ID,
+    USER_D_ID,
     MANAGER_ID,
 )
 from tutorweb.content.tests.base import TestFixture as ContentTestFixture
