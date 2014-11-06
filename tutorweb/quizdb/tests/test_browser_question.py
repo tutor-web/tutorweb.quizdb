@@ -72,7 +72,7 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # Get qb1, q2, qntmp
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertTrue(len(aAlloc['questions']), 3)
+        self.assertEqual(len(aAlloc['questions']), 3)
         qntmp = [
             qn['uri'] for qn
             in aAlloc['questions']
@@ -88,7 +88,7 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # Sync again, only get q1 & q2
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertTrue(len(aAlloc['questions']), 2)
+        self.assertEqual(len(aAlloc['questions']), 2)
 
         # Still can't fetch qntmp no more
         self.getJson(qntmp, expectedStatus=404, user=USER_A_ID)
@@ -163,12 +163,12 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # User A still only gets to write questions
         qns = qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID)
-        self.assertTrue(qns.keys(), ['template'])
+        self.assertEqual(set(qns.keys()), set(['template']))
 
         # User B might get to answer that question though
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
         qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
-        self.assertTrue(qns.keys(), ['template', 'usergenerated'])
+        self.assertEqual(set(qns.keys()), set(['template', 'usergenerated']))
         self.assertTrue('Want some rye?' in qns['usergenerated'][0]['text'])
         self.assertTrue('Course you do' in qns['usergenerated'][0]['choices'][0])
         self.assertTrue('No thanks' in qns['usergenerated'][0]['choices'][1])
@@ -183,9 +183,9 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # So might user C & D
         cAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_C_ID)
-        self.assertTrue(qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID).keys(), ['template', 'usergenerated'])
+        self.assertEqual(set(qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID).keys()), set(['template', 'usergenerated']))
         dAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_D_ID)
-        self.assertTrue(qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID).keys(), ['template', 'usergenerated'])
+        self.assertEqual(set(qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID).keys()), set(['template', 'usergenerated']))
 
         # The URI generated has the question_id appended to the end
         self.assertEqual(
@@ -204,9 +204,9 @@ class GetQuestionViewTest(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=bAlloc['questions'][0]['uri'],
+                    uri=qns['usergenerated'][0]['uri'],
                     question_type='usergenerated',
-                    question_id=self.getJson(bAlloc['questions'][0]['uri'], user=USER_B_ID)['question_id'],
+                    question_id=self.getJson(qns['usergenerated'][0]['uri'], user=USER_B_ID)['question_id'],
                     selected_answer=1,
                     student_answer=dict(
                         rating=75,
@@ -219,7 +219,7 @@ class GetQuestionViewTest(FunctionalTestCase):
             ],
         ))
         qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
-        self.assertTrue(qns.keys(), ['template'])
+        self.assertEqual(set(qns.keys()), set(['template']))
 
         # Keep on writing questions, will eventually hit cap
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
@@ -242,7 +242,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
-        self.assertTrue(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys(), ['template'])
+        self.assertEqual(set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()), set(['template']))
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
@@ -263,9 +263,9 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
-        self.assertTrue(
+        self.assertEqual(
             self.getJson(aAlloc['questions'][0]['uri'], user=USER_A_ID, expectedStatus=400),
-            u'User has written 3 questions already')
+            {u'message': u'User has written 3 questions already', u'error': u'BadRequest'})
 
         # B, C & D are still going
         self.assertEqual(set(qn['text'] for qn in qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)['usergenerated']), set([

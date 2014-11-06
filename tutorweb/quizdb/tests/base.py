@@ -73,6 +73,10 @@ class IntegrationTestCase(TestCase):
         Session().execute("DROP TABLE userGeneratedAnswer")
         ORMBase.metadata.create_all(Session().bind)
 
+    def assertTrue(self, expr, thing=None, msg=None):
+        if thing is not None:
+            raise ValueError("Did you really mean to use assertTrue?")
+        return TestCase.assertTrue(self, expr, msg=msg)
 
 class FunctionalTestCase(ContentFunctionalTestCase):
     layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
@@ -120,3 +124,8 @@ class FunctionalTestCase(ContentFunctionalTestCase):
             if i not in corrAns:
                 return i
         raise ValueError("No incorrect answer");
+
+    def assertTrue(self, expr, thing=None, msg=None):
+        if thing is not None:
+            raise ValueError("Did you really mean to use assertTrue?")
+        return TestCase.assertTrue(self, expr, msg=msg)
