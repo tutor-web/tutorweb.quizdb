@@ -56,6 +56,22 @@ class ReviewUgQnViewTest(FunctionalTestCase):
             self.createdTmplQns = count
             import transaction ; transaction.commit()
 
+        # Repeatedly ask for a question until it matches the returned dict
+        def searchForQn(uri, match, user=USER_A_ID, emptyOkay=False, loops=50):
+            def isMatch(qn, match):
+                for k in match.keys():
+                    if (k not in qn) or qn[k] != match[k]:
+                        return False
+                return True
+
+            for i in range(loops):
+                qn = self.getJson(uri, user=user, expectedStatus=[200, 400])
+                if isMatch(qn, match):
+                    return qn
+            if emptyOkay:
+                return None
+            raise ValueError("Could not get a question with %s " % str(match))
+
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
 
@@ -66,7 +82,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
             title=u"Tutorial with a question cap of 5",
             settings=[
                 dict(key='question_cap', value='5'),
-                dict(key='prob_template_eval', value='1'),
+                dict(key='prob_template_eval', value='0.5'),
             ],
         )
         portal['dept1']['tmpltut'].invokeFactory(
@@ -79,8 +95,8 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest tmpllec tmplQ%d' % i for i in range(0,5)],
+            sorted(searchForQn(qn['uri'], {"_type" : "template"}, user=USER_A_ID)['title'] for qn in aAlloc['questions']),
+            sorted(u'Unittest tmpllec tmplQ%d' % i for i in range(0,5)),
         )
 
         # Write some answers back
@@ -154,11 +170,14 @@ class ReviewUgQnViewTest(FunctionalTestCase):
 
         # Allocate to user B, filter out templates
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
-        bUgQns = [x for x in [self.getJson(qn['uri'], user=USER_B_ID) for qn in bAlloc['questions']] if x['_type'] == u'usergenerated']
-        self.assertEqual(len(bUgQns), 2)
+        bUgQns = [searchForQn(qn['uri'], {"_type" : "usergenerated"}, user=USER_B_ID, emptyOkay=True) for qn in bAlloc['questions']]
+        bUgQns = [x for x in bUgQns if x is not None]
         if 'Want some rye' in bUgQns[1]['text']:
             # We need them to be in the right order for test to work
             bUgQns.reverse()
+        self.assertEqual(len(bUgQns), 2)
+        self.assertTrue('Want some rye?' in bUgQns[0]['text'])
+        self.assertTrue('like us?' in bUgQns[1]['text'])
 
         # Answer user generated questions
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID, body=dict(
@@ -197,7 +216,8 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         ))
 
         # B has no more to answer
-        bUgQns = [x for x in [self.getJson(qn['uri'], user=USER_B_ID) for qn in bAlloc['questions']] if x['_type'] == u'usergenerated']
+        bUgQns = [searchForQn(qn['uri'], {"_type" : "usergenerated"}, user=USER_B_ID, emptyOkay=True) for qn in bAlloc['questions']]
+        bUgQns = [x for x in bUgQns if x is not None]
         self.assertEqual(len(bUgQns), 0)
 
         # B's answer now appears in A's review

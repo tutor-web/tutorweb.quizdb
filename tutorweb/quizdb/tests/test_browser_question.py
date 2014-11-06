@@ -98,6 +98,31 @@ class GetQuestionViewTest(FunctionalTestCase):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
 
+        # Repeatedly ask for a question until it matches the returned dict
+        def searchForQn(uri, match, user=USER_A_ID, loops=50):
+            def isMatch(qn, match):
+                for k in match.keys():
+                    if (k not in qn) or qn[k] != match[k]:
+                        return False
+                return True
+
+            for i in range(loops):
+                qn = self.getJson(uri, user=user, expectedStatus=[200, 400])
+                if isMatch(qn, match):
+                    return qn
+            raise ValueError("Could not get a question with %s " % str(match))
+
+        # Get a bunch of questions
+        def qnsByType(uri, user=USER_A_ID, loops=20):
+            out = {}
+            for i in range(loops):
+                qn = self.getJson(uri, user=user, expectedStatus=[200, 400])
+                key = qn.get('_type', qn.get('error', 'other'))
+                if key not in out:
+                    out[key] = []
+                out[key].append(qn)
+            return out
+
         # Create a lecture with one question template
         portal['dept1'].invokeFactory(
             type_name="tw_tutorial",
@@ -124,10 +149,7 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # User A should get assigned the template question
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
-        self.assertEquals(
-            [self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']],
-            [u'Unittest tmpllec tmplQ0'],
-        )
+        qn = searchForQn(aAlloc['questions'][0]['uri'], {"title": u'Unittest tmpllec tmplQ0'}, user=USER_A_ID)
 
         # Write a question back
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
@@ -151,52 +173,39 @@ class GetQuestionViewTest(FunctionalTestCase):
             ],
         ))
 
-        # Helper to order questions by type
-        def qnsByType(uri, user=USER_A_ID, loops=20):
-            out = {}
-            for i in range(loops):
-                qn = self.getJson(uri, user=user)
-                if qn['_type'] not in out:
-                    out[qn['_type']] = []
-                out[qn['_type']].append(qn)
-            return out
-
-        # User A still only gets to write questions
-        qns = qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID)
-        self.assertEqual(set(qns.keys()), set(['template']))
+        # User A still only gets to write questions (NB: BadRequest is "nothing to review")
+        self.assertEqual(
+            set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()),
+            set(['template', 'BadRequest'])
+        )
 
         # User B might get to answer that question though
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
-        qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
-        self.assertEqual(set(qns.keys()), set(['template', 'usergenerated']))
-        self.assertTrue('Want some rye?' in qns['usergenerated'][0]['text'])
-        self.assertTrue('Course you do' in qns['usergenerated'][0]['choices'][0])
-        self.assertTrue('No thanks' in qns['usergenerated'][0]['choices'][1])
-        self.assertEqual(
-            qns['usergenerated'][0]['question_id'],
-            aAlloc['answerQueue'][0]['student_answer'],
-        )
-        self.assertEqual(qns['usergenerated'][0]['shuffle'], [0, 1])
-        answer = json.loads(base64.b64decode(qns['usergenerated'][0]['answer']))
+        qn = searchForQn(bAlloc['questions'][0]['uri'], {'_type': 'template'},  user=USER_B_ID)
+        qn = searchForQn(bAlloc['questions'][0]['uri'], {'_type': 'usergenerated'},  user=USER_B_ID)
+        self.assertTrue('Want some rye?' in qn['text'])
+        self.assertTrue('Course you do' in qn['choices'][0])
+        self.assertTrue('No thanks' in qn['choices'][1])
+        self.assertEqual(qn['question_id'], aAlloc['answerQueue'][0]['student_answer'])
+        self.assertEqual(qn['shuffle'], [0, 1])
+        answer = json.loads(base64.b64decode(qn['answer']))
         self.assertTrue('So you can get the keys' in answer['explanation'])
         self.assertEqual(answer['correct'], [0])
 
         # So might user C & D
         cAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_C_ID)
-        self.assertEqual(set(qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID).keys()), set(['template', 'usergenerated']))
+        qn = searchForQn(cAlloc['questions'][0]['uri'], {'_type': 'template'},  user=USER_C_ID)
+        qn = searchForQn(cAlloc['questions'][0]['uri'], {'_type': 'usergenerated'},  user=USER_C_ID)
         dAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_D_ID)
-        self.assertEqual(set(qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID).keys()), set(['template', 'usergenerated']))
+        qn = searchForQn(dAlloc['questions'][0]['uri'], {'_type': 'template'},  user=USER_D_ID)
+        qn = searchForQn(dAlloc['questions'][0]['uri'], {'_type': 'usergenerated'},  user=USER_D_ID)
 
-        # The URI generated has the question_id appended to the end
+        # The URI generated has the question_id appended to the end & can fetch directly
+        qn = searchForQn(bAlloc['questions'][0]['uri'], {'_type': 'usergenerated'},  user=USER_B_ID)
+        self.assertEqual(qn['uri'], '%s?question_id=%d' % (bAlloc['questions'][0]['uri'], qn['question_id']))
         self.assertEqual(
-            qns['usergenerated'][0]['uri'],
-            '%s?question_id=%d' % (bAlloc['questions'][0]['uri'], qns['usergenerated'][0]['question_id']),
-        )
-
-        # Can fetch it directly using this URL
-        self.assertEqual(
-            self.getJson(qns['usergenerated'][0]['uri'], user=USER_B_ID),
-            qns['usergenerated'][0],
+            self.getJson(qn['uri'], user=USER_B_ID),
+            qn,
         )
 
         # If B answers it, doesn't get to answer it again
@@ -204,9 +213,9 @@ class GetQuestionViewTest(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=qns['usergenerated'][0]['uri'],
+                    uri=qn['uri'],
                     question_type='usergenerated',
-                    question_id=self.getJson(qns['usergenerated'][0]['uri'], user=USER_B_ID)['question_id'],
+                    question_id=self.getJson(qn['uri'], user=USER_B_ID)['question_id'],
                     selected_answer=1,
                     student_answer=dict(
                         rating=75,
@@ -219,7 +228,7 @@ class GetQuestionViewTest(FunctionalTestCase):
             ],
         ))
         qns = qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)
-        self.assertEqual(set(qns.keys()), set(['template']))
+        self.assertEqual(set(qns.keys()), set(['template', 'BadRequest']))
 
         # Keep on writing questions, will eventually hit cap
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
@@ -242,7 +251,10 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
-        self.assertEqual(set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()), set(['template']))
+        self.assertEqual(
+            set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()),
+            set(['template', 'BadRequest']),
+        )
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
@@ -264,8 +276,9 @@ class GetQuestionViewTest(FunctionalTestCase):
             ],
         ))
         self.assertEqual(
-            self.getJson(aAlloc['questions'][0]['uri'], user=USER_A_ID, expectedStatus=400),
-            {u'message': u'User has written 3 questions already', u'error': u'BadRequest'})
+            set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()),
+            set(['BadRequest']),
+        )
 
         # B, C & D are still going
         self.assertEqual(set(qn['text'] for qn in qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)['usergenerated']), set([

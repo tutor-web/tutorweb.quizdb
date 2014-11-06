@@ -89,16 +89,18 @@ class QuestionView(JSONBrowserView):
                     .filter(db.LectureSetting.key.in_(settings.keys()))):
                 settings[row.key] = float(row.value)
 
-            # Has the user answered enough questions aready?
-            if settings['cap_template_qns'] > 0:
-                hadFill = (Session.query(db.UserGeneratedQuestion)
+            # Should the user be reviewing a question?
+            if (random.random() <= settings['prob_template_eval']):
+                reviewQuestion = True
+            elif settings['cap_template_qns'] > 0:
+                reviewQuestion = (Session.query(db.UserGeneratedQuestion)
                     .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                     .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                     .count()) >= settings['cap_template_qns']
             else:
-                hadFill = False
+                reviewQuestion = False
 
-            if hadFill or (random.random() <= settings['prob_template_eval']):
+            if reviewQuestion:
                 # Try and find a user-generated question that student hasn't answered before
                 ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer.ugQuestionId)
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
@@ -116,9 +118,9 @@ class QuestionView(JSONBrowserView):
                 if ugQn is not None:
                     # Found one, should return it
                     out = self.ugQuestionToJson(ugQn)
-                elif hadFill:
+                else:
                     # Don't fall back to writing questions
-                    raise BadRequest("User has written %d questions already" % settings['cap_template_qns'])
+                    raise BadRequest("No questions for student to review")
 
         # No custom techniques, fetch question @@data
         if not out:
