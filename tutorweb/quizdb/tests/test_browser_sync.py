@@ -760,7 +760,7 @@ class SyncViewFunctional(FunctionalTestCase):
         aqTime = [1377000000]
         def aqEntry(alloc, qnIndex, correct, grade_after):
             qnData = self.getJson(alloc['questions'][qnIndex]['uri'], user=USER_A_ID)
-            aqTime[0] += 100
+            aqTime[0] += 120
             return dict(
                 uri=qnData.get('uri', alloc['questions'][qnIndex]['uri']),
                 type='tw_latexquestion',
@@ -788,7 +788,7 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(totalAwarded=0, lastUpdate=u'2013-08-20T13:08:00'),
+            dict(walletId='', history=[], coinAvailable=0),
         )
 
         # Get 5 more right, get a point
@@ -804,7 +804,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(totalAwarded=1, lastUpdate=u'2013-08-20T13:16:20'),
+            dict(coinAvailable=1, walletId='', history=[
+                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
         )
 
         # Another 10 makes no difference
@@ -816,7 +818,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(totalAwarded=1, lastUpdate=u'2013-08-20T13:18:00'),
+            dict(coinAvailable=1, walletId='', history=[
+                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
         )
 
         # Acing the lecture gets more points
@@ -828,7 +832,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(totalAwarded=11, lastUpdate=u'2013-08-20T13:19:40'),
+            dict(coinAvailable=11, walletId='', history=[
+                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=1,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
         )
 
         # We can't get these points again
@@ -843,7 +850,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(totalAwarded=11, lastUpdate=u'2013-08-20T13:26:20'),
+            dict(coinAvailable=11, walletId='', history=[
+                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=1,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
         )
 
         # Ace lec2 too and we get everything in one hit
@@ -856,7 +866,12 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(totalAwarded=122, lastUpdate=u'2013-08-20T13:28:00'),
+            dict(coinAvailable=122, walletId='', history=[
+                dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:33:40'),
+                dict(amount=110, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:33:40'),
+                dict(amount=10,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
         )
 
     def test_answerQueueSummary(self):

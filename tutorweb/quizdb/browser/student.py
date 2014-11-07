@@ -29,16 +29,31 @@ class StudentAwardView(JSONBrowserView):
     def asDict(self, data):
         """Show coins given to student"""
         student = self.getCurrentStudent()
-        vals = (Session.query(
-            func.sum(db.Answer.coinsAwarded),
-            func.max(db.Answer.timeEnd),
-        )
-            .filter(db.Answer.studentId == student.studentId)
-            .filter(db.Answer.practice == False)
-            .order_by(db.Answer.timeEnd)
-            .first())
+
+        if True:
+            lastClaimTime = 0
+            coinClaimed = 0
+            walletId = ''
+
+        history = []
+        coinAwarded = 0
+        for row in (Session.query(db.Answer.timeEnd, db.Answer.coinsAwarded, db.Lecture.plonePath)
+                .join(db.Lecture)
+                .filter(db.Answer.studentId == student.studentId)
+                .filter(db.Answer.practice == False)
+                .filter(db.Answer.coinsAwarded > 0)
+                .order_by(db.Answer.timeEnd, db.Lecture.plonePath)):
+
+            coinAwarded += row[1]
+            history.insert(0, dict(
+                lecture=row[2],
+                time=row[0].isoformat() if row[1] else None,
+                amount=row[1],
+                claimed=(coinAwarded <= coinClaimed and row[0] <= lastAwardTime)
+            ))
 
         return dict(
-            totalAwarded=int(vals[0]),
-            lastUpdate=vals[1].isoformat() if vals[1] else None,
+            walletId=walletId,
+            history=history,
+            coinAvailable=(coinAwarded - coinClaimed),
         )
