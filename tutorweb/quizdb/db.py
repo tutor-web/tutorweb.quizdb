@@ -474,3 +474,37 @@ class UserGeneratedAnswer(ORMBase):
         nullable=False,
         default=0,
     )
+
+
+class CoinAward(ORMBase):
+    """Record of coins distributed to students"""
+    __tablename__ = 'coinAward'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    coinAwardId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        primary_key=True,
+        autoincrement=True,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        nullable=False,
+        index=True,
+    )
+    amount = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        nullable=False,
+    )
+    walletId = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
+    awardTime = sqlalchemy.schema.Column(
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime.now,
+    )

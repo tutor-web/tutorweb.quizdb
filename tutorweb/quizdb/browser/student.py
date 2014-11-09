@@ -30,8 +30,15 @@ class StudentAwardView(JSONBrowserView):
         """Show coins given to student"""
         student = self.getCurrentStudent()
 
-        if True:
-            lastClaimTime = 0
+        (lastAwardTime, walletId, coinClaimed) = (Session.query(
+            func.max(db.CoinAward.awardTime),
+            func.max(db.CoinAward.walletId), #TODO: Should be last, not max
+            func.sum(db.CoinAward.amount),
+        )
+            .filter(db.CoinAward.studentId == student.studentId)
+            .first())
+        if coinClaimed is None:
+            lastAwardTime = 0
             coinClaimed = 0
             walletId = ''
 
@@ -52,8 +59,26 @@ class StudentAwardView(JSONBrowserView):
                 claimed=(coinAwarded <= coinClaimed and row[0] <= lastAwardTime)
             ))
 
+        # Check if wallet ID is provided, if so pay up.
+        if data is not None and data.get('walletId', None):
+            walletId = data['walletId']
+            coinOwed = (coinAwarded - coinClaimed)
+
+            # TODO: Actual transaction
+            Session.add(db.CoinAward(
+                studentId=student.studentId,
+                amount=int(coinOwed),
+                walletId=walletId,
+            ))
+            Session.flush()
+
+            # Worked, so should be even now
+            for h in history:
+                h['claimed'] = True
+            coinClaimed += coinOwed
+
         return dict(
             walletId=walletId,
             history=history,
-            coinAvailable=(coinAwarded - coinClaimed),
+            coinAvailable=int(coinAwarded - coinClaimed),
         )
