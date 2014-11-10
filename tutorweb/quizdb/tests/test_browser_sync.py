@@ -827,7 +827,7 @@ class SyncViewFunctional(FunctionalTestCase):
         lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
             answerQueue=[
-                aqEntry(lec1Alloc, 0, True, 10.0),
+                aqEntry(lec1Alloc, 0, True, 9.999999999),
             ],
         ))
         self.assertEqual(
@@ -845,7 +845,10 @@ class SyncViewFunctional(FunctionalTestCase):
                 aqEntry(lec1Alloc, 0, False, 9.0),
                 aqEntry(lec1Alloc, 0, False, 8.0),
                 aqEntry(lec1Alloc, 0, True, 9.0),
-                aqEntry(lec1Alloc, 0, True, 10.0),
+                aqEntry(lec1Alloc, 0, True, 9.999999999),
+                aqEntry(lec1Alloc, 0, True, 9.999999999),
+                aqEntry(lec1Alloc, 0, True, 9.999999999),
+                aqEntry(lec1Alloc, 0, True, 9.999999999),
             ],
         ))
         self.assertEqual(
@@ -861,14 +864,14 @@ class SyncViewFunctional(FunctionalTestCase):
         lec2Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
             answerQueue=[
-                aqEntry(lec2Alloc, 0, True, 10.0),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
             ] * 10,
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coinAvailable=122, walletId='', history=[
-                dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:33:40'),
-                dict(amount=110, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:33:40'),
+                dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
+                dict(amount=110, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
                 dict(amount=10,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
                 dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])

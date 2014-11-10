@@ -168,7 +168,7 @@ class SyncLectureView(JSONBrowserView):
             out += settings.get('award_lecture_answered', 1)
 
         # Has the lecture just been aced?
-        if dbAnsSummary.gradeHighWaterMark < 10.0 and newGrade >= 10.0:
+        if dbAnsSummary.gradeHighWaterMark < 9.998 and newGrade > 9.998:
             out += settings.get('award_lecture_aced', 10)
 
             # Fetch all sibling lectures
@@ -184,7 +184,7 @@ class SyncLectureView(JSONBrowserView):
                     .join(db.Lecture)
                     .filter(db.AnswerSummary.studentId == student.studentId)
                     .filter(db.Lecture.plonePath.in_(siblingPaths))
-                    .filter(db.AnswerSummary.gradeHighWaterMark >= 10.0)
+                    .filter(db.AnswerSummary.gradeHighWaterMark > 9.998)
                     .count() > 0):
                 out += settings.get('award_tutorial_aced', 100)
         return out
