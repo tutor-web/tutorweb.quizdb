@@ -10,3 +10,5 @@
 /parts/
 /var/
 /build/
+
+/tutorweb/quizdb/coin_config.py

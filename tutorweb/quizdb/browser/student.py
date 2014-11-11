@@ -8,7 +8,7 @@ from Products.CMFCore.utils import getToolByName
 
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
-
+from ...quizdb import coin
 
 class StudentUpdateView(JSONBrowserView):
     """Update all student email addresses"""
@@ -64,7 +64,10 @@ class StudentAwardView(JSONBrowserView):
             walletId = data['walletId']
             coinOwed = (coinAwarded - coinClaimed)
 
-            # TODO: Actual transaction
+            # Perform transaction
+            coin.sendTransaction(walletId, coinOwed / 1000)
+
+            # Worked, so update database
             Session.add(db.CoinAward(
                 studentId=student.studentId,
                 amount=int(coinOwed),
