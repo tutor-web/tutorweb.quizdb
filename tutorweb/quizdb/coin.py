@@ -15,6 +15,8 @@ def sendTransaction(walletId, coinOwed):
         # Unit test wallets don't do anything
         return 'UNITTESTTX:%s:%d' % (walletId, coinOwed)
 
+    if coin_config.RPC_WALLETPASS:
+        callMethod('walletpassphrase', coin_config.RPC_WALLETPASS, 2)
     return callMethod(
         'sendtoaddress',
         walletId,

@@ -32,6 +32,7 @@ class TestCoin(unittest.TestCase):
         coin.coin_config.RPC_PORT = 900
         coin.coin_config.RPC_USER = "smly"
         coin.coin_config.RPC_PASS = "realgoodpassword"
+        coin.coin_config.RPC_WALLETPASS = None
 
         nextResponse = dict(result=1234)
         self.assertEqual(coin.sendTransaction('WaLlEt', 23), 1234)
@@ -90,6 +91,41 @@ class TestCoin(unittest.TestCase):
         with self.assertRaisesRegexp(BadRequest, "Smileycoin"):
             coin.sendTransaction('WALL-E', 84)
 
+    def test_walletOpening(self):
+        """Wallets can be opened first"""
+        chooseOpener(MockHTTPHandler)
+        global nextResponse
+
+        # Configure with usless settings
+        coin.coin_config.RPC_HOST = "moohost"
+        coin.coin_config.RPC_PORT = 900
+        coin.coin_config.RPC_USER = "smelly"
+        coin.coin_config.RPC_PASS = "badpassword"
+        coin.coin_config.RPC_WALLETPASS = "letmein"
+
+        self.assertEqual(coin.sendTransaction('WaLlEt', 23), 1234)
+        self.assertEqual(requests[-2], dict(
+            url='http://moohost:900',
+            contenttype='application/json',
+            auth='smelly:badpassword',
+            data=dict(
+                id=requests[-2]['data']['id'],
+                jsonrpc=u'1.0',
+                method=u'walletpassphrase',
+                params=['letmein', 2],
+            ),
+        ))
+        self.assertEqual(requests[-1], dict(
+            url='http://moohost:900',
+            contenttype='application/json',
+            auth='smelly:badpassword',
+            data=dict(
+                id=requests[-1]['data']['id'],
+                jsonrpc=u'1.0',
+                method=u'sendtoaddress',
+                params=[u'WaLlEt', 0.023, u'Award from tutorweb'],
+            ),
+        ))
 
 
 class NoHTTPHandler(urllib2.HTTPHandler):
