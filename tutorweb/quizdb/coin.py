@@ -13,7 +13,7 @@ def sendTransaction(walletId, coinOwed):
     """Send coinOwed to walletId, return tx id if worked"""
     if walletId.startswith('$$UNITTEST'):
         # Unit test wallets don't do anything
-        return 'UNITTESTTX'
+        return 'UNITTESTTX:%s:%d' % (walletId, coinOwed)
 
     return callMethod(
         'sendtoaddress',

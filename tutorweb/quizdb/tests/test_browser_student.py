@@ -135,7 +135,7 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID, body=dict(
                 walletId='$$UNITTEST:01',
             )),
-            dict(coin_available=0, walletId='$$UNITTEST:01', tx_id='UNITTESTTX', history=[
+            dict(coin_available=0, walletId='$$UNITTEST:01', tx_id='UNITTESTTX:$$UNITTEST:01:11', history=[
                 dict(amount=10, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
                 dict(amount=1,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
