@@ -60,12 +60,13 @@ class StudentAwardView(JSONBrowserView):
             ))
 
         # Check if wallet ID is provided, if so pay up.
+        txId = None
         if data is not None and data.get('walletId', None):
             walletId = data['walletId']
             coinOwed = (coinAwarded - coinClaimed)
 
             # Perform transaction
-            coin.sendTransaction(walletId, coinOwed / 1000)
+            txId = coin.sendTransaction(walletId, coinOwed)
 
             # Worked, so update database
             Session.add(db.CoinAward(
@@ -83,5 +84,6 @@ class StudentAwardView(JSONBrowserView):
         return dict(
             walletId=walletId,
             history=history,
-            coinAvailable=int(coinAwarded - coinClaimed),
+            coin_available=int(coinAwarded - coinClaimed),
+            tx_id=txId,
         )

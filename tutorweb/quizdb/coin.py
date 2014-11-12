@@ -10,12 +10,17 @@ import coin_config
 
 
 def sendTransaction(walletId, coinOwed):
-    """Send coinOwed to walletId"""
+    """Send coinOwed to walletId, return tx id if worked"""
     if walletId.startswith('$$UNITTEST'):
         # Unit test wallets don't do anything
-        return
+        return 'UNITTESTTX'
 
-    callMethod('sendtoaddress', walletId, coinOwed)
+    return callMethod(
+        'sendtoaddress',
+        walletId,
+        float(coinOwed) / 1000,
+        "Award from tutorweb",
+    )
 
 
 def callMethod(method, *params):
