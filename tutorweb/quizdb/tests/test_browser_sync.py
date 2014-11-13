@@ -758,8 +758,8 @@ class SyncViewFunctional(FunctionalTestCase):
         """Questions should get a suitable award"""
         # Shortcut for making answerQueue entries
         aqTime = [1377000000]
-        def aqEntry(alloc, qnIndex, correct, grade_after):
-            qnData = self.getJson(alloc['questions'][qnIndex]['uri'], user=USER_A_ID)
+        def aqEntry(alloc, qnIndex, correct, grade_after, practice=False):
+            qnData = self.getJson(alloc['questions'][qnIndex]['uri'], user=alloc['user'])
             aqTime[0] += 120
             return dict(
                 uri=qnData.get('uri', alloc['questions'][qnIndex]['uri']),
@@ -770,6 +770,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 quiz_time=aqTime[0] - 50,
                 answer_time=aqTime[0] - 20,
                 grade_after=grade_after,
+                practice=practice,
             )
 
         # Get an allocation to start things off
@@ -791,15 +792,14 @@ class SyncViewFunctional(FunctionalTestCase):
             dict(walletId='', history=[], tx_id=None, coin_available=0),
         )
 
-        # Get 5 more right, get a point
+        # Go over 5, get a point
         lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
             answerQueue=[
-                aqEntry(lec1Alloc, 0, True, 0.6),
-                aqEntry(lec1Alloc, 0, True, 0.7),
-                aqEntry(lec1Alloc, 0, True, 0.8),
-                aqEntry(lec1Alloc, 0, True, 0.9),
                 aqEntry(lec1Alloc, 0, True, 1.0),
+                aqEntry(lec1Alloc, 0, True, 2.0),
+                aqEntry(lec1Alloc, 0, True, 5.0),
+                aqEntry(lec1Alloc, 0, True, 5.0),
             ],
         ))
         self.assertEqual(
@@ -809,12 +809,14 @@ class SyncViewFunctional(FunctionalTestCase):
             ])
         )
 
-        # Another 10 makes no difference
+        # 5 below cut-off, 4 above makes no difference
         lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
-            answerQueue=[
-                aqEntry(lec1Alloc, 0, True, 9.9),
-            ] * 10,
+            answerQueue=([
+                aqEntry(lec1Alloc, 0, True, 4.0),
+            ] * 5) + ([
+                aqEntry(lec1Alloc, 0, True, 6.0),
+            ] * 5),
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
@@ -827,7 +829,7 @@ class SyncViewFunctional(FunctionalTestCase):
         lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
             answerQueue=[
-                aqEntry(lec1Alloc, 0, True, 9.999999999),
+                aqEntry(lec1Alloc, 0, True, 9.998),
             ],
         ))
         self.assertEqual(
@@ -870,10 +872,63 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=122, walletId='', tx_id=None, history=[
-                dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
-                dict(amount=110, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
+                dict(amount=111, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
                 dict(amount=10,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
                 dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
+        )
+
+        # B uses practice mode, doesn't get multiple points
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID)
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID, body=dict(
+            user='Betty',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, True, 1.0),
+                aqEntry(lec1Alloc, 0, True, 2.0),
+                aqEntry(lec1Alloc, 0, True, 3.0),
+                aqEntry(lec1Alloc, 0, True, 4.0),
+                aqEntry(lec1Alloc, 0, True, 5.0),
+                aqEntry(lec1Alloc, 0, True, 6.0),
+                aqEntry(lec1Alloc, 0, True, 7.0),
+                aqEntry(lec1Alloc, 0, True, 9.999999999),
+                aqEntry(lec1Alloc, 0, False, 9.999999999, practice = True),
+                aqEntry(lec1Alloc, 0, False, 9.999999999, practice = True),
+                aqEntry(lec1Alloc, 0, False, 9.999999999, practice = True),
+                aqEntry(lec1Alloc, 0, False, 9.999999999, practice = True),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
+            dict(coin_available=11, walletId='', tx_id=None, history=[
+                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
+                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
+            ])
+        )
+
+        # B only gets 8 right, doesn't get multiple points
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_B_ID)
+        lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_B_ID, body=dict(
+            user='Betty',
+            answerQueue=[
+                aqEntry(lec1Alloc, 0, True, 1.0),
+                aqEntry(lec1Alloc, 0, True, 2.0),
+                aqEntry(lec1Alloc, 0, True, 3.0),
+                aqEntry(lec1Alloc, 0, True, 4.0),
+                aqEntry(lec1Alloc, 0, True, 5.0),
+                aqEntry(lec1Alloc, 0, True, 6.0),
+                aqEntry(lec1Alloc, 0, True, 7.0),
+                aqEntry(lec1Alloc, 0, True, 8.0),
+                aqEntry(lec1Alloc, 0, False, 7.0),
+                aqEntry(lec1Alloc, 0, False, 6.0),
+                aqEntry(lec1Alloc, 0, False, 5.0),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
+            dict(coin_available=12, walletId='', tx_id=None, history=[
+                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T14:13:40'),
+                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
+                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
             ])
         )
 

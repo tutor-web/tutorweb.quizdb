@@ -164,11 +164,11 @@ class SyncLectureView(JSONBrowserView):
         out = 0
 
         # Got 8 questions right
-        if dbAnsSummary.lecCorrect == 8:
+        if dbAnsSummary.gradeHighWaterMark < 5.000 and newGrade >= 5.000:
             out += settings.get('award_lecture_answered', 1)
 
         # Has the lecture just been aced?
-        if dbAnsSummary.gradeHighWaterMark < 9.998 and newGrade > 9.998:
+        if dbAnsSummary.gradeHighWaterMark < 9.998 and newGrade >= 9.998:
             out += settings.get('award_lecture_aced', 10)
 
             # Fetch all sibling lectures
