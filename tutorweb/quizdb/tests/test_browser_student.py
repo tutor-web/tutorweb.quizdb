@@ -110,9 +110,9 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
+                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -125,8 +125,8 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=11, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
             ])
         )
 
@@ -135,17 +135,17 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID, body=dict(
                 walletId='$$UNITTEST:01',
             )),
-            dict(coin_available=0, walletId='$$UNITTEST:01', tx_id='UNITTESTTX:$$UNITTEST:01:11', history=[
-                dict(amount=10, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=0, walletId='$$UNITTEST:01', tx_id='UNITTESTTX:$$UNITTEST:01:11000', history=[
+                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
+                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
         # B's coin isn't claimed
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=11, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
             ])
         )
 
@@ -153,16 +153,16 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=0, walletId='$$UNITTEST:01', tx_id=None, history=[
-                dict(amount=10, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
+                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
         # B's coin still isn't claimed
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=11, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
             ])
         )
 
@@ -175,17 +175,17 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=111, walletId='$$UNITTEST:01', tx_id=None, history=[
-                dict(amount=111, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:25:40'),
-                dict(amount=10, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=111000, walletId='$$UNITTEST:01', tx_id=None, history=[
+                dict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:25:40'),
+                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
+                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
         # B's situation is still the same
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=11, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
             ])
         )

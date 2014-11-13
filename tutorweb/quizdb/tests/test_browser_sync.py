@@ -804,8 +804,8 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=1, walletId='', tx_id=None, history=[
-                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=1000, walletId='', tx_id=None, history=[
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -820,8 +820,8 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=1, walletId='', tx_id=None, history=[
-                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=1000, walletId='', tx_id=None, history=[
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -834,9 +834,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
-                dict(amount=1,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -855,9 +855,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
-                dict(amount=1,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -871,10 +871,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=122, walletId='', tx_id=None, history=[
-                dict(amount=111, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
-                dict(amount=10,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
-                dict(amount=1,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            dict(coin_available=122000, walletId='', tx_id=None, history=[
+                dict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
+                dict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -899,9 +899,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=11, walletId='', tx_id=None, history=[
-                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
-                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
+            dict(coin_available=11000, walletId='', tx_id=None, history=[
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
             ])
         )
 
@@ -925,10 +925,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=12, walletId='', tx_id=None, history=[
-                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T14:13:40'),
-                dict(amount=10, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
-                dict(amount=1, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
+            dict(coin_available=12000, walletId='', tx_id=None, history=[
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T14:13:40'),
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
             ])
         )
 
