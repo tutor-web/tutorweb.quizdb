@@ -73,6 +73,7 @@ class StudentAwardView(JSONBrowserView):
                 studentId=student.studentId,
                 amount=int(coinOwed),
                 walletId=walletId,
+                txId=txId,
             ))
             Session.flush()
 

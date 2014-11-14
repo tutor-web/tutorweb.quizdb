@@ -503,6 +503,10 @@ class CoinAward(ORMBase):
         sqlalchemy.types.String(100),
         nullable=False,
     )
+    txId = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
     awardTime = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
         nullable=False,
