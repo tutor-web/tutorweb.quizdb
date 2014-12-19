@@ -24,7 +24,7 @@ from .base import JSONBrowserView
 logger = logging.getLogger(__name__)
 
 DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
-INTEGER_SETTINGS = ['grade_s']  # Randomly-chosen questions that should result in an integer value
+INTEGER_SETTINGS = ['grade_s', 'grade_nmin', 'grade_nmax']  # Randomly-chosen questions that should result in an integer value
 
 
 class SyncTutorialView(JSONBrowserView):
