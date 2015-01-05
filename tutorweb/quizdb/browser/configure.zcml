@@ -59,7 +59,7 @@
       />
     <browser:page name="quizdb-student-award"
       for="Products.CMFCore.interfaces.ISiteRoot"
-      class=".student.StudentAwardView"
+      class=".coin.StudentAwardView"
       permission="zope2.View"
       />
 </configure>
