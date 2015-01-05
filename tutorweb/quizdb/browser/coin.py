@@ -10,6 +10,15 @@ from tutorweb.quizdb import db
 from .base import JSONBrowserView
 from ...quizdb import coin
 
+class TotalCoinView(BrowserView):
+    """Show approximate number of coins"""
+    def __call__(self):
+        out = (coin.getBlockCount() - 1000) * 10000 + 24000000000
+        self.request.response.setStatus(200)
+        self.request.response.setHeader("Content-type", "text/plain")
+        return str(out)
+
+
 class StudentAwardView(JSONBrowserView):
     """Show coins awarded to student"""
 

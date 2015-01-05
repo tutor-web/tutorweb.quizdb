@@ -9,6 +9,10 @@ from zExceptions import BadRequest
 import coin_config
 
 
+def getBlockCount():
+    return callMethod('getblockcount')
+
+
 def sendTransaction(walletId, coinOwed):
     """Send coinOwed to walletId, return tx id if worked"""
     if walletId.startswith('$$UNITTEST'):

@@ -62,4 +62,10 @@
       class=".coin.StudentAwardView"
       permission="zope2.View"
       />
+
+    <browser:page name="quizdb-coin-totalcoins"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".coin.TotalCoinView"
+      permission="zope2.View"
+      />
 </configure>

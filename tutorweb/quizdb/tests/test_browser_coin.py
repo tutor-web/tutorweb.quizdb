@@ -4,6 +4,34 @@ from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 import tutorweb.quizdb.tests.test_coin
 from .test_coin import chooseOpener, MockHTTPHandler, nextResponse
 
+class TotalCoinViewTest(IntegrationTestCase):
+    def tearDown(self):
+        tutorweb.quizdb.tests.test_coin.chooseOpener()
+
+    def test_totalCoinView(self):
+        chooseOpener(MockHTTPHandler)
+
+        view = self.layer['portal'].unrestrictedTraverse('@@quizdb-coin-totalcoins')
+
+        blockCount = 0323523
+        tutorweb.quizdb.tests.test_coin.nextResponse = dict(
+            result=blockCount,
+        )
+        self.assertEqual(
+            int(view()),
+            (blockCount - 1000) * 10000 + 24000000000,
+        )
+
+        blockCount = 50291283
+        tutorweb.quizdb.tests.test_coin.nextResponse = dict(
+            result=blockCount,
+        )
+        self.assertEqual(
+            int(view()),
+            (blockCount - 1000) * 10000 + 24000000000,
+        )
+
+
 class StudentUpdateViewFunctional(FunctionalTestCase):
     def test_answerQueue_StudentAward(self):
         """Should be able to claim awards into wallets"""
