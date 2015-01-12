@@ -165,11 +165,11 @@ class SyncLectureView(JSONBrowserView):
 
         # Got 8 questions right
         if dbAnsSummary.gradeHighWaterMark < 5.000 and newGrade >= 5.000:
-            out += settings.get('award_lecture_answered', 1000)
+            out += round(float(settings.get('award_lecture_answered', "1000")))
 
         # Has the lecture just been aced?
         if dbAnsSummary.gradeHighWaterMark < 9.998 and newGrade >= 9.998:
-            out += settings.get('award_lecture_aced', 10000)
+            out += round(float(settings.get('award_lecture_aced', "10000")))
 
             # Fetch all sibling lectures
             siblingPaths = [
@@ -186,7 +186,7 @@ class SyncLectureView(JSONBrowserView):
                     .filter(db.Lecture.plonePath.in_(siblingPaths))
                     .filter(db.AnswerSummary.gradeHighWaterMark > 9.998)
                     .count() > 0):
-                out += settings.get('award_tutorial_aced', 100000)
+                out += round(float(settings.get('award_tutorial_aced', "100000")))
         return out
 
     def parseAnswerQueue(self, student, rawAnswerQueue, settings):
