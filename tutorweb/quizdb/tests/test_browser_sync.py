@@ -8,6 +8,17 @@ from ..browser.sync import DEFAULT_QUESTION_CAP
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
+def uniDict(**kwargs):
+    def unicodify(o):
+        if isinstance(o, str):
+            return unicode(o)
+        return o
+
+    return dict(
+        (unicodify(k), unicodify(v))
+        for k, v in kwargs.items()
+    )
+
 
 class SyncViewIntegration(IntegrationTestCase):
     def test_getStudentSettings(self):
@@ -773,6 +784,23 @@ class SyncViewFunctional(FunctionalTestCase):
                 practice=practice,
             )
 
+        # Add extra lecture
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+        portal['dept1']['tut1'].invokeFactory(
+            type_name="tw_lecture",
+            id="tmplec3",
+            title=u"Lecture three",
+        )
+        portal['dept1']['tut1']['tmplec3'].invokeFactory(
+            type_name="tw_latexquestion",
+            id="qn0",
+            title="Unittest tmplec Q0",
+            choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
+            finalchoices=[],
+        )
+        transaction.commit()
+
         # Get an allocation to start things off
         lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
 
@@ -861,7 +889,7 @@ class SyncViewFunctional(FunctionalTestCase):
             ])
         )
 
-        # Ace lec2 too and we get everything in one hit
+        # Ace lec2 too and we get award for that too
         lec2Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_A_ID)
         lec2Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
@@ -871,10 +899,28 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=122000, walletId='', tx_id=None, history=[
-                dict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
+            dict(coin_available=22000, walletId='', tx_id=None, history=[
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
                 dict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
                 dict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+            ])
+        )
+
+        # Ace lec3 and we get award for finshing tutorial
+        tmplec3Alloc = self.getJson('http://nohost/plone/dept1/tut1/tmplec3/@@quizdb-sync', user=USER_A_ID)
+        tmplec3Alloc = self.getJson('http://nohost/plone/dept1/tut1/tmplec3/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+            ] * 10,
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            uniDict(coin_available=133000, walletId='', tx_id=None, history=[
+                uniDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time='2013-08-20T13:41:40'),
+                uniDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
+                uniDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                uniDict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
 
@@ -899,9 +945,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
-                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
+            uniDict(coin_available=11000, walletId='', tx_id=None, history=[
+                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:57:40'),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:51:40'),
             ])
         )
 
@@ -925,12 +971,16 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            dict(coin_available=12000, walletId='', tx_id=None, history=[
-                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T14:13:40'),
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:55:40'),
-                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:49:40'),
+            uniDict(coin_available=12000, walletId='', tx_id=None, history=[
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T14:15:40'),
+                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:57:40'),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:51:40'),
             ])
         )
+
+        # Remove extra lecture
+        del portal['dept1']['tut1']['tmplec3']
+        transaction.commit()
 
     def test_answerQueueSummary(self):
         """Make sure answerQueueSummary stays up to date"""

@@ -184,8 +184,8 @@ class SyncLectureView(JSONBrowserView):
                     .join(db.Lecture)
                     .filter(db.AnswerSummary.studentId == student.studentId)
                     .filter(db.Lecture.plonePath.in_(siblingPaths))
-                    .filter(db.AnswerSummary.gradeHighWaterMark > 9.998)
-                    .count() > 0):
+                    .filter(db.AnswerSummary.gradeHighWaterMark >= 9.998)
+                    .count() >= len(siblingPaths)):
                 out += round(float(settings.get('award_tutorial_aced', "100000")))
         return out
 
