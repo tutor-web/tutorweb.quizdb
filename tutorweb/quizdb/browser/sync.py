@@ -126,7 +126,9 @@ class SyncLectureView(JSONBrowserView):
             allSettings[k] = settings[k]
 
         Session.flush()
-        return allSettings
+
+        # Remove :min and :max, not useful downstream
+        return dict((k, allSettings[k]) for k in allSettings.keys() if ':' not in k)
 
     def getAnswerSummary(self, student):
         """Fetch answerSummary row for student"""

@@ -39,7 +39,13 @@ class SyncViewIntegration(IntegrationTestCase):
             view = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync')
             student = view.getCurrentStudent()
             self.assertEqual(student.userName, userId)
-            return view.getStudentSettings(student)
+            settings = view.getStudentSettings(student)
+
+            # Should never leak :min and :max
+            self.assertEqual([k for k in settings.keys() if ':min' in k], [])
+            self.assertEqual([k for k in settings.keys() if ':max' in k], [])
+
+            return settings
 
         # Get no settings when none are set
         self.assertEquals(
