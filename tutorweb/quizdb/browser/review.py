@@ -47,6 +47,7 @@ class ReviewUgQnView(JSONBrowserView):
                     dict(answer=self.texToHTML(ugQn.choice_8_answer), correct=ugQn.choice_8_correct),
                     dict(answer=self.texToHTML(ugQn.choice_9_answer), correct=ugQn.choice_9_correct),
                 ] if x['correct'] is not None],
+                explanation=self.texToHTML(ugQn.explanation),
                 answers=[],
             ))
 

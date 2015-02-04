@@ -123,7 +123,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     uri=aAlloc['questions'][1]['uri'],
                     student_answer=dict(
                         text=u"Who's like us?",
-                        explanation=u"moo",
+                        explanation=u"oink",
                         choices=[
                             dict(answer="Here's to us.", correct=False),
                             dict(answer="Who's like us?", correct=False),
@@ -143,12 +143,12 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         self.assertEquals(
             self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID),
             [
-                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'choices':[
+                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
                 ]},
-                {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'choices':[
+                {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
                     {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
@@ -224,13 +224,13 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         self.assertEquals(
             self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID),
             [
-                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'choices':[
+                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"I've never played Return to Zork", u'id': 1, u'rating': 25},
                 ]},
-                {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'choices':[
+                {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
                     {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
