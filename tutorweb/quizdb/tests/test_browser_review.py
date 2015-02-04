@@ -147,14 +147,14 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
-                ]},
+                ], u'verdict': None},
                 {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
                     {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
-                ]},
+                ], u'verdict': None},
             ]
         )
         # A has nothing in another lecture
@@ -229,7 +229,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"I've never played Return to Zork", u'id': 1, u'rating': 25},
-                ]},
+                ], u'verdict': 25},
                 {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
@@ -237,7 +237,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"You don't actually respond like this, you tip the drink into the plant pot", u'id': 2, u'rating': -1},
-                ]},
+                ], u'verdict': -1},
             ]
         )
         # B still hasn't done anything yet

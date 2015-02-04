@@ -59,4 +59,10 @@ class ReviewUgQnView(JSONBrowserView):
                     comments=ugAnswers[answerIndex].comments,
                 ))
                 answerIndex += 1
-        return out
+
+        for qn in out:
+            # Work out modal rating for each question
+            ratings = [a['rating'] for a in qn['answers'] if a['rating'] is not None]
+            qn['verdict'] = max(set(ratings), key=ratings.count) if len(ratings) > 0 else None
+
+        return sorted(out, key=lambda k: k['verdict'], reverse = True)
