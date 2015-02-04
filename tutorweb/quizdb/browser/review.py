@@ -25,14 +25,19 @@ class ReviewUgQnView(JSONBrowserView):
         # Get all our questions, interleave questions with answers
         out = []
         answerIndex = 0
-        for ugQn in (Session.query(db.UserGeneratedQuestion)
-                .join(db.Question)
+        for (ugQn, alloc) in (Session.query(db.UserGeneratedQuestion, db.Allocation)
+                .join(db.Question).join(db.Allocation)
+                .filter(db.Allocation.studentId == student.studentId)
                 .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                 .filter(db.Question.lectureId == self.getLectureId())
                 .order_by(db.UserGeneratedQuestion.ugQuestionId)
                 .all()):
 
             out.append(dict(
+                uri='%s/quizdb-get-question/%s' % (
+                    self.portalObject().absolute_url(),
+                    alloc.publicId,
+                ),
                 id=ugQn.ugQuestionId,
                 text=self.texToHTML(ugQn.text),
                 choices=[x for x in [
