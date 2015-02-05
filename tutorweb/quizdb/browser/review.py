@@ -34,9 +34,10 @@ class ReviewUgQnView(JSONBrowserView):
                 .all()):
 
             out.append(dict(
-                uri='%s/quizdb-get-question/%s' % (
+                uri='%s/quizdb-get-question/%s?author_qn=yes&question_id=%d' % (
                     self.portalObject().absolute_url(),
                     alloc.publicId,
+                    ugQn.ugQuestionId,
                 ),
                 id=ugQn.ugQuestionId,
                 text=self.texToHTML(ugQn.text),
