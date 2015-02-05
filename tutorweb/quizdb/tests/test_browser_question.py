@@ -333,6 +333,31 @@ class GetQuestionViewTest(FunctionalTestCase):
             # NB: Haven't answered first, but hit review cap
         ]))
 
+        # A can fetch their question again for more authoring
+        self.assertEqual(self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_A_ID), {
+            u'_type': u'template',
+            u'uri': "%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1),
+            u'title': u'Unittest tmpllec tmplQ0',
+            u'example_choices': [],
+            u'example_explanation': u'',
+            u'example_text': u'',
+            u'hints': u'',
+            u'student_answer': {
+                u'text': u'Want some rye?',
+                u'choices': [
+                    {u'answer': u'Course you do', u'correct': True},
+                    {u'answer': u'No thanks', u'correct': False}
+                ],
+                u'explanation': u'So you can get the keys',
+            },
+        })
+
+        # Can't fetch questions that don't exist
+        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 99), user=USER_A_ID, expectedStatus = 404)
+
+        # B can't get A's question
+        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_B_ID, expectedStatus = 404)
+
 class GetLectureQuestionsViewTest(FunctionalTestCase):
     maxDiff = None
 

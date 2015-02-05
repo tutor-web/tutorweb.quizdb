@@ -59,7 +59,7 @@ class QuestionView(JSONBrowserView):
         out = None
 
         # Is the student requesting a particular question they've done before?
-        if not out and dbQn.qnType == 'tw_questiontemplate' and 'question_id' in self.request.form:
+        if not out and dbQn.qnType == 'tw_questiontemplate' and 'question_id' in self.request.form and 'author_qn' not in self.request.form:
             student = self.getCurrentStudent()
 
             ugQn = (Session.query(db.UserGeneratedQuestion)
@@ -90,7 +90,9 @@ class QuestionView(JSONBrowserView):
                 settings[row.key] = float(row.value)
 
             # Should the user be reviewing a question?
-            if (random.random() <= settings['prob_template_eval']):
+            if self.request.form.get('author_qn', False):
+                reviewQuestion = False
+            elif (random.random() <= settings['prob_template_eval']):
                 reviewQuestion = True
             elif settings['cap_template_qns'] > 0:
                 reviewQuestion = (Session.query(db.UserGeneratedQuestion)
@@ -121,6 +123,37 @@ class QuestionView(JSONBrowserView):
                 else:
                     # Don't fall back to writing questions
                     raise BadRequest("No questions for student to review")
+            else:
+                # Author a question
+                try:
+                    #NB: Unrestricted so we can see this even when direct access is banned
+                    out = self.portalObject().unrestrictedTraverse(str(dbQn.plonePath) + '/@@data').asDict()
+                    qnUri = self.request.getURL()
+                    if '?' in qnUri:
+                        qnUri = qnUri.split('?')[0]
+                    out['uri'] = '%s?author_qn=yes' % self.request.getURL()
+                    if 'question_id' in self.request.form:
+                        # Trying to rewrite a question, so add in what was written before
+                        ugQn = (Session.query(db.UserGeneratedQuestion)
+                            .filter(db.UserGeneratedQuestion.ugQuestionId == self.request.form['question_id'])
+                            .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
+                            .filter(db.UserGeneratedQuestion.studentId == student.studentId)
+                            .first())
+                        if ugQn is not None:
+                            # Found one, add it to question
+                            out['uri'] += '&question_id=%d' % ugQn.ugQuestionId
+                            out['student_answer'] = dict(
+                                text=ugQn.text,
+                                choices=[dict(
+                                        answer=getattr(ugQn, 'choice_%d_answer' % i, None),
+                                        correct=getattr(ugQn, 'choice_%d_correct' % i, None),
+                                    ) for i in range(0, 10) if getattr(ugQn, 'choice_%d_correct' % i, None) is not None],
+                                explanation=ugQn.explanation
+                            )
+                        else:
+                            raise NotFound(self, self.request.form['question_id'], self.request)
+                except KeyError:
+                    raise NotFound(self, dbQn.plonePath, self.request)
 
         # No custom techniques, fetch question @@data
         if not out:
