@@ -55,6 +55,7 @@ class ReviewUgQnView(JSONBrowserView):
                 ] if x['correct'] is not None],
                 explanation=self.texToHTML(ugQn.explanation),
                 answers=[],
+                verdict=(-2 if ugQn.superseded else None),
             ))
 
             # NB: Both arrays are ordered by ugQuestionId, so can iterate through at same pace
@@ -67,6 +68,9 @@ class ReviewUgQnView(JSONBrowserView):
                 answerIndex += 1
 
         for qn in out:
+            if qn['verdict'] is not None:
+                continue
+
             # Work out modal rating for each question
             ratings = [a['rating'] for a in qn['answers'] if a['rating'] is not None]
             qn['verdict'] = max(set(ratings), key=ratings.count) if len(ratings) > 0 else None

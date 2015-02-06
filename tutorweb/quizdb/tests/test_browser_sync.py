@@ -771,6 +771,35 @@ class SyncViewFunctional(FunctionalTestCase):
             [[True, 3]],
             )
 
+        # Rewrite a question
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri="%s?author_qn=yes&question_id=%d" % (
+                        aAlloc['questions'][0]['uri'],
+                        aAlloc['answerQueue'][0]['student_answer'],
+                    ),
+                    student_answer=dict(
+                        text=u"My first question, again",
+                        explanation=u"I'm much better now",
+                        choices=[dict(answer="Good?", correct=True), dict(answer="Bad?", correct=False)],
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+
+        # Old one should be marked as superseded
+        self.assertEquals([[r['verdict'], r['text']] for r in self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID)], [
+            [-2, u'<div class="parse-as-tex">My first question</div>'],
+            [None, u'<div class="parse-as-tex">My second question</div>'],
+            [None, u'<div class="parse-as-tex">My first question, again</div>'],
+        ])
+
     def test_answerQueue_getCoinAward(self):
         """Questions should get a suitable award"""
         # Shortcut for making answerQueue entries

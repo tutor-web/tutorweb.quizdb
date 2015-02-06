@@ -6,6 +6,7 @@ import logging
 import random
 import re
 import time
+import urlparse
 
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
@@ -203,10 +204,15 @@ class SyncLectureView(JSONBrowserView):
             if 'answer_time' not in a:
                 logger.debug("Unanswered question passed to sync")
                 continue
-            if '/quizdb-get-question/' not in a['uri']:
+            parts = uriSplit.split(a['uri'])
+            if len(parts) < 2:
                 logger.warn("Question ID %s malformed" % a['uri'])
                 continue
-            answerQueue.append((uriSplit.split(a['uri'])[1], a))
+            answerQueue.append((
+                parts[1],
+                urlparse.parse_qs(parts[2]) if len(parts) > 2 else {},
+                a,
+            ))
 
         # Fetch all questions for allocations, locking for update
         dbQns = {}
@@ -215,7 +221,7 @@ class SyncLectureView(JSONBrowserView):
                 .with_lockmode('update')
                 .join(db.Allocation)
                 .filter(db.Allocation.studentId == student.studentId)
-                .filter(db.Allocation.publicId.in_(publicId for (publicId, a) in answerQueue))
+                .filter(db.Allocation.publicId.in_(publicId for (publicId, _, _) in answerQueue))
                 .all()):
 
                 dbQns[publicId] = dbQn
@@ -223,7 +229,7 @@ class SyncLectureView(JSONBrowserView):
         # Fetch summary
         dbAnsSummary = self.getAnswerSummary(student)
 
-        for (publicId, a) in answerQueue:
+        for (publicId, queryString, a) in answerQueue:
             # Fetch question for allocation
             dbQn = dbQns.get(publicId, None)
             if dbQn is None:
@@ -235,13 +241,13 @@ class SyncLectureView(JSONBrowserView):
 
             if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
                 # Evaluated a user-generated question, write it to the DB
-                if 'question_id' not in a:
+                if 'question_id' not in queryString:
                     logger.warn("Missing ID of the question being answered")
                     continue
 
                 ugAns = db.UserGeneratedAnswer(
                         studentId=student.studentId,
-                        ugQuestionId=a['question_id'],
+                        ugQuestionId=queryString['question_id'][0],
                         chosenAnswer=a['student_answer'].get('choice', None),
                         questionRating=a['student_answer'].get('rating', None),
                         comments=a['student_answer'].get('comments', ""),
@@ -270,6 +276,16 @@ class SyncLectureView(JSONBrowserView):
                     # student_answer should contain the ID of our answer
                     Session.flush()
                     a['student_answer'] = ugQn.ugQuestionId
+
+                    # If this replaces an old question, note this in DB
+                    if 'question_id' in queryString:
+                        (Session.query(db.UserGeneratedQuestion)
+                            .filter(db.UserGeneratedQuestion.ugQuestionId == queryString['question_id'][0])
+                            .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
+                            .filter(db.UserGeneratedQuestion.studentId == student.studentId)
+                            .one()).superseded=ugQn.ugQuestionId
+                        Session.flush()
+
                 else:
                     # Student skipped (and got an incorrect mark)
                     a['student_answer'] = None

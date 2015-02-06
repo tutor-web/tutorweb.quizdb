@@ -429,6 +429,11 @@ class UserGeneratedQuestion(ORMBase):
         nullable=False,
         default='',
     )
+    superseded = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionId'),
+        nullable=True,
+    )
 
 
 class UserGeneratedAnswer(ORMBase):
