@@ -115,6 +115,7 @@ class QuestionView(JSONBrowserView):
                     .filter(ugAnswerQuery.ugQuestionId == None)
                     .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                     .filter(db.UserGeneratedQuestion.studentId != student.studentId)
+                    .filter(db.UserGeneratedQuestion.superseded == None)
                     .order_by(func.random())
                     .first())
                 if ugQn is not None:

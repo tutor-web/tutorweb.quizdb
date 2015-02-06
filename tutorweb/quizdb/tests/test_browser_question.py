@@ -358,6 +358,35 @@ class GetQuestionViewTest(FunctionalTestCase):
         # B can't get A's question
         self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_B_ID, expectedStatus = 404)
 
+        # A writes a a new version of 3rd question
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri="%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 3),
+                    student_answer=dict(
+                        text=u"Damn Few! My keys? Sure.",
+                        choices=[
+                            dict(answer="Course you do", correct=True),
+                            dict(answer="No thanks", correct=False),
+                        ],
+                        explanation=u'So you can get the keys',
+                    ),
+                    correct=True,
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+
+        # C doesn't get to review original version of replaced question anymore
+        self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID)['usergenerated']), set([
+            u'<div class="parse-as-tex">Damn Few! My keys? Sure.</div>',
+            u'<div class="parse-as-tex">Here\'s to us!</div>',
+            # NB: Haven't answered first, but hit review cap
+        ]))
+
 class GetLectureQuestionsViewTest(FunctionalTestCase):
     maxDiff = None
 
