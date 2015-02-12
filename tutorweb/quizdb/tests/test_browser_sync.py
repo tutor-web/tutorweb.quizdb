@@ -148,7 +148,7 @@ class SyncViewFunctional(FunctionalTestCase):
     def setUp(self):
         self.loghandlers = dict(
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
-            sync=InstalledHandler('tutorweb.quizdb.browser.sync')
+            sync=InstalledHandler('tutorweb.quizdb.sync')
         )
 
     def logs(self, name='sqlalchemy'):
