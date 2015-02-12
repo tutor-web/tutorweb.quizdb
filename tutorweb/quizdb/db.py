@@ -1,5 +1,6 @@
 from hashlib import md5
 from datetime import datetime
+from random import random
 
 import sqlalchemy.event
 import sqlalchemy.schema
@@ -61,11 +62,11 @@ class Allocation(ORMBase):
 @sqlalchemy.event.listens_for(Allocation, "before_insert")
 def generatePublicId(mapper, connection, instance):
     """Generate a sparse ID for this row"""
-    #TODO: Surely this shouldn't be predictable?
-    instance.publicId = md5('%s:%s:%s' % (
+    instance.publicId = md5('%s:%s:%s:%s' % (
         instance.studentId,
         instance.questionId,
-        datetime.now()
+        datetime.now(),
+        random(),
     )).hexdigest()
 
 
