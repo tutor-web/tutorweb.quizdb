@@ -1,4 +1,5 @@
 import random
+import time
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -258,7 +259,8 @@ class SyncViewFunctional(FunctionalTestCase):
         )
         self.assertEquals(aAlloc['removed_questions'], [qn3])
 
-        # Recreate it
+        # Recreate it - gets removed and re-added under a different allocation
+        time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
         portal['dept1']['tut1']['lec1'].invokeFactory(
             type_name="tw_latexquestion",
             id="qn3",
@@ -337,10 +339,8 @@ class SyncViewFunctional(FunctionalTestCase):
             )
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
-        )
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
+        self.assertEquals(sorted(aQuestions.keys()), [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'])
         statsBefore = getLectureStats()
 
         # Write some answers back
@@ -349,7 +349,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][0]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
                     student_answer=0,
                     correct='wibble',
                     quiz_time=1377000000,
@@ -358,7 +358,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 ),
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][1]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
                     student_answer=99,
                     correct=False,
                     quiz_time=1377000020,
@@ -367,7 +367,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 ),
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][1]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
                     student_answer=2,
                     correct=True,
                     quiz_time=1377000020,
@@ -439,7 +439,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][1]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
                     student_answer=2,
                     correct=False,  # NB: Sending back false even though question is really true
                     quiz_time=1377000040,
@@ -462,7 +462,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][1]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
                     student_answer=None,
                     correct=False,  # NB: Sending back false even though question is really true
                     quiz_time=1377000050,
@@ -483,17 +483,15 @@ class SyncViewFunctional(FunctionalTestCase):
         """Make sure answerQueues for students and lectures are separate"""
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
-        )
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
+        self.assertEquals(sorted(aQuestions.keys()), [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'])
 
         # Write some answers back
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][0]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
                     student_answer=0,
                     correct='wibble',
                     quiz_time=1377000000,
@@ -502,7 +500,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 ),
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][1]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
                     student_answer=2,
                     correct=True,
                     quiz_time=1377000020,
@@ -516,6 +514,7 @@ class SyncViewFunctional(FunctionalTestCase):
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID)
         self.assertEquals(bAlloc['answerQueue'], [
         ])
+        bQuestions = dict((self.getJson(qn['uri'], user=USER_B_ID)['title'], qn['uri']) for qn in bAlloc['questions'])
 
         # Write some answers back, can only write back B's allocation
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID, body=dict(
@@ -523,7 +522,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][0]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
                     student_answer=0,
                     correct=True,
                     quiz_time=1377000040,
@@ -532,7 +531,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 ),
                 dict(
                     synced=False,
-                    uri=bAlloc['questions'][0]['uri'],
+                    uri=bQuestions[u'Unittest D1 T1 L1 Q1'],
                     student_answer=0,
                     correct=True,
                     quiz_time=1377000041,
@@ -545,7 +544,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
         self.assertTrue((
             u'No record of allocation %s for student Betty'
-            % aAlloc['questions'][0]['uri'].replace('http://nohost/plone/quizdb-get-question/', '')
+            % aQuestions[u'Unittest D1 T1 L1 Q1'].replace('http://nohost/plone/quizdb-get-question/', '')
         ) in self.logs('sync'))
 
         # A doesn't see B's answer
@@ -579,7 +578,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][0]['uri'],
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
                     student_answer=2,
                     correct=True,
                     quiz_time=1377000060,
@@ -596,13 +595,14 @@ class SyncViewFunctional(FunctionalTestCase):
         """Make sure answerQueues for entire tutorials get synced"""
         # Allocate tutorial to user A
         tutAlloc = self.getJson('http://nohost/plone/dept1/tut1/@@quizdb-sync', user=USER_A_ID)
+        tutQuestions = [dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions']) for aAlloc in tutAlloc['lectures']]
         self.assertEquals(len(tutAlloc['lectures']), 2)
         self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in tutAlloc['lectures'][0]['questions']]),
+            sorted(tutQuestions[0].keys()),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
         self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in tutAlloc['lectures'][1]['questions']]),
+            sorted(tutQuestions[1].keys()),
             [u'Unittest D1 T1 L2 Q1', u'Unittest D1 T1 L2 Q2'],
         )
 
@@ -614,7 +614,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(uri=tutAlloc['lectures'][0]['uri'], answerQueue=[
                     dict(
                         synced=False,
-                        uri=tutAlloc['lectures'][0]['questions'][0]['uri'],
+                        uri=tutQuestions[0][u'Unittest D1 T1 L1 Q1'],
                         student_answer=0,
                         correct='wibble',
                         quiz_time=1379900000,
@@ -625,7 +625,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(uri=tutAlloc['lectures'][1]['uri'], answerQueue=[
                     dict(
                         synced=False,
-                        uri=tutAlloc['lectures'][1]['questions'][0]['uri'],
+                        uri=tutQuestions[1][u'Unittest D1 T1 L2 Q1'],
                         student_answer=0,
                         correct='wibble',
                         quiz_time=1373300020,
@@ -687,8 +687,9 @@ class SyncViewFunctional(FunctionalTestCase):
 
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
         self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            sorted(aQuestions.keys()),
             [u'Unittest tmpllec tmplQ%d' % i for i in range(0,5)],
         )
 
@@ -697,7 +698,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][0]['uri'],
+                    uri=aQuestions[u'Unittest tmpllec tmplQ0'],
                     student_answer=dict(
                         text=u"My first question",
                         explanation=u"I'm getting the hang of it",
@@ -710,7 +711,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 ),
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][1]['uri'],
+                    uri=aQuestions[u'Unittest tmpllec tmplQ1'],
                     student_answer=dict(
                         text=u"I bottled it",
                     ),
@@ -721,7 +722,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 ),
                 dict(
                     synced=False,
-                    uri=aAlloc['questions'][2]['uri'],
+                    uri=aQuestions['Unittest tmpllec tmplQ2'],
                     student_answer=dict(
                         text=u"My second question",
                         explanation=u"I'm getting better!",
@@ -742,8 +743,9 @@ class SyncViewFunctional(FunctionalTestCase):
 
         # Allocate to user B
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
+        bQuestions = dict((self.getJson(qn['uri'], user=USER_B_ID)['title'], qn['uri']) for qn in bAlloc['questions'])
         self.assertEquals(
-            sorted([self.getJson(qn['uri'], user=USER_B_ID)['title'] for qn in bAlloc['questions']]),
+            sorted(bQuestions.keys()),
             [u'Unittest tmpllec tmplQ%d' % i for i in range(0,5)],
         )
 
@@ -752,7 +754,7 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=[
                 dict(
                     synced=False,
-                    uri=bAlloc['questions'][0]['uri'],
+                    uri=bQuestions[u'Unittest tmpllec tmplQ0'],
                     student_answer=dict(
                         text=u"My first question",
                         explanation=u"I'm way better than Arthur",
@@ -777,7 +779,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(
                     synced=False,
                     uri="%s?author_qn=yes&question_id=%d" % (
-                        aAlloc['questions'][0]['uri'],
+                        aQuestions[u'Unittest tmpllec tmplQ0'],
                         aAlloc['answerQueue'][0]['student_answer'],
                     ),
                     student_answer=dict(
@@ -1112,15 +1114,13 @@ class SyncViewFunctional(FunctionalTestCase):
         """Practice mod answers are recorded, but not returned"""
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
-        )
+        qns = dict((self.getJson(qn['uri'])['title'], qn) for qn in aAlloc['questions'])
+        self.assertEquals(sorted(qns.keys()), [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'])
 
         # Form nice long answerQueue and submit it
         answerQueue = [dict(
             synced=False,
-            uri=aAlloc['questions'][0]['uri'],
+            uri=qns[u'Unittest D1 T1 L1 Q1']['uri'],
             student_answer=i % 2,  # Odd i's should be correct
             correct='wibble',
             quiz_time=1377000000 + (i * 10),
