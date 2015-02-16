@@ -120,22 +120,36 @@ class SyncLectureView(JSONBrowserView):
 
     def asDict(self, data):
         student = self.getCurrentStudent()
-        settings = self.getStudentSettings(student)
+        portalObj = self.portalObject()
+        lectureId = self.getLectureId()
 
         # Check we're the right user, given the data
         lecture = data or dict()
         if lecture.get('user', None) and lecture['user'] != student.userName:
             raise Unauthorized('This drill is for user ' + lecture['user'] + ', not ' + student.userName)
 
-        # Build lecture dict
-        (questions, removedQuestions) = getQuestionAllocation(
-            self.portalObject(),
-            self.getLectureId(),
+        # Fetch lecture settings for current student
+        settings = self.getStudentSettings(student)
+
+        # Parse answer queue first to update question counts
+        answerQueue = parseAnswerQueue(
+            portalObj,
+            lectureId,
             self.context,
             student,
-            lecture.get('questions', []),
+            lecture.get('answerQueue', []),
             settings,
         )
+
+        # ... then fetch question lists
+        (questions, removedQuestions) = getQuestionAllocation(
+            lectureId,
+            student,
+            portalObj.absolute_url(),
+            settings,
+        )
+
+        # Build lecture dict
         return dict(
             uri=self.context.absolute_url() + '/quizdb-sync',
             user=student.userName,
@@ -144,14 +158,7 @@ class SyncLectureView(JSONBrowserView):
             review_uri=self.context.absolute_url() + '/quizdb-review-ugqn',
             title=self.context.title,
             settings=settings,
-            answerQueue=parseAnswerQueue(
-                self.portalObject(),
-                self.getLectureId(),
-                self.context,
-                student,
-                lecture.get('answerQueue', []),
-                settings,
-            ),
+            answerQueue=answerQueue,
             questions=questions,
             removed_questions=removedQuestions,
         )
