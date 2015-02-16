@@ -19,7 +19,8 @@ DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
 
 def toUTCDateTime(t):
     # Convert Zope DateTime into UTC datetime object
-    return t.asdatetime().astimezone(pytz.utc).replace(tzinfo=None)
+    # NB: MySQL cannae store less than second resolution
+    return t.asdatetime().astimezone(pytz.utc).replace(microsecond=0, tzinfo=None)
 
 
 def syncPloneQuestions(portalObj, lectureId, lectureObj):

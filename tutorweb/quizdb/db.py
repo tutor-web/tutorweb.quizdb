@@ -138,7 +138,6 @@ class Question(ORMBase):
         sqlalchemy.types.DateTime(),
         nullable=False,
         default=datetime.now,
-        onupdate=func.now(),
     )
     active = sqlalchemy.schema.Column(
         sqlalchemy.types.Boolean(),

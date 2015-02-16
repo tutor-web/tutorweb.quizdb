@@ -1,4 +1,5 @@
 import random
+import time
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -267,6 +268,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(aAlloc['removed_questions'], [])
 
         # Recreate it - gets removed and re-added under a different allocation
+        time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
         portal['dept1']['tut1']['lec1'].invokeFactory(
             type_name="tw_latexquestion",
             id="qn3",
@@ -292,6 +294,7 @@ class SyncViewFunctional(FunctionalTestCase):
         qn3a = aQuestions[u'Unittest D1 T1 L1 Q3']
 
         # Try updating it, should cause the old one to be removed and a new one added
+        time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
         portal['dept1']['tut1']['lec1']['qn3'].title = u'Unittest D1 T1 L1 Q3b'
         portal['dept1']['tut1']['lec1']['qn3'].reindexObject()
         transaction.commit()
