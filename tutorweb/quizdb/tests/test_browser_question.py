@@ -1,5 +1,6 @@
 import base64
 import json
+import time
 
 import transaction
 
@@ -430,3 +431,40 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
             sorted([q['title'] for q in self.getJson(aAlloc['question_uri']).values()]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
         )
+
+    def test_questionUpdate(self):
+        """Don't return expired allocations"""
+        # Create a temporary question
+        login(self.layer['portal'], MANAGER_ID)
+        self.layer['portal']['dept1']['tut1']['lec1'].invokeFactory(
+            type_name="tw_latexquestion",
+            id="qntmp",
+            title="Unittest D1 T1 L1 QTmp",
+        )
+        transaction.commit()
+
+        # Allocate to user A, should get questions
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        allQns = self.getJson(aAlloc['question_uri'])
+        self.assertEqual(
+            sorted([q['title'] for q in allQns.values()]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 QTmp'],
+        )
+        allQns1 = allQns
+
+        # Change QnTmp a bit
+        time.sleep(1)
+        self.layer['portal']['dept1']['tut1']['lec1']['qntmp'].title="Unittest D1 T1 L1 QTmpA"
+        self.layer['portal']['dept1']['tut1']['lec1']['qntmp'].reindexObject()
+        transaction.commit()
+
+        # Sync, should see new copy (and only one copy) of first question
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        allQns = self.getJson(aAlloc['question_uri'])
+        self.assertEqual(
+            sorted([q['title'] for q in allQns.values()]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 QTmpA'],
+        )
+
+        # The allocations are different
+        self.assertNotEquals(sorted(allQns1.keys()), sorted(allQns.keys()))

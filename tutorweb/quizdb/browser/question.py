@@ -233,6 +233,7 @@ class GetLectureQuestionsView(QuestionView):
             .filter(db.Question.lectureId == self.getLectureId()) \
             .filter(db.Question.active == True) \
             .filter(db.Allocation.studentId == student.studentId) \
+            .filter(db.Allocation.active == True) \
             .filter(db.Question.qnType != 'tw_questiontemplate') \
             .all() # NB: qnType != '...' ~== online_only = false
 
