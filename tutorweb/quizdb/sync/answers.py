@@ -105,6 +105,7 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
     # Fetch all questions for allocations, locking for update
     dbQns = {}
     if len(answerQueue) > 0:
+        # NB: Not checking active, since might be writing historical answers.
         for (dbQn, publicId) in (Session.query(db.Question, db.Allocation.publicId)
                 .with_lockmode('update')
                 .join(db.Allocation)

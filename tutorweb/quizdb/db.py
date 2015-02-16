@@ -23,7 +23,6 @@ class Allocation(ORMBase):
     """Allocation table: Which students are working on which questions"""
     __tablename__ = 'allocation'
     __table_args__ = (
-        sqlalchemy.schema.UniqueConstraint('studentId', 'questionId', name='uniq_studid_qnid'),
         dict(
             mysql_engine='InnoDB',
             mysql_charset='utf8',
@@ -56,6 +55,11 @@ class Allocation(ORMBase):
         sqlalchemy.types.DateTime(),
         nullable=False,
         default=datetime.now,
+    )
+    active = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+        default=True,
     )
 
 

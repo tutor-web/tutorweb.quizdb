@@ -1,5 +1,4 @@
 import random
-import time
 import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -224,6 +223,12 @@ class SyncViewFunctional(FunctionalTestCase):
             type_name="tw_latexquestion",
             id="qn3",
             title="Unittest D1 T1 L1 Q3",
+            text=self.rtv("How is this question?"),
+            choices=[
+                dict(text="Good?", correct=False),
+                dict(text="Bad?", correct=True),
+                dict(text="Ugly?", correct=False),
+            ],
         )
         portal['dept1']['tut1']['lec1'].invokeFactory(
             type_name="tw_latexquestion",
@@ -232,47 +237,113 @@ class SyncViewFunctional(FunctionalTestCase):
         )
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
         self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            sorted(aQuestions.keys()),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
         self.assertEquals(aAlloc['removed_questions'], [])
 
-        # Work out which is question 3
-        for qn in aAlloc['questions']:
-            if self.getJson(qn['uri'])['title'] == u'Unittest D1 T1 L1 Q3':
-                qn3 = qn['uri']
+        # Keep this version of question 3
+        qn3 = aQuestions[u'Unittest D1 T1 L1 Q3']
 
         # Delete question3, doesn't appear in sync
         browser = self.getBrowser('http://nohost/plone/dept1/tut1/lec1/qn3/delete_confirmation', user=MANAGER_ID)
         browser.getControl('Delete').click()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
-            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
-        )
-        self.assertEquals(aAlloc['removed_questions'], [qn3])
-        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
         self.assertEquals(
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
         self.assertEquals(aAlloc['removed_questions'], [qn3])
 
+        # Gone completely second time around
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEquals(
+            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
+        )
+        self.assertEquals(aAlloc['removed_questions'], [])
+
         # Recreate it - gets removed and re-added under a different allocation
-        time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
         portal['dept1']['tut1']['lec1'].invokeFactory(
             type_name="tw_latexquestion",
             id="qn3",
             title="Unittest D1 T1 L1 Q3",
+            text=self.rtv("How is this question?"),
+            choices=[
+                dict(text="Good?", correct=False),
+                dict(text="Bad?", correct=True),
+                dict(text="Ugly?", correct=False),
+            ],
         )
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
         self.assertEquals(
-            sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
+            sorted(aQuestions.keys()),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
         self.assertEquals(aAlloc['removed_questions'], [])
+        self.assertNotEquals(aQuestions[u'Unittest D1 T1 L1 Q3'], qn3)
+
+        # Keep this version of question 3
+        qn3a = aQuestions[u'Unittest D1 T1 L1 Q3']
+
+        # Try updating it, should cause the old one to be removed and a new one added
+        portal['dept1']['tut1']['lec1']['qn3'].title = u'Unittest D1 T1 L1 Q3b'
+        portal['dept1']['tut1']['lec1']['qn3'].reindexObject()
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
+        self.assertEquals(
+            sorted(aQuestions.keys()),
+            [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3b', u'Unittest D1 T1 L1 Q4'],
+        )
+        self.assertEquals(aAlloc['removed_questions'], [qn3a])
+        self.assertNotEquals(aQuestions[u'Unittest D1 T1 L1 Q3b'], qn3)
+        self.assertNotEquals(aQuestions[u'Unittest D1 T1 L1 Q3b'], qn3a)
+
+        # Keep this version of question 3
+        qn3b = aQuestions[u'Unittest D1 T1 L1 Q3b']
+
+        # Can answer all versions of qn3.
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=qn3,
+                    student_answer=0,
+                    correct='wibble',
+                    quiz_time=1377000000,
+                    answer_time=1377000005,
+                    grade_after=0.1,
+                ),
+                dict(
+                    synced=False,
+                    uri=qn3a,
+                    student_answer=1,
+                    correct='wibble',
+                    quiz_time=1377000010,
+                    answer_time=1377000015,
+                    grade_after=0.1,
+                ),
+                dict(
+                    synced=False,
+                    uri=qn3b,
+                    student_answer=2,
+                    correct='wibble',
+                    quiz_time=1377000020,
+                    answer_time=1377000025,
+                    grade_after=0.1,
+                ),
+            ],
+        ))
+        self.assertEquals(
+            [a['quiz_time'] for a in aAlloc['answerQueue']],
+            [1377000000, 1377000010, 1377000020],
+        )
 
     def test_settings(self):
         """Make sure settings are inherited from tutorial"""

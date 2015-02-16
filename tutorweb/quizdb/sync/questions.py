@@ -1,9 +1,10 @@
-import collections
-import dateutil.parser
+import datetime
 import logging
 import random
+import pytz
 
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql.expression import func
 
 from z3c.saconfig import Session
 
@@ -16,12 +17,13 @@ logger = logging.getLogger(__package__)
 DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
 
 
-def questionUrl(portalObj, dbQn, publicId):
-    return portalObj.absolute_url() + '/quizdb-get-question/' + publicId
+def toUTCDateTime(t):
+    # Convert Zope DateTime into UTC datetime object
+    return t.asdatetime().astimezone(pytz.utc).replace(tzinfo=None)
 
 
-def getQuestionAllocation(portalObj, lectureId, lectureObj, student, questions, settings):
-    removedQns = []
+def syncPloneQuestions(portalObj, lectureId, lectureObj):
+    """Ensure database has same questions as Plone"""
 
     # Get all plone questions, turn it into a dict by path
     listing = portalObj.portal_catalog.unrestrictedSearchResults(
@@ -30,86 +32,100 @@ def getQuestionAllocation(portalObj, lectureId, lectureObj, student, questions, 
     )
     ploneQns = dict((b.getPath(), b) for b in listing)
 
-    # Get all questions from DB and their allocations
-    subquery = aliased(
-        db.Allocation,
-        Session.query(db.Allocation).filter(
-            db.Allocation.studentId == student.studentId
-        ).subquery(),
-    )
-    dbAllocs = Session.query(db.Question, subquery) \
-        .outerjoin(subquery) \
-        .filter(db.Question.lectureId == lectureId) \
-        .all()
-
-    # Update / delete any existing questions
-    usedAllocs = collections.defaultdict(list)
-    spareAllocs = collections.defaultdict(list)
-    for (i, (dbQn, dbAlloc)) in enumerate(dbAllocs):
-        if dbQn.plonePath in ploneQns:
-            # Already have dbQn, don't need to create it
-            del ploneQns[dbQn.plonePath]
+    # Get all questions currently in the database
+    for dbQn in (Session.query(db.Question).filter(db.Question.lectureId == lectureId)):
+        brain = ploneQns.get(dbQn.plonePath, None)
+        if brain is not None:
+            # Question still there (or returned), update
             dbQn.active = True
-            if dbAlloc is not None:
-                usedAllocs[dbQn.qnType].append(i)
-            else:
-                spareAllocs[dbQn.qnType].append(i)
-        else:
-            # Question isn't in Plone, so deactivate in DB
+            dbQn.lastUpdate = toUTCDateTime(brain['modified'])
+            # Dont add this question later
+            del ploneQns[dbQn.plonePath]
+        elif dbQn.active:
+            # Question has been removed, disable in database & record when we did it
             dbQn.active = False
-            if dbAlloc:
-                # Remove allocation, so users don't take this question any more
-                removedQns.append(questionUrl(portalObj, dbQn, dbAlloc.publicId))
-                dbAllocs[i] = (dbQn, None)
+            dbQn.lastUpdate = datetime.datetime.utcnow()
+        else:
+            # No question & already removed from DB
+            pass
 
-    # Add any questions missing from DB
+    # Insert any remaining questions
     for (path, brain) in ploneQns.iteritems():
         obj = brain.getObject()
-        dbQn = db.Question(
+        Session.add(db.Question(
             plonePath=path,
             qnType=obj.portal_type,
             lectureId=lectureId,
-            lastUpdate=dateutil.parser.parse(brain['ModificationDate']),
+            lastUpdate=toUTCDateTime(brain['modified']),
             timesAnswered=getattr(obj, 'timesanswered', 0),
             timesCorrect=getattr(obj, 'timescorrect', 0),
-        )
-        Session.add(dbQn)
-        spareAllocs[dbQn.qnType].append(len(dbAllocs))
-        dbAllocs.append((dbQn, None))
+        ))
+
     Session.flush()
 
+
+def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDifficulty=None):
+    def questionUrl(publicId):
+        return questionRoot + '/quizdb-get-question/' + publicId
+
+    # Get all existing allocations from the DB and their questions
+    allocsByType = dict(
+        tw_latexquestion=[],
+        tw_questiontemplate=[],
+        # NB: Need to add rows for each distinct question type, otherwise won't try and assign them
+    )
+    removedQns = []
+    for (dbAlloc, dbQn) in (Session.query(db.Allocation, db.Question)
+            .join(db.Question)
+            .filter(db.Allocation.studentId == student.studentId)
+            .filter(db.Allocation.active == True)
+            .filter(db.Question.lectureId == lectureId)):
+        if not(dbQn.active) or (dbAlloc.allocationTime < dbQn.lastUpdate):
+            # Question has been removed or is stale
+            removedQns.append(questionUrl(dbAlloc.publicId))
+            dbAlloc.active = False
+        else:
+            # Still around, so save it
+            allocsByType[dbQn.qnType].append(dict(alloc=dbAlloc, question=dbQn))
+
     # Each question type should have at most question_cap questions
-    for qnType in set(usedAllocs.keys() + spareAllocs.keys()):
-        # Count questions that aren't allocated, and allocate more if needed
-        neededAllocs = min(
-            int(settings.get('question_cap', DEFAULT_QUESTION_CAP)),
-            len(usedAllocs[qnType]) + len(spareAllocs[qnType]),
-        ) - len(usedAllocs[qnType])
-        if neededAllocs > 0:
-            # Need more questions, so assign randomly
-            for i in random.sample(spareAllocs[qnType], neededAllocs):
+    for (qnType, allocs) in allocsByType.items():
+        questionCap = int(settings.get('question_cap', DEFAULT_QUESTION_CAP))
+
+        # If there's too many allocs, throw some away
+        for i in sorted(random.sample(xrange(len(allocs)), max(len(allocs) - questionCap, 0)), reverse=True):
+            removedQns.append(questionUrl(allocs[i]['alloc'].publicId))
+            allocs[i]['alloc'].active = False
+            del allocs[i]
+
+        # Assign required questions randomly
+        if len(allocs) < questionCap:
+            for dbQn in (Session.query(db.Question)
+                    .filter(db.Question.lectureId == lectureId)
+                    .filter(~db.Question.questionId.in_([a['alloc'].questionId for a in allocs]))
+                    .filter(db.Question.qnType == qnType)
+                    .filter(db.Question.active == True)
+                    .order_by(None if targetDifficulty is None else 3)
+                    .order_by(func.random())
+                    .limit(max(questionCap - len(allocs), 0))):
                 dbAlloc = db.Allocation(
                     studentId=student.studentId,
-                    questionId=dbAllocs[i][0].questionId,
+                    questionId=dbQn.questionId,
+                    allocationTime=datetime.datetime.utcnow(),
                 )
                 Session.add(dbAlloc)
-                dbAllocs[i] = (dbAllocs[i][0], dbAlloc)
-        elif neededAllocs < 0:
-            # Need less questions
-            for i in random.sample(usedAllocs[qnType], abs(neededAllocs)):
-                removedQns.append(questionUrl(portalObj, dbAllocs[i][0], dbAllocs[i][1].publicId))
-                Session.delete(dbAllocs[i][1])  # NB: Should probably mark as deleted instead
-                dbAllocs[i] = (dbAllocs[i][0], None)
+                allocs.append(dict(alloc=dbAlloc, question=dbQn))
+
     Session.flush()
 
     # Return all active questions
     return (
         [dict(
-            _type="template" if dbQn.qnType == 'tw_questiontemplate' else None,
-            uri=questionUrl(portalObj, dbQn, dbAlloc.publicId),
-            chosen=dbQn.timesAnswered,
-            correct=dbQn.timesCorrect,
-            online_only = (dbQn.qnType == 'tw_questiontemplate'),
-        ) for (dbQn, dbAlloc) in dbAllocs if dbAlloc is not None],
+            _type="template" if a['question'].qnType == 'tw_questiontemplate' else None,
+            uri=questionUrl(a['alloc'].publicId),
+            chosen=a['question'].timesAnswered,
+            correct=a['question'].timesCorrect,
+            online_only = (a['question'].qnType == 'tw_questiontemplate'),
+        ) for allocs in allocsByType.values() for a in allocs],
         removedQns,
     )

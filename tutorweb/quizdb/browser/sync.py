@@ -6,7 +6,7 @@ from z3c.saconfig import Session
 from tutorweb.quizdb import db
 from .base import JSONBrowserView
 
-from ..sync.questions import getQuestionAllocation
+from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
@@ -130,6 +130,13 @@ class SyncLectureView(JSONBrowserView):
 
         # Fetch lecture settings for current student
         settings = self.getStudentSettings(student)
+
+        # Make sure DB is in sync with Plone
+        syncPloneQuestions(
+            portalObj,
+            lectureId,
+            self.context,
+        )
 
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(

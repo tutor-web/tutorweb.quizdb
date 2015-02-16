@@ -10,7 +10,7 @@ from plone.app.testing import login
 from tutorweb.content.tests.base import setRelations
 from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
-from ..sync.questions import getQuestionAllocation
+from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 
 
@@ -136,7 +136,8 @@ class StudentResultsViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        qns = getQuestionAllocation(self.layer['portal'], syncView.getLectureId(), lecture, student, [], {})[0]
+        syncPloneQuestions(self.layer['portal'], syncView.getLectureId(), lecture)
+        qns = getQuestionAllocation(syncView.getLectureId(), student, self.layer['portal'].absolute_url(), {})[0]
         out = parseAnswerQueue(self.layer['portal'], syncView.getLectureId(), lecture, student, [dict(
             synced=False,
             uri=qns[0]['uri'],
@@ -248,7 +249,8 @@ class StudentTableViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        qns = getQuestionAllocation(self.layer['portal'], syncView.getLectureId(), lecture, student, [], {})[0]
+        syncPloneQuestions(self.layer['portal'], syncView.getLectureId(), lecture)
+        qns = getQuestionAllocation(syncView.getLectureId(), student, self.layer['portal'].absolute_url(), {})[0]
         out = parseAnswerQueue(self.layer['portal'], syncView.getLectureId(), lecture, student, [dict(
             synced=False,
             uri=random.choice(qns)['uri'],
