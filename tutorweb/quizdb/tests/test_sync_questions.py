@@ -63,3 +63,68 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         self.assertTrue(abs(0.08 - statsA['variance']) < 0.05)
         self.assertTrue(abs(0.01 - statsB['variance']) < 0.05)
         self.assertTrue(abs(0.01 - statsC['variance']) < 0.05)
+
+    def test_reAllocQuestions(self):
+        """Make sure we can throw away un-needed questions"""
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create a lecture that has a range of questions, put them in DB
+        qnCount = 100
+        def questionOpts(i):
+            return dict(
+                timesanswered=qnCount,
+                timescorrect=i,
+            )
+        lectureObj = self.createTestLecture(qnCount=qnCount, qnOpts=questionOpts)
+        login(portal, USER_A_ID)
+        lectureId = lectureObj.restrictedTraverse('@@quizdb-sync').getLectureId()
+        syncPloneQuestions(portal, lectureId, lectureObj)
+
+        def gqa(targetDifficulty, reAllocQuestions, student=self.studentA):
+            (allocs, _) = getQuestionAllocation(
+                lectureId,
+                student,
+                'http://x',
+                dict(question_cap=10),
+                targetDifficulty=targetDifficulty,
+                reAllocQuestions=reAllocQuestions,
+            )
+            return allocs
+        aAllocs = []
+
+        # Assign to A randomly
+        aAllocs.append(gqa(None, False))
+        self.assertEquals(len(aAllocs[0]), 10)
+
+        # Reassign, with high grade should get rid of easy questions
+        aAllocs.append(gqa(0.925, True))
+        self.assertEquals(len(aAllocs[1]), 10)
+
+        # Old items should be easy
+        oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
+        self.assertEquals(len(oldItems), 2)
+        for a in oldItems:
+            self.assertTrue(a['correct'] < 20)
+
+        # New items should be hard
+        newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
+        self.assertEquals(len(newItems), 2)
+        for a in newItems:
+            self.assertTrue(a['correct'] > 80)
+
+        # Reassign, with low grade should get rid of hard questions
+        aAllocs.append(gqa(0.025, True))
+        self.assertEquals(len(aAllocs[1]), 10)
+
+        # Old items should be hard
+        oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
+        self.assertEquals(len(oldItems), 2)
+        for a in oldItems:
+            self.assertTrue(a['correct'] > 80)
+
+        # New items should be easy
+        newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
+        self.assertEquals(len(newItems), 2)
+        for a in newItems:
+            self.assertTrue(a['correct'] < 20)

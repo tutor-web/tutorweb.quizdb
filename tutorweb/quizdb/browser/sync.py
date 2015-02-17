@@ -154,7 +154,8 @@ class SyncLectureView(JSONBrowserView):
             student,
             portalObj.absolute_url(),
             settings,
-            targetDifficulty=(answerQueue[-1].get('grade_after', None) if len(answerQueue) > 10 else None),
+            targetDifficulty=(answerQueue[-1].get('grade_after', None) if len(answerQueue) > 8 else None),
+            reAllocQuestions=(len(answerQueue) > 10 and len(answerQueue) % 10 == 0),
         )
 
         # Build lecture dict

@@ -65,7 +65,7 @@ def syncPloneQuestions(portalObj, lectureId, lectureObj):
     Session.flush()
 
 
-def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDifficulty=None):
+def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDifficulty=None, reAllocQuestions=False):
     def questionUrl(publicId):
         return questionRoot + '/quizdb-get-question/' + publicId
 
@@ -98,6 +98,20 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
             removedQns.append(questionUrl(allocs[i]['alloc'].publicId))
             allocs[i]['alloc'].active = False
             del allocs[i]
+
+        # If there's questions to spare, and requested to do so, reallocate questions
+        if len(allocs) == questionCap and reAllocQuestions:
+            if targetDifficulty is None:
+                raise ValueError("Must have a target difficulty to know what to remove")
+
+            # Make ranking how likely questions are, based on targetDifficulty
+            suitability = [1 - abs(targetDifficulty - float(a['question'].timesCorrect) / a['question'].timesAnswered) for a in allocs]
+            ranking = sorted(range(len(allocs)), key=lambda k: suitability[k])
+
+            # Remove the least likely tenth
+            for i in sorted(ranking[0:len(allocs) / 10 + 1], reverse=True):
+                allocs[i]['alloc'].active = False
+                del allocs[i]
 
         # Assign required questions randomly
         if len(allocs) < questionCap:
