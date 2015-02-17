@@ -27,7 +27,9 @@ class ReviewUgQnView(JSONBrowserView):
         answerIndex = 0
         for (ugQn, alloc) in (Session.query(db.UserGeneratedQuestion, db.Allocation)
                 .join(db.Question).join(db.Allocation)
+                # NB: question/student/revision would be unique, this *should* be.
                 .filter(db.Allocation.studentId == student.studentId)
+                .filter(db.Allocation.active == True)
                 .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                 .filter(db.Question.lectureId == self.getLectureId())
                 .order_by(db.UserGeneratedQuestion.ugQuestionId)
