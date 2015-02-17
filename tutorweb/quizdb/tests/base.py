@@ -4,6 +4,8 @@ import tempfile
 from unittest import TestCase
 import json
 
+from zope.testing.loggingsupport import InstalledHandler
+
 from plone.app.testing import IntegrationTesting, FunctionalTesting
 from z3c.saconfig import Session
 from zope.configuration import xmlconfig
@@ -82,6 +84,29 @@ class IntegrationTestCase(TestCase):
 class FunctionalTestCase(ContentFunctionalTestCase):
     layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
 
+    def setUp(self):
+        super(FunctionalTestCase, self).setUp()
+        self.loghandlers = dict(
+            sqlalchemy=InstalledHandler('sqlalchemy.engine'),
+            sync=InstalledHandler('tutorweb.quizdb.browser.sync')
+        )
+
+    def tearDown(self):
+        """Drop all DB tables and recreate"""
+        Session().execute("DROP TABLE allocation")
+        Session().execute("DROP TABLE lecture")
+        Session().execute("DROP TABLE lectureSetting")
+        Session().execute("DROP TABLE question")
+        Session().execute("DROP TABLE student")
+        Session().execute("DROP TABLE answer")
+        Session().execute("DROP TABLE answerSummary")
+        Session().execute("DROP TABLE userGeneratedQuestions")
+        Session().execute("DROP TABLE userGeneratedAnswer")
+        Session().execute("DROP TABLE coinAward")
+        ORMBase.metadata.create_all(Session().bind)
+
+        super(FunctionalTestCase, self).tearDown()
+
     def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
         """Call view, decode JSON results"""
         browser = self.getBrowser(None, user=user)
@@ -106,20 +131,6 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         )
         return json.loads(browser.contents)
 
-    def tearDown(self):
-        """Drop all DB tables and recreate"""
-        Session().execute("DROP TABLE allocation")
-        Session().execute("DROP TABLE lecture")
-        Session().execute("DROP TABLE lectureSetting")
-        Session().execute("DROP TABLE question")
-        Session().execute("DROP TABLE student")
-        Session().execute("DROP TABLE answer")
-        Session().execute("DROP TABLE answerSummary")
-        Session().execute("DROP TABLE userGeneratedQuestions")
-        Session().execute("DROP TABLE userGeneratedAnswer")
-        Session().execute("DROP TABLE coinAward")
-        ORMBase.metadata.create_all(Session().bind)
-
     def findAnswer(self, qnData, correct=True):
         """Return the first correct/incorrect answer for given question"""
         corrAns = json.loads(base64.b64decode(qnData['answer']))['correct']
@@ -134,3 +145,6 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         if thing is not None:
             raise ValueError("Did you really mean to use assertTrue?")
         return TestCase.assertTrue(self, expr, msg=msg)
+
+    def logs(self, name='sqlalchemy'):
+        return [x.getMessage() for x in self.loghandlers[name].records]
