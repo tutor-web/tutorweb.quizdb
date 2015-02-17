@@ -1,12 +1,15 @@
+import random
 import base64
 import os
 import tempfile
 from unittest import TestCase
 import json
 
+import transaction
+from Acquisition import aq_parent
 from zope.testing.loggingsupport import InstalledHandler
 
-from plone.app.testing import IntegrationTesting, FunctionalTesting
+from plone.app.testing import IntegrationTesting, FunctionalTesting, login
 from z3c.saconfig import Session
 from zope.configuration import xmlconfig
 
@@ -92,7 +95,14 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         )
 
     def tearDown(self):
-        """Drop all DB tables and recreate"""
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Remove any temporary Plone objects
+        for l in reversed(getattr(self, 'tempObjects', [])):
+            del aq_parent(l)[l.id]
+
+        # Drop all DB tables & recreate
         Session().execute("DROP TABLE allocation")
         Session().execute("DROP TABLE lecture")
         Session().execute("DROP TABLE lectureSetting")
@@ -105,6 +115,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         Session().execute("DROP TABLE coinAward")
         ORMBase.metadata.create_all(Session().bind)
 
+        transaction.commit()
         super(FunctionalTestCase, self).tearDown()
 
     def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
@@ -148,3 +159,48 @@ class FunctionalTestCase(ContentFunctionalTestCase):
 
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
+
+    def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}):
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+        tutorial = portal.restrictedTraverse('dept1/tut1')
+
+        # Create some content, merging in specified options
+        def createContent(parent, defaults, i=random.randint(1000000, 9999999)):
+            # Autogenerate id, title
+            opts = dict(
+                id="%s-%d" % (dict(
+                    tw_department="dept",
+                    tw_tutorial="tut",
+                    tw_lecture="lec",
+                    tw_latexquestion="qn",
+                )[defaults['type_name']], i),
+                title="Unittest %s %d" % (defaults['type_name'], i),
+            )
+
+            # Merge in supplied opts
+            opts.update(defaults)
+            if defaults['type_name'] == 'tw_latexquestion':
+                opts.update(qnOpts(i))
+
+            obj = parent[parent.invokeFactory(**opts)]
+            if not hasattr(self, 'tempObjects'):
+                self.tempObjects = []
+            self.tempObjects.append(obj)
+            return obj
+
+        # Create dept/tutorial/lecture
+        deptObj = createContent(portal, dict(type_name="tw_department"))
+        tutorialObj = createContent(deptObj, dict(type_name="tw_tutorial"))
+        lectureObj = createContent(tutorialObj, dict(type_name="tw_lecture"))
+
+        # Create required questions inside
+        for i in xrange(qnCount):
+            createContent(lectureObj, dict(
+                type_name="tw_latexquestion",
+                choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
+                finalchoices=[],
+            ), i)
+
+        transaction.commit()
+        return lectureObj
