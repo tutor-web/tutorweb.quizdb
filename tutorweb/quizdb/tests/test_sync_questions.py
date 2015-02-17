@@ -34,7 +34,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
 
-        def getAllocStats(lectureId, student, targetDifficulty, settings = {}):
+        def getAllocStats(lectureId, student, targetDifficulty, settings = dict(question_cap=10)):
             (allocs, _) = getQuestionAllocation(lectureId, student, 'http://x', settings, targetDifficulty=targetDifficulty)
             difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs]
             mean = sum(difficulty) / len(difficulty)
@@ -42,7 +42,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
             return dict(difficulty=difficulty, mean=mean, variance=variance)
 
         # Create a lecture that has a range of questions, put them in DB
-        qnCount = 250
+        qnCount = 100
         def questionOpts(i):
             return dict(
                 timesanswered=qnCount,
