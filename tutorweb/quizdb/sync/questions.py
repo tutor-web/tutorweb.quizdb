@@ -101,12 +101,16 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
 
         # Assign required questions randomly
         if len(allocs) < questionCap:
+            if targetDifficulty is None:
+                targetExp = None
+            else:
+                targetExp = func.abs(int(targetDifficulty * 10) - func.round((10.0 * db.Question.timesCorrect) / db.Question.timesAnswered))
             for dbQn in (Session.query(db.Question)
                     .filter(db.Question.lectureId == lectureId)
                     .filter(~db.Question.questionId.in_([a['alloc'].questionId for a in allocs]))
                     .filter(db.Question.qnType == qnType)
                     .filter(db.Question.active == True)
-                    .order_by(None if targetDifficulty is None else 3)
+                    .order_by(targetExp)
                     .order_by(func.random())
                     .limit(max(questionCap - len(allocs), 0))):
                 dbAlloc = db.Allocation(
