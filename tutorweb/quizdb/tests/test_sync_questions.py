@@ -105,13 +105,13 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
         self.assertEquals(len(oldItems), 2)
         for a in oldItems:
-            self.assertTrue(a['correct'] < 20)
+            self.assertTrue(a['correct'] < 25)
 
         # New items should be hard
         newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
         self.assertEquals(len(newItems), 2)
         for a in newItems:
-            self.assertTrue(a['correct'] > 80)
+            self.assertTrue(a['correct'] > 75)
 
         # Reassign, with low grade should get rid of hard questions
         aAllocs.append(gqa(0.025, True))
@@ -121,10 +121,10 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
         self.assertEquals(len(oldItems), 2)
         for a in oldItems:
-            self.assertTrue(a['correct'] > 80)
+            self.assertTrue(a['correct'] > 75)
 
         # New items should be easy
         newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
         self.assertEquals(len(newItems), 2)
         for a in newItems:
-            self.assertTrue(a['correct'] < 20)
+            self.assertTrue(a['correct'] < 25)
