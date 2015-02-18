@@ -148,7 +148,7 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
             a['student_answer'] = ugAns.ugAnswerId
 
         elif dbQn.qnType == 'tw_questiontemplate':
-            if a['correct']:
+            if a['student_answer'] and a['student_answer']['text']:
                 # Write question to database
                 ugQn = db.UserGeneratedQuestion(
                     studentId=student.studentId,
@@ -167,15 +167,23 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
 
                 # If this replaces an old question, note this in DB
                 if 'question_id' in queryString:
+                    a['correct'] = None # NB: Can't award yourself infinite corrects
                     (Session.query(db.UserGeneratedQuestion)
                         .filter(db.UserGeneratedQuestion.ugQuestionId == queryString['question_id'][0])
                         .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                         .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                         .one()).superseded = ugQn.ugQuestionId
                     Session.flush()
+                else:
+                    a['correct'] = True
 
+            elif 'question_id' in queryString:
+                # Student tried to rewrite question, but skipped
+                a['correct'] = None
+                a['student_answer'] = None
             else:
                 # Student skipped (and got an incorrect mark)
+                a['correct'] = False
                 a['student_answer'] = None
 
         else:  # A tw_latexquestion, probably

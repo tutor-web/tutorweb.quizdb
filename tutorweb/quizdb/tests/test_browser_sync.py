@@ -786,9 +786,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(
                     synced=False,
                     uri=aQuestions[u'Unittest tmpllec tmplQ1'],
-                    student_answer=dict(
-                        text=u"I bottled it",
-                    ),
+                    student_answer=dict(),
                     correct=False,
                     quiz_time=1377000020,
                     answer_time=1377000030,
@@ -863,7 +861,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     ),
                     correct=True,
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000050,
                     grade_after=0.1,
                 ),
             ],
@@ -875,6 +873,12 @@ class SyncViewFunctional(FunctionalTestCase):
             [None, u'<div class="parse-as-tex">My second question</div>'],
             [None, u'<div class="parse-as-tex">My first question, again</div>'],
         ])
+
+        # Didn't get marked as correct second time around
+        self.assertEquals(
+            [a['correct'] for a in  aAlloc['answerQueue']],
+            [True, False, True, None],
+        )
 
     def test_answerQueue_getCoinAward(self):
         """Questions should get a suitable award"""
