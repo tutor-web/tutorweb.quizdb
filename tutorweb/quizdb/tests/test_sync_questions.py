@@ -11,9 +11,6 @@ from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 class GetQuestionAllocationTest(FunctionalTestCase):
     maxDiff = None
 
-    def logs(self, name='sqlalchemy'):
-        return [x.getMessage() for x in self.loghandlers[name].records]
-
     def setUp(self):
         """Fetch student record for all users"""
         super(GetQuestionAllocationTest, self).setUp()
@@ -42,7 +39,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
             return dict(difficulty=difficulty, mean=mean, variance=variance)
 
         # Create a lecture that has a range of questions, put them in DB
-        qnCount = 100
+        qnCount = 200
         def questionOpts(i):
             return dict(
                 timesanswered=qnCount,
