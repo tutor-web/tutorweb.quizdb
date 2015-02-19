@@ -166,22 +166,21 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         tutorial = portal.restrictedTraverse('dept1/tut1')
 
         # Create some content, merging in specified options
-        def createContent(parent, defaults, i=random.randint(1000000, 9999999)):
-            # Autogenerate id, title
-            opts = dict(
-                id="%s-%d" % (dict(
+        def createContent(parent, defaults, i=random.randint(1000000, 9999999), optsFn=lambda i: {}):
+            opts = dict(id=None, title=None)
+            opts.update(defaults)
+            opts.update(optsFn(i))
+
+            if not opts['id']:
+                opts['id'] = "%s-%d" % (dict(
                     tw_department="dept",
                     tw_tutorial="tut",
                     tw_lecture="lec",
                     tw_latexquestion="qn",
-                )[defaults['type_name']], i),
-                title="Unittest %s %d" % (defaults['type_name'], i),
-            )
-
-            # Merge in supplied opts
-            opts.update(defaults)
-            if defaults['type_name'] == 'tw_latexquestion':
-                opts.update(qnOpts(i))
+                    tw_questiontemplate="tmplqn",
+                    )[opts['type_name']], i)
+            if not opts['title']:
+                opts['title'] = "Unittest %s %d" % (opts['type_name'], i),
 
             obj = parent[parent.invokeFactory(**opts)]
             if not hasattr(self, 'tempObjects'):
@@ -200,7 +199,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
                 type_name="tw_latexquestion",
                 choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
                 finalchoices=[],
-            ), i)
+            ), i, optsFn=qnOpts)
 
         transaction.commit()
         return lectureObj
