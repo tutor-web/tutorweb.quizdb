@@ -10,6 +10,7 @@ from Acquisition import aq_parent
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import IntegrationTesting, FunctionalTesting, login
+from Products.CMFCore.utils import getToolByName
 from z3c.saconfig import Session
 from zope.configuration import xmlconfig
 
@@ -203,3 +204,24 @@ class FunctionalTestCase(ContentFunctionalTestCase):
 
         transaction.commit()
         return lectureObj
+
+    def createTestStudent(self, id):
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        acl_users = getToolByName(portal, 'acl_users')
+        mtool = getToolByName(portal, 'portal_membership')
+        acl_users.userFolderAddUser(
+            id, 'secret'+id[0],
+            ['Member'],[]
+        )
+        mtool.getMemberById(id).setMemberProperties(dict(
+            email=id + '@example.com',
+            accept=True,
+        ))
+
+        login(portal, id)
+        student = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
+        transaction.commit()
+
+        return student
