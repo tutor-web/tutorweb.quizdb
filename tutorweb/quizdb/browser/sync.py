@@ -133,7 +133,6 @@ class SyncLectureView(JSONBrowserView):
 
         # Make sure DB is in sync with Plone
         syncPloneQuestions(
-            portalObj,
             lectureId,
             self.context,
         )

@@ -23,11 +23,11 @@ def toUTCDateTime(t):
     return t.asdatetime().astimezone(pytz.utc).replace(microsecond=0, tzinfo=None)
 
 
-def syncPloneQuestions(portalObj, lectureId, lectureObj):
+def syncPloneQuestions(lectureId, lectureObj):
     """Ensure database has same questions as Plone"""
 
     # Get all plone questions, turn it into a dict by path
-    listing = portalObj.portal_catalog.unrestrictedSearchResults(
+    listing = lectureObj.portal_catalog.unrestrictedSearchResults(
         path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
         object_provides=IQuestion.__identifier__
     )

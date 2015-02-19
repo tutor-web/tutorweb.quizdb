@@ -48,7 +48,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         lectureObj = self.createTestLecture(qnCount=qnCount, qnOpts=questionOpts)
         login(portal, USER_A_ID)
         lectureId = lectureObj.restrictedTraverse('@@quizdb-sync').getLectureId()
-        syncPloneQuestions(portal, lectureId, lectureObj)
+        syncPloneQuestions(lectureId, lectureObj)
 
         # A should get an even spread, B focuses on easy, C focuses on hard
         statsA = getAllocStats(lectureId, self.studentA, None)
@@ -76,7 +76,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         lectureObj = self.createTestLecture(qnCount=qnCount, qnOpts=questionOpts)
         login(portal, USER_A_ID)
         lectureId = lectureObj.restrictedTraverse('@@quizdb-sync').getLectureId()
-        syncPloneQuestions(portal, lectureId, lectureObj)
+        syncPloneQuestions(lectureId, lectureObj)
 
         def gqa(targetDifficulty, reAllocQuestions, student=self.studentA):
             (allocs, _) = getQuestionAllocation(

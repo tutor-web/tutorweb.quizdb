@@ -136,7 +136,7 @@ class StudentResultsViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        syncPloneQuestions(self.layer['portal'], syncView.getLectureId(), lecture)
+        syncPloneQuestions(syncView.getLectureId(), lecture)
         qns = getQuestionAllocation(syncView.getLectureId(), student, self.layer['portal'].absolute_url(), {})[0]
         out = parseAnswerQueue(self.layer['portal'], syncView.getLectureId(), lecture, student, [dict(
             synced=False,
@@ -249,7 +249,7 @@ class StudentTableViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        syncPloneQuestions(self.layer['portal'], syncView.getLectureId(), lecture)
+        syncPloneQuestions(syncView.getLectureId(), lecture)
         qns = getQuestionAllocation(syncView.getLectureId(), student, self.layer['portal'].absolute_url(), {})[0]
         out = parseAnswerQueue(self.layer['portal'], syncView.getLectureId(), lecture, student, [dict(
             synced=False,
