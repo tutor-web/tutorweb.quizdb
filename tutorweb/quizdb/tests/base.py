@@ -92,7 +92,8 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         super(FunctionalTestCase, self).setUp()
         self.loghandlers = dict(
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
-            sync=InstalledHandler('tutorweb.quizdb.browser.sync')
+            sync=InstalledHandler('tutorweb.quizdb.browser.sync'),
+            syncm=InstalledHandler('tutorweb.quizdb.sync'),
         )
 
     def tearDown(self):
