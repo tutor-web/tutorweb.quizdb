@@ -17,7 +17,7 @@ from tutorweb.quizdb import db
 logger = logging.getLogger(__package__)
 
 
-def getAnswerSummary(portalObj, lectureId, lectureObj, student):
+def getAnswerSummary(lectureId, student):
     """Fetch answerSummary row for student"""
     try:
         dbAnsSummary = (Session.query(db.AnswerSummary)
@@ -48,7 +48,7 @@ def getAnswerSummary(portalObj, lectureId, lectureObj, student):
     return dbAnsSummary
 
 
-def getCoinAward(portalObj, lectureId, lectureObj, student, dbAnsSummary, a, settings):
+def getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings):
     """How many coins does this earn a student?"""
     newGrade = a.get('grade_after', None)
     out = 0
@@ -115,7 +115,7 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
             dbQns[publicId] = dbQn
 
     # Fetch summary
-    dbAnsSummary = getAnswerSummary(portalObj, lectureId, lectureObj, student)
+    dbAnsSummary = getAnswerSummary(lectureId, student)
 
     for (publicId, queryString, a) in answerQueue:
         # Fetch question for allocation
@@ -214,7 +214,7 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
                 dbAnsSummary.practiceCorrect += 1
 
         # Does this earn the student any coins?
-        coinsAwarded = getCoinAward(portalObj, lectureId, lectureObj, student, dbAnsSummary, a, settings)
+        coinsAwarded = getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings)
 
         # Post-awards, update grade
         if a.get('grade_after', None) is not None:
