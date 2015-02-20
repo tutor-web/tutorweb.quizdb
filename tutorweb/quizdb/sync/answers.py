@@ -94,7 +94,7 @@ def getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings):
                 # Has the author received an award for this question yet?
                 ugQn = (Session.query(db.UserGeneratedQuestion)
                     .filter(db.UserGeneratedQuestion.ugQuestionId == ugAns.ugQuestionId)
-                    .one())  # TODO: Just join it.
+                    .one())
                 ugQnAns = (Session.query(db.Answer)
                     .filter(db.Answer.questionId == dbQn.questionId)
                     .filter(db.Answer.studentId == ugQn.studentId)
