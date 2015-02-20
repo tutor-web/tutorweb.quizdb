@@ -118,7 +118,7 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
             if targetDifficulty is None:
                 targetExp = None
             else:
-                targetExp = func.abs(round(targetDifficulty * 10) - func.round((10.0 * db.Question.timesCorrect) / db.Question.timesAnswered))
+                targetExp = func.abs(round(targetDifficulty * 50) - func.round((50.0 * db.Question.timesCorrect) / db.Question.timesAnswered))
             for dbQn in (Session.query(db.Question)
                     .filter(db.Question.lectureId == lectureId)
                     .filter(~db.Question.questionId.in_([a['alloc'].questionId for a in allocs]))
