@@ -462,6 +462,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000000,
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
+                u'coins_awarded': 0,
             },
             {
                 u'synced': True,
@@ -474,6 +475,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'lec_correct': 1,
                 u'practice_answered': 0,
                 u'practice_correct': 0,
+                u'coins_awarded': 0,
             },
         ])
 
@@ -492,6 +494,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000000,
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
+                u'coins_awarded': 0,
             },
             {
                 u'synced': True,
@@ -504,6 +507,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'lec_correct': 1,
                 u'practice_answered': 0,
                 u'practice_correct': 0,
+                u'coins_awarded': 0,
             },
         ])
 
@@ -631,6 +635,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000000,
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
+                u'coins_awarded': 0,
             },
             {
                 u'synced': True,
@@ -643,6 +648,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'lec_correct': 1,
                 u'practice_answered': 0,
                 u'practice_correct': 0,
+                u'coins_awarded': 0,
             },
         ])
 

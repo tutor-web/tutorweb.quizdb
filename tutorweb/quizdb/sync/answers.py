@@ -251,6 +251,7 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
         answer_time=int(time.mktime(dbAns.timeEnd.timetuple())),
         student_answer=dbAns.chosenAnswer,
         grade_after=dbAns.grade,
+        coins_awarded=dbAns.coinsAwarded,
         synced=True,
     ) for dbAns in reversed(dbAnswers)]
 
