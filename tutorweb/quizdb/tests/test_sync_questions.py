@@ -54,12 +54,12 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         statsA = getAllocStats(lectureId, self.studentA, None)
         statsB = getAllocStats(lectureId, self.studentB, 0.175)
         statsC = getAllocStats(lectureId, self.studentC, 0.925)
-        self.assertTrue(abs(0.500 - statsA['mean']) < 0.15)
-        self.assertTrue(abs(0.175 - statsB['mean']) < 0.15)
-        self.assertTrue(abs(0.925 - statsC['mean']) < 0.15)
-        self.assertTrue(abs(0.08 - statsA['variance']) < 0.05)
-        self.assertTrue(abs(0.01 - statsB['variance']) < 0.05)
-        self.assertTrue(abs(0.01 - statsC['variance']) < 0.05)
+        self.assertLess(abs(0.500 - statsA['mean']), 0.15)
+        self.assertLess(abs(0.175 - statsB['mean']), 0.15)
+        self.assertLess(abs(0.925 - statsC['mean']), 0.15)
+        self.assertLess(abs(0.08 - statsA['variance']), 0.05)
+        self.assertLess(abs(0.01 - statsB['variance']), 0.05)
+        self.assertLess(abs(0.01 - statsC['variance']), 0.05)
 
     def test_reAllocQuestions(self):
         """Make sure we can throw away un-needed questions"""
@@ -102,13 +102,13 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
         self.assertEquals(len(oldItems), 2)
         for a in oldItems:
-            self.assertTrue(a['correct'] < 25)
+            self.assertLess(a['correct'], 25)
 
         # New items should be hard
         newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
         self.assertEquals(len(newItems), 2)
         for a in newItems:
-            self.assertTrue(a['correct'] > 75)
+            self.assertGreater(a['correct'], 75)
 
         # Reassign, with low grade should get rid of hard questions
         aAllocs.append(gqa(0.025, True))
@@ -118,10 +118,10 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
         self.assertEquals(len(oldItems), 2)
         for a in oldItems:
-            self.assertTrue(a['correct'] > 75)
+            self.assertGreater(a['correct'], 75)
 
         # New items should be easy
         newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
         self.assertEquals(len(newItems), 2)
         for a in newItems:
-            self.assertTrue(a['correct'] < 25)
+            self.assertLess(a['correct'], 25)
