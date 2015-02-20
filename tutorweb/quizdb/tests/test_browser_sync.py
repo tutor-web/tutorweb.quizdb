@@ -875,7 +875,7 @@ class SyncViewFunctional(FunctionalTestCase):
 
         # Old one should be marked as superseded
         self.assertEquals([[r['verdict'], r['text']] for r in self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID)], [
-            [-2, u'<div class="parse-as-tex">My first question</div>'],
+            # NB: Not shown [-2, u'<div class="parse-as-tex">My first question</div>'],
             [None, u'<div class="parse-as-tex">My second question</div>'],
             [None, u'<div class="parse-as-tex">My first question, again</div>'],
         ])

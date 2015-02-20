@@ -31,6 +31,7 @@ class ReviewUgQnView(JSONBrowserView):
                 .filter(db.Allocation.studentId == student.studentId)
                 .filter(db.Allocation.active == True)
                 .filter(db.UserGeneratedQuestion.studentId == student.studentId)
+                .filter(db.UserGeneratedQuestion.superseded == None)
                 .filter(db.Question.lectureId == self.getLectureId())
                 .order_by(db.UserGeneratedQuestion.ugQuestionId)
                 .all()):
