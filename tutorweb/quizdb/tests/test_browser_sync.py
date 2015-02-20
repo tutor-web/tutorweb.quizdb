@@ -792,7 +792,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(
                     synced=False,
                     uri=aQuestions[u'Unittest tmpllec tmplQ1'],
-                    student_answer=dict(),
+                    student_answer=None,
                     correct=False,
                     quiz_time=1377000020,
                     answer_time=1377000030,

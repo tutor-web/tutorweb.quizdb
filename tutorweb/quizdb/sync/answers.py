@@ -185,7 +185,7 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
             a['student_answer'] = ugAns.ugAnswerId
 
         elif dbQn.qnType == 'tw_questiontemplate':
-            if a['student_answer'] and a['student_answer']['text']:
+            if a.get('student_answer', None) and a['student_answer'].get('text', None):
                 # Write question to database
                 ugQn = db.UserGeneratedQuestion(
                     studentId=student.studentId,
