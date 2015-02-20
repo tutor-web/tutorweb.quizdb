@@ -77,6 +77,43 @@ def getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings):
                 .filter(db.AnswerSummary.gradeHighWaterMark >= 9.998)
                 .count() >= len(siblingPaths)):
             out += round(float(settings.get('award_tutorial_aced', "100000")))
+
+    # Is this a review of a template question?
+    if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
+        # Did they grade it as 50 or more?
+        ugAns = (Session.query(db.UserGeneratedAnswer)
+            .filter(db.UserGeneratedAnswer.ugAnswerId == a['student_answer'])
+            .filter(db.UserGeneratedAnswer.studentId == student.studentId)
+            .one())
+        if ugAns.questionRating >= 50:
+            # Are the majority of reviews positive?
+            if (Session.query(db.UserGeneratedAnswer)
+                    .filter(db.UserGeneratedAnswer.ugQuestionId == ugAns.ugQuestionId)
+                    .filter(db.UserGeneratedAnswer.questionRating >= 50)
+                    .count()) >= round(float(settings.get('cap_template_qn_reviews', '10')) / 2):
+                # Has the author received an award for this question yet?
+                ugQn = (Session.query(db.UserGeneratedQuestion)
+                    .filter(db.UserGeneratedQuestion.ugQuestionId == ugAns.ugQuestionId)
+                    .one())  # TODO: Just join it.
+                ugQnAns = (Session.query(db.Answer)
+                    .filter(db.Answer.questionId == dbQn.questionId)
+                    .filter(db.Answer.studentId == ugQn.studentId)
+                    .filter(db.Answer.chosenAnswer == ugQn.ugQuestionId)
+                    .one())
+                if ugQnAns.coinsAwarded == 0:
+                    # Has the author of the ugQuestion already received award_templateqn_aced the maximum number of times?
+                    allQnsAwardedCoins = (Session.query(func.count(db.Answer.answerId))
+                        .join(db.Question)
+                        .filter(db.Answer.lectureId == ugQnAns.lectureId)
+                        .filter(db.Answer.studentId == ugQnAns.studentId)
+                        .filter(db.Question.qnType == 'tw_questiontemplate')
+                        .filter(db.Answer.coinsAwarded > 0)
+                        .one())[0]
+                    # NB: Technically we should be using the other student's cap_template_qns. Meh.
+                    if allQnsAwardedCoins < int(settings.get('cap_template_qns', '5')):
+                        # Finally, update the original question a coin award
+                        ugQnAns.coinsAwarded = float(settings.get('award_templateqn_aced', "10000"))
+
     return out
 
 
