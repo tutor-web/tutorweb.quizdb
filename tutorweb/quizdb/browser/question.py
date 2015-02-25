@@ -145,6 +145,7 @@ class QuestionView(JSONBrowserView):
                         .filter(db.UserGeneratedQuestion.ugQuestionId == self.request.form['question_id'])
                         .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                         .filter(db.UserGeneratedQuestion.studentId == student.studentId)
+                        .filter(db.UserGeneratedQuestion.superseded == None)
                         .first())
                     if ugQn is not None:
                         # Found one, add it to question

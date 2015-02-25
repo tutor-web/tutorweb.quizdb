@@ -386,6 +386,9 @@ class GetQuestionViewTest(FunctionalTestCase):
             ],
         ))
 
+        # After this, can't fetch original question for re-authoring
+        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_A_ID, expectedStatus=404)
+
         # C doesn't get to review original version of replaced question anymore
         self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID)['usergenerated']), set([
             u'<div class="parse-as-tex">Damn Few! My keys? Sure.</div>',
