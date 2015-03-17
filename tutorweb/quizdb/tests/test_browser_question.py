@@ -234,7 +234,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                         comments="Don't know much about zork",
                     ),
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000020,
                     grade_after=0.1,
                 ),
             ],
@@ -258,7 +258,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                     ),
                     correct=True,
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000030,
                     grade_after=0.1,
                 ),
             ],
@@ -279,7 +279,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                     ),
                     correct=True,
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000040,
                     grade_after=0.1,
                 ),
             ],
@@ -318,7 +318,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                         comments="Really easy",
                     ),
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000050,
                     grade_after=0.1,
                 ),
             ],
@@ -340,7 +340,7 @@ class GetQuestionViewTest(FunctionalTestCase):
         ]))
 
         # A can fetch their question again for more authoring
-        self.assertEqual(self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_A_ID), {
+        self.assertEqual(self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']), user=USER_A_ID), {
             u'_type': u'template',
             u'uri': "%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1),
             u'title': u'Unittest tmpllec tmplQ0',
@@ -362,14 +362,14 @@ class GetQuestionViewTest(FunctionalTestCase):
         self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 99), user=USER_A_ID, expectedStatus = 404)
 
         # B can't get A's question
-        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_B_ID, expectedStatus = 404)
+        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']), user=USER_B_ID, expectedStatus = 404)
 
         # A writes a a new version of 3rd question
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
                     synced=False,
-                    uri="%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 3),
+                    uri="%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']),
                     student_answer=dict(
                         text=u"Damn Few! My keys? Sure.",
                         choices=[
@@ -380,14 +380,14 @@ class GetQuestionViewTest(FunctionalTestCase):
                     ),
                     correct=True,
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000060,
                     grade_after=0.1,
                 ),
             ],
         ))
 
         # After this, can't fetch original question for re-authoring
-        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], 1), user=USER_A_ID, expectedStatus=404)
+        self.getJson("%s?author_qn=yes&question_id=%d" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']), user=USER_A_ID, expectedStatus=404)
 
         # C doesn't get to review original version of replaced question anymore
         self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID)['usergenerated']), set([
