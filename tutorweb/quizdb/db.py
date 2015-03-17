@@ -124,6 +124,12 @@ class Question(ORMBase):
         sqlalchemy.schema.ForeignKey('lecture.lectureId'),
         nullable=False,
     )
+    correctChoices = sqlalchemy.schema.Column(
+        # JSON Array of correct answers
+        sqlalchemy.types.String(128),
+        nullable=False,
+        default="[]",
+    )
     timesAnswered = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         nullable=False,

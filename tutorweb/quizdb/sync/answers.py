@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import re
 import time
@@ -225,21 +226,23 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
 
         else:  # A tw_latexquestion, probably
             # Check against plone to ensure student was right
-            try:
-                ploneQn = portalObj.unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
-                a['correct'] = True if a['student_answer'] is not None and ploneQn.allChoices()[a['student_answer']]['correct'] else False
+            if a['student_answer'] is None:
+                a['correct'] = False
+            elif not(isinstance(a['student_answer'], int)):
+                logger.warn("Student answer %s out of range" % a['student_answer'])
+                continue
+            else:
+                a['correct'] = a['student_answer'] in json.loads(dbQn.correctChoices)
                 if a['correct']:
                     dbQn.timesCorrect += 1
-                dbQn.timesAnswered += 1  # NB: Do this once we know question is valid
-                # TODO: Recalculate grade at this point, instead of relying on JS?
-                # Write back stats to Plone
+            dbQn.timesAnswered += 1  # NB: Do this once we know question is valid
+
+            # Write back stats to Plone
+            try:
+                ploneQn = portalObj.unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
                 ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
             except (KeyError, NotFound):
                 logger.error("Cannot find Plone question at %s" % dbQn.plonePath)
-                continue
-            except (TypeError, IndexError):
-                logger.warn("Student answer %d out of range" % a['student_answer'])
-                continue
 
         # Update student summary rows
         dbAnsSummary.lecAnswered += 1  # NB: Including practice questions is intentional

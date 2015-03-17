@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import random
 import pytz
@@ -25,6 +26,13 @@ def toUTCDateTime(t):
 
 def syncPloneQuestions(lectureId, lectureObj):
     """Ensure database has same questions as Plone"""
+    def correctChoices(ploneQn):
+        try:
+            allChoices = ploneQn.unrestrictedTraverse('@@data').allChoices()
+        except AttributeError:
+            # Template questions don't have correct answers
+            return json.dumps([])
+        return json.dumps([i for i, a in enumerate(allChoices) if a['correct']])
 
     # Get all plone questions, turn it into a dict by path
     listing = lectureObj.portal_catalog.unrestrictedSearchResults(
@@ -39,6 +47,7 @@ def syncPloneQuestions(lectureId, lectureObj):
         if brain is not None:
             # Question still there (or returned), update
             dbQn.active = True
+            dbQn.correctChoices = correctChoices(brain.getObject())
             dbQn.lastUpdate = toUTCDateTime(brain['modified'])
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
@@ -58,6 +67,7 @@ def syncPloneQuestions(lectureId, lectureObj):
             qnType=obj.portal_type,
             lectureId=lectureId,
             lastUpdate=toUTCDateTime(brain['modified']),
+            correctChoices=correctChoices(obj),
             timesAnswered=getattr(obj, 'timesanswered', 0),
             timesCorrect=getattr(obj, 'timescorrect', 0),
         ))
