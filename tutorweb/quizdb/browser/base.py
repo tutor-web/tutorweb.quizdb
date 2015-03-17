@@ -1,5 +1,6 @@
 import json
 import logging
+import socket
 
 from AccessControl import Unauthorized
 from Globals import DevelopmentMode
@@ -92,10 +93,23 @@ class JSONBrowserView(BrowserView):
             return self.dbStudent
 
         try:
+            dbHost = (Session.query(db.Host)
+                .filter(db.Host.fqdn == socket.getfqdn())
+                .one())
+        except NoResultFound:
+            dbHost = db.Host(fqdn=socket.getfqdn())
+            Session.add(dbHost)
+            Session.flush()
+
+        try:
             dbStudent = Session.query(db.Student) \
+                .filter(db.Student.hostId == dbHost.hostId) \
                 .filter(db.Student.userName == mb.getUserName()).one()
         except NoResultFound:
-            dbStudent = db.Student(userName=mb.getUserName())
+            dbStudent = db.Student(
+                userName=mb.getUserName(),
+                hostId=dbHost.hostId,
+            )
             Session.add(dbStudent)
         dbStudent.eMail = mb.getProperty('email')
         Session.flush()

@@ -74,6 +74,27 @@ def generatePublicId(mapper, connection, instance):
     )).hexdigest()
 
 
+class Host(ORMBase):
+    """Host table: Hosts that run tutorweb"""
+    __tablename__ = 'host'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    hostId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        primary_key=True,
+        autoincrement=True,
+    )
+    fqdn = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+
 class Lecture(ORMBase):
     """DB -> Plone question lookup table"""
     __tablename__ = 'lecture'
@@ -164,6 +185,11 @@ class Student(ORMBase):
         sqlalchemy.types.Integer(),
         primary_key=True,
         autoincrement=True,
+    )
+    hostId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('host.hostId'),
+        nullable=False,
     )
     userName = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
