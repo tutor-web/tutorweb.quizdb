@@ -33,14 +33,20 @@ class GetQuestionAllocationTest(FunctionalTestCase):
 
         def getAllocStats(lectureId, student, targetDifficulty, settings = dict(question_cap=10)):
             (allocs, _) = getQuestionAllocation(lectureId, student, 'http://x', settings, targetDifficulty=targetDifficulty)
-            difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs]
+            difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs if qn['chosen'] > 10]
             mean = sum(difficulty) / len(difficulty)
             variance = sum((x - mean) **2 for x in difficulty) / len(difficulty)
             return dict(difficulty=difficulty, mean=mean, variance=variance)
 
         # Create a lecture that has a range of questions, put them in DB
-        qnCount = 200
+        qnCount = 205
         def questionOpts(i):
+            if i >= 200:
+                # Add some questions with very little feedback
+                return dict(
+                    timesanswered=i - 200,
+                    timescorrect=max(i - 202, 0),
+                )
             return dict(
                 timesanswered=qnCount,
                 timescorrect=qnCount - i,

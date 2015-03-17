@@ -105,7 +105,13 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
                 raise ValueError("Must have a target difficulty to know what to remove")
 
             # Make ranking how likely questions are, based on targetDifficulty
-            suitability = [1 - abs(targetDifficulty - float(a['question'].timesCorrect) / a['question'].timesAnswered) for a in allocs]
+            suitability = []
+            for a in allocs:
+                if a['question'].timesAnswered == 0:
+                    # New questions should be added regardless
+                    suitability.append(1)
+                else:
+                    suitability.append(1 - abs(targetDifficulty - float(a['question'].timesCorrect) / a['question'].timesAnswered))
             ranking = sorted(range(len(allocs)), key=lambda k: suitability[k])
 
             # Remove the least likely tenth
