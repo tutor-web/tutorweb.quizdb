@@ -165,6 +165,14 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
             ))
             continue
 
+        # Does this answer already exist in DB? if so, ignore it.
+        if (Session.query(db.Answer)
+                .filter(db.Answer.studentId == student.studentId)
+                .filter(db.Answer.questionId == dbQn.questionId)
+                .filter(db.Answer.timeEnd == datetime.datetime.fromtimestamp(a['answer_time']))
+                .count()) > 0:
+            continue
+
         if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
             # Evaluated a user-generated question, write it to the DB
             if 'question_id' not in queryString:

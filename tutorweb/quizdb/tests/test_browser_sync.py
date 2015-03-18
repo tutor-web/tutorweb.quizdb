@@ -448,10 +448,19 @@ class SyncViewFunctional(FunctionalTestCase):
                     answer_time=1377000030,
                     grade_after=0.3,
                 ),
+                dict(
+                    synced=False,
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
+                    student_answer=1,
+                    correct='wibble',
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.9,
+                ),
             ],
         ))
 
-        # Noticed that middle item wasn't correct
+        # Noticed that middle item wasn't correct, last was repetition
         self.assertEqual(self.logs('sync'), ['Student answer A out of range'])
         # Returned answerQueue without dodgy answer
         self.assertEqual(aAlloc['answerQueue'], [
