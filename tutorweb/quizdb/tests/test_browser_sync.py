@@ -961,11 +961,18 @@ class SyncViewFunctional(FunctionalTestCase):
         # 5 below cut-off, 4 above makes no difference
         lec1Alloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
             user='Arnold',
-            answerQueue=([
+            answerQueue=[
                 aqEntry(lec1Alloc, 0, True, 4.0),
-            ] * 5) + ([
+                aqEntry(lec1Alloc, 0, True, 4.0),
+                aqEntry(lec1Alloc, 0, True, 4.0),
+                aqEntry(lec1Alloc, 0, True, 4.0),
+                aqEntry(lec1Alloc, 0, True, 4.0),
                 aqEntry(lec1Alloc, 0, True, 6.0),
-            ] * 5),
+                aqEntry(lec1Alloc, 0, True, 6.0),
+                aqEntry(lec1Alloc, 0, True, 6.0),
+                aqEntry(lec1Alloc, 0, True, 6.0),
+                aqEntry(lec1Alloc, 0, True, 6.0),
+            ],
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
@@ -984,7 +991,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
                 dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
@@ -1005,7 +1012,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
                 dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
@@ -1016,13 +1023,22 @@ class SyncViewFunctional(FunctionalTestCase):
             user='Arnold',
             answerQueue=[
                 aqEntry(lec2Alloc, 0, True, 9.999999999),
-            ] * 10,
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+                aqEntry(lec2Alloc, 0, True, 9.999999999),
+            ],
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=22000, walletId='', tx_id=None, history=[
-                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
-                dict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:55:40'),
+                dict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
                 dict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
@@ -1033,14 +1049,23 @@ class SyncViewFunctional(FunctionalTestCase):
             user='Arnold',
             answerQueue=[
                 aqEntry(tmplec3Alloc, 0, True, 9.999999999),
-            ] * 10,
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+                aqEntry(tmplec3Alloc, 0, True, 9.999999999),
+            ],
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             uniDict(coin_available=133000, walletId='', tx_id=None, history=[
-                uniDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time='2013-08-20T13:41:40'),
-                uniDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:39:40'),
-                uniDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                uniDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time='2013-08-20T14:15:40'),
+                uniDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:55:40'),
+                uniDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
                 uniDict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
             ])
         )
@@ -1067,8 +1092,8 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             uniDict(coin_available=11000, walletId='', tx_id=None, history=[
-                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:57:40'),
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:51:40'),
+                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:49:40'),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:43:40'),
             ])
         )
 
@@ -1093,9 +1118,9 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             uniDict(coin_available=12000, walletId='', tx_id=None, history=[
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T14:15:40'),
-                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:57:40'),
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:51:40'),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T15:07:40'),
+                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:49:40'),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:43:40'),
             ])
         )
 

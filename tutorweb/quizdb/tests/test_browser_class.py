@@ -143,10 +143,10 @@ class StudentResultsViewTest(IntegrationTestCase):
             uri=qns[0]['uri'],
             student_answer=0,
             correct=True,
-            quiz_time=self.timestamp,
-            answer_time=self.timestamp + 10,
+            quiz_time=self.timestamp + i * 10,
+            answer_time=self.timestamp + i * 10 + 5,
             grade_after=grade,
-        ) for grade in grades], {})
+        ) for i, grade in enumerate(grades)], {})
         login(self.layer['portal'], MANAGER_ID)
         transaction.commit()
         return out
@@ -213,23 +213,23 @@ class StudentTableViewTest(IntegrationTestCase):
             self.updateAnswerQueue(USER_A_ID, lec1, [grade])
         c = self.getCSV()
         self.assertEqual([[x['Student'], x['Lecture'][-4:], x['Grade'], x['Time answered']] for x in c], [
-            ['Arnold', 'lec1', '0.3', '2013-08-20 13:01:50'],
-            ['Arnold', 'lec1', '0.9', '2013-08-20 13:01:50'],
-            ['Arnold', 'lec1', '0.59', '2013-08-20 13:06:50'],
-            ['Arnold', 'lec1', '0.51', '2013-08-20 13:08:30'],
-            ['Arnold', 'lec1', '0.58', '2013-08-20 13:10:10'],
-            ['Arnold', 'lec1', '0.52', '2013-08-20 13:11:50'],
-            ['Arnold', 'lec1', '0.57', '2013-08-20 13:13:30'],
-            ['Arnold', 'lec1', '0.53', '2013-08-20 13:15:10'],
-            ['Arnold', 'lec1', '0.56', '2013-08-20 13:16:50'],
-            ['Arnold', 'lec1', '0.55', '2013-08-20 13:18:30'],
-            ['Arnold', 'lec1', '0.54', '2013-08-20 13:20:10'],
-            ['Arnold', 'lec2', '0.31', '2013-08-20 13:05:10'],
-            ['Arnold', 'lec2', '0.91', '2013-08-20 13:05:10'],
-            ['Betty', 'lec1', '0.4', '2013-08-20 13:00:10'],
-            ['Betty', 'lec1', '0.8', '2013-08-20 13:00:10'],
-            ['Betty', 'lec2', '0.41', '2013-08-20 13:03:30'],
-            ['Betty', 'lec2', '0.81', '2013-08-20 13:03:30'],
+            ['Arnold', 'lec1', '0.3', '2013-08-20 13:01:45'],
+            ['Arnold', 'lec1', '0.9', '2013-08-20 13:01:55'],
+            ['Arnold', 'lec1', '0.59', '2013-08-20 13:06:45'],
+            ['Arnold', 'lec1', '0.51', '2013-08-20 13:08:25'],
+            ['Arnold', 'lec1', '0.58', '2013-08-20 13:10:05'],
+            ['Arnold', 'lec1', '0.52', '2013-08-20 13:11:45'],
+            ['Arnold', 'lec1', '0.57', '2013-08-20 13:13:25'],
+            ['Arnold', 'lec1', '0.53', '2013-08-20 13:15:05'],
+            ['Arnold', 'lec1', '0.56', '2013-08-20 13:16:45'],
+            ['Arnold', 'lec1', '0.55', '2013-08-20 13:18:25'],
+            ['Arnold', 'lec1', '0.54', '2013-08-20 13:20:05'],
+            ['Arnold', 'lec2', '0.31', '2013-08-20 13:05:05'],
+            ['Arnold', 'lec2', '0.91', '2013-08-20 13:05:15'],
+            ['Betty', 'lec1', '0.4', '2013-08-20 13:00:05'],
+            ['Betty', 'lec1', '0.8', '2013-08-20 13:00:15'],
+            ['Betty', 'lec2', '0.41', '2013-08-20 13:03:25'],
+            ['Betty', 'lec2', '0.81', '2013-08-20 13:03:35'],
         ])
 
     def getCSV(self):
@@ -256,10 +256,10 @@ class StudentTableViewTest(IntegrationTestCase):
             uri=random.choice(qns)['uri'],
             student_answer=0,
             correct=True,
-            quiz_time=self.timestamp,
-            answer_time=self.timestamp + 10,
+            quiz_time=self.timestamp + i * 10,
+            answer_time=self.timestamp + i * 10 + 5,
             grade_after=grade,
-        ) for grade in grades], {})
+        ) for i, grade in enumerate(grades)], {})
         login(self.layer['portal'], MANAGER_ID)
         transaction.commit()
         return out
