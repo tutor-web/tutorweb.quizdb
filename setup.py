@@ -29,7 +29,6 @@ setup(
     install_requires=[
         'setuptools',
         'z3c.saconfig',
-        'MySQL-python',
         'SQLAlchemy>=0.8',
     ],
     extras_require={
