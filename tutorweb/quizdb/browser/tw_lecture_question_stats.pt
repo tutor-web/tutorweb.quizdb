@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="tutorweb.content">
+<body>
+
+<metal:content-core fill-slot="content-core">
+
+  <form method="POST" enctype="multipart/form-data"
+        tal:attributes="action string:${context/absolute_url}/tex-import">
+    <div><label for="lecture-media">Update questions from TeX file</label></div>
+    <div>
+      <input type="file" name="media" id="lecture-media" />
+      <input type="submit" value="Upload">
+    </div>
+  </form>
+
+  <a tal:attributes="href string:${context/absolute_url}/tex">Download questions in TeX form</a>
+
+  <tal:t tal:define="questions view/getStats" tal:condition="python:len(questions) > 0">
+    <table class="listing">
+      <thead>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Answers</th>
+        <th>Answers correct</th>
+      </thead>
+      <tbody>
+        <tr tal:repeat="item questions">
+          <td tal:content="item/id">q01</td>
+            <td>
+              <a href="#" tal:attributes="href item/url"
+                          tal:content="item/title">question</a>
+            </td>
+            <td tal:content="item/timesAnswered">q01</td>
+            <td tal:content="item/timesCorrect">q01</td>
+          </tr>
+        </tbody>
+      </table>
+  </tal:t>
+
+</metal:content-core>
+
+</body>
+</html>

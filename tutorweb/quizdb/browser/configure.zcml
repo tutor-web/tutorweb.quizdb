@@ -9,6 +9,19 @@
       permission="zope2.View"
       />
 
+    <browser:page name="question-stats"
+      for="tutorweb.content.schema.ILecture"
+      permission="cmf.ModifyPortalContent"
+      class=".questionstats.QuestionStatsView"
+      template="tw_lecture_question_stats.pt"
+      />
+    <browser:page name="question-stats"
+      for="tutorweb.content.schema.IQuestion"
+      permission="cmf.ModifyPortalContent"
+      class=".questionstats.QuestionStatsView"
+      template="tw_lecture_question_stats.pt"
+      />
+
     <browser:page name="quizdb-sync"
       for="tutorweb.content.schema.ITutorial"
       class=".sync.SyncTutorialView"
