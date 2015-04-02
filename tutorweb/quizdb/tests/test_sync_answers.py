@@ -38,7 +38,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                 login(portal, creator.userName)
                 (creatorAllocs, _) = getQuestionAllocation(lectureId, creator, portal.absolute_url(), {})
 
-                creatorAq = parseAnswerQueue(portal, lectureId, lectureObj, creator, [
+                creatorAq = parseAnswerQueue(lectureId, lectureObj, creator, [
                     dict(
                         synced=False,
                         uri=creatorAllocs[0]['uri'],
@@ -74,7 +74,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                     (reviewerAllocs, _) = getQuestionAllocation(lectureId, reviewer, portal.absolute_url(), {})
                     # Don't know which of reviewerAllocs matches creatorAq[-1], so guess
                     try:
-                        parseAnswerQueue(portal, lectureId, lectureObj, reviewer, [
+                        parseAnswerQueue(lectureId, lectureObj, reviewer, [
                             dict(
                                 uri='%s?question_id=%d' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']),
                                 question_type='usergenerated',
@@ -84,7 +84,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                             ),
                         ], {})
                     except NoResultFound:
-                        parseAnswerQueue(portal, lectureId, lectureObj, reviewer, [
+                        parseAnswerQueue(lectureId, lectureObj, reviewer, [
                             dict(
                                 uri='%s?question_id=%d' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']),
                                 question_type='usergenerated',
@@ -95,17 +95,17 @@ class GetCoinAwardTest(FunctionalTestCase):
                         ], {})
 
                     # User-generated question gets more coins once high reviews are majority
-                    creatorAq = parseAnswerQueue(portal, lectureId, lectureObj, creator, [], {})
+                    creatorAq = parseAnswerQueue(lectureId, lectureObj, creator, [], {})
                     self.assertEqual(sorted([a['coins_awarded'] for a in creatorAq][-2:]), [0, 10000] if i >= 4 and qnCount < 5 else [0, 0])
 
             # Awarded coins for first 5 instances of the question that people review, even after first creator maxed out
             self.assertEqual(
-                [a['coins_awarded'] for a in parseAnswerQueue(portal, lectureId, lectureObj, creator, [], {})],
+                [a['coins_awarded'] for a in parseAnswerQueue(lectureId, lectureObj, creator, [], {})],
                 [0, 10000, 0, 10000, 0, 10000, 0, 10000, 0, 10000, 0, 0, 0, 0],
             )
 
         # Reviewers didn't get anything throughout entire process
         self.assertEqual(
-            [a['coins_awarded'] for a in parseAnswerQueue(portal, lectureId, lectureObj, reviewers[0], [], {})],
+            [a['coins_awarded'] for a in parseAnswerQueue(lectureId, lectureObj, reviewers[0], [], {})],
             [0, 0, 0, 0, 0, 0, 0] * 2,
         )

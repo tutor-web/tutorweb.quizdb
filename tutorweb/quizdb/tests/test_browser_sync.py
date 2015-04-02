@@ -405,17 +405,10 @@ class SyncViewFunctional(FunctionalTestCase):
 
     def test_answerQueuePersistent(self):
         """Make sure answerQueue gets logged and is returned"""
-        def getLectureStats():
-            lec1 = self.layer['portal']['dept1']['tut1']['lec1']
-            return dict(
-                answered=lec1['qn1'].timesanswered + lec1['qn2'].timesanswered,
-                correct=lec1['qn1'].timescorrect + lec1['qn2'].timescorrect,
-            )
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
         self.assertEquals(sorted(aQuestions.keys()), [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'])
-        statsBefore = getLectureStats()
 
         # Write some answers back
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
@@ -487,11 +480,6 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'coins_awarded': 0,
             },
         ])
-
-        # Question stats have been updated
-        statsAfter = getLectureStats()
-        self.assertEqual(statsBefore['answered'] + 2, statsAfter['answered'])
-        self.assertEqual(statsBefore['correct'] + 1, statsAfter['correct'])
 
         # Fetching again returns the same queue
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)

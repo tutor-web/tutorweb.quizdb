@@ -118,7 +118,7 @@ def getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings):
     return out
 
 
-def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, settings):
+def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
     # Filter nonsense out of answerQueue
     answerQueue = []
     uriSplit = re.compile('\/quizdb-get-question\/|\?')
@@ -244,13 +244,6 @@ def parseAnswerQueue(portalObj, lectureId, lectureObj, student, rawAnswerQueue, 
                 if a['correct']:
                     dbQn.timesCorrect += 1
             dbQn.timesAnswered += 1  # NB: Do this once we know question is valid
-
-            # Write back stats to Plone
-            try:
-                ploneQn = portalObj.unrestrictedTraverse(str(dbQn.plonePath) + '/@@data')
-                ploneQn.updateStats(dbQn.timesAnswered, dbQn.timesCorrect)
-            except (KeyError, NotFound):
-                logger.error("Cannot find Plone question at %s" % dbQn.plonePath)
 
         # Update student summary rows
         dbAnsSummary.lecAnswered += 1  # NB: Including practice questions is intentional

@@ -139,7 +139,6 @@ class SyncLectureView(JSONBrowserView):
 
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(
-            portalObj,
             lectureId,
             self.context,
             student,
