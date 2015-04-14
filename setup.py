@@ -29,7 +29,7 @@ setup(
     install_requires=[
         'setuptools',
         'z3c.saconfig',
-        'SQLAlchemy>=0.8',
+        'SQLAlchemy>=0.9',
     ],
     extras_require={
         'test': [
