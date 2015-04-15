@@ -49,7 +49,7 @@ class SyncTutorialView(JSONBrowserView):
 class SyncLectureView(JSONBrowserView):
     def getStudentSettings(self, student):
         """Return a dict of lecture / tutorial settings, choosing a random value if required"""
-        lectureId = self.getLectureId()
+        dbLec = self.getDbLecture()
 
         # Fetch settings from lecture
         settings = dict(
@@ -61,7 +61,7 @@ class SyncLectureView(JSONBrowserView):
         # Get all current settings as a dict, removing old ones
         allSettings = {}
         for dbS in (Session.query(db.LectureSetting)
-                .filter(db.LectureSetting.lectureId == lectureId)
+                .filter(db.LectureSetting.lectureId == dbLec.lectureId)
                 .filter(db.LectureSetting.studentId == student.studentId)
                 .all()):
             if dbS.key not in settings.keys() and dbS.key + ':max' not in settings.keys():
@@ -97,7 +97,7 @@ class SyncLectureView(JSONBrowserView):
                     new_value = str(round(new_value, 3))
 
                 Session.merge(db.LectureSetting(
-                    lectureId=lectureId,
+                    lectureId=dbLec.lectureId,
                     studentId=student.studentId,
                     key=base_key,
                     value=new_value,
@@ -106,7 +106,7 @@ class SyncLectureView(JSONBrowserView):
 
             # Add / update DB
             Session.merge(db.LectureSetting(
-                lectureId=lectureId,
+                lectureId=dbLec.lectureId,
                 studentId=student.studentId,
                 key=k,
                 value=settings[k],
@@ -121,7 +121,7 @@ class SyncLectureView(JSONBrowserView):
     def asDict(self, data):
         student = self.getCurrentStudent()
         portalObj = self.portalObject()
-        lectureId = self.getLectureId()
+        dbLec = self.getDbLecture()
 
         # Check we're the right user, given the data
         lecture = data or dict()
@@ -133,13 +133,13 @@ class SyncLectureView(JSONBrowserView):
 
         # Make sure DB is in sync with Plone
         syncPloneQuestions(
-            lectureId,
+            dbLec,
             self.context,
         )
 
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(
-            lectureId,
+            dbLec.lectureId,
             self.context,
             student,
             lecture.get('answerQueue', []),
@@ -148,7 +148,7 @@ class SyncLectureView(JSONBrowserView):
 
         # ... then fetch question lists
         (questions, removedQuestions) = getQuestionAllocation(
-            lectureId,
+            dbLec,
             student,
             portalObj.absolute_url(),
             settings,

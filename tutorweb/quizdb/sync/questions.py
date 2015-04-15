@@ -24,7 +24,7 @@ def toUTCDateTime(t):
     return t.asdatetime().astimezone(pytz.utc).replace(microsecond=0, tzinfo=None)
 
 
-def syncPloneQuestions(lectureId, lectureObj):
+def syncPloneQuestions(dbLec, lectureObj):
     """Ensure database has same questions as Plone"""
     def correctChoices(ploneQn):
         try:
@@ -33,8 +33,6 @@ def syncPloneQuestions(lectureId, lectureObj):
             # Template questions don't have correct answers
             return json.dumps([])
         return json.dumps([i for i, a in enumerate(allChoices) if a['correct']])
-
-    dbLec = Session.query(db.Lecture).filter(db.Lecture.lectureId == lectureId).one()
 
     # Get all plone questions, turn it into a dict by path
     listing = lectureObj.portal_catalog.unrestrictedSearchResults(
@@ -77,11 +75,10 @@ def syncPloneQuestions(lectureId, lectureObj):
     Session.flush()
 
 
-def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDifficulty=None, reAllocQuestions=False):
+def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficulty=None, reAllocQuestions=False):
     def questionUrl(publicId):
         return questionRoot + '/quizdb-get-question/' + publicId
 
-    dbLec = Session.query(db.Lecture).filter(db.Lecture.lectureId == lectureId).one()
     # Get all existing allocations from the DB and their questions
     allocsByType = dict(
         tw_latexquestion=[],

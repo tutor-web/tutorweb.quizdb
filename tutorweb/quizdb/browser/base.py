@@ -72,9 +72,6 @@ class BrowserViewHelpers(object):
             Session.flush()
             return dbLec
 
-    def getLectureId(self):
-        return self.getDbLecture().lectureId
-
     def texToHTML(self, f):
         """Encode TeX in f into HTML"""
         if not f:

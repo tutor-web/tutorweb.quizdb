@@ -27,8 +27,8 @@ class GetCoinAwardTest(FunctionalTestCase):
             type_name="tw_questiontemplate",
         ))
         login(portal, creators[0].userName)
-        lectureId = lectureObj.restrictedTraverse('@@quizdb-sync').getLectureId()
-        syncPloneQuestions(lectureId, lectureObj)
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
 
         # Try each creator
         for (creatorIndex, creator) in enumerate(creators):
@@ -36,9 +36,9 @@ class GetCoinAwardTest(FunctionalTestCase):
             for qnCount in range(7):
                 # user 1 generates a question (assign, answer), don't get any coin for that
                 login(portal, creator.userName)
-                (creatorAllocs, _) = getQuestionAllocation(lectureId, creator, portal.absolute_url(), {})
+                (creatorAllocs, _) = getQuestionAllocation(dbLec, creator, portal.absolute_url(), {})
 
-                creatorAq = parseAnswerQueue(lectureId, lectureObj, creator, [
+                creatorAq = parseAnswerQueue(dbLec.lectureId, lectureObj, creator, [
                     dict(
                         synced=False,
                         uri=creatorAllocs[0]['uri'],
@@ -71,10 +71,10 @@ class GetCoinAwardTest(FunctionalTestCase):
                 # Start reviewing question
                 for (i, reviewer) in enumerate(reviewers):
                     login(portal, reviewer.userName)
-                    (reviewerAllocs, _) = getQuestionAllocation(lectureId, reviewer, portal.absolute_url(), {})
+                    (reviewerAllocs, _) = getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {})
                     # Don't know which of reviewerAllocs matches creatorAq[-1], so guess
                     try:
-                        parseAnswerQueue(lectureId, lectureObj, reviewer, [
+                        parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [
                             dict(
                                 uri='%s?question_id=%d' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']),
                                 question_type='usergenerated',
@@ -84,7 +84,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                             ),
                         ], {})
                     except NoResultFound:
-                        parseAnswerQueue(lectureId, lectureObj, reviewer, [
+                        parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [
                             dict(
                                 uri='%s?question_id=%d' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']),
                                 question_type='usergenerated',
@@ -95,17 +95,17 @@ class GetCoinAwardTest(FunctionalTestCase):
                         ], {})
 
                     # User-generated question gets more coins once high reviews are majority
-                    creatorAq = parseAnswerQueue(lectureId, lectureObj, creator, [], {})
+                    creatorAq = parseAnswerQueue(dbLec.lectureId, lectureObj, creator, [], {})
                     self.assertEqual(sorted([a['coins_awarded'] for a in creatorAq][-2:]), [0, 10000] if i >= 4 and qnCount < 5 else [0, 0])
 
             # Awarded coins for first 5 instances of the question that people review, even after first creator maxed out
             self.assertEqual(
-                [a['coins_awarded'] for a in parseAnswerQueue(lectureId, lectureObj, creator, [], {})],
+                [a['coins_awarded'] for a in parseAnswerQueue(dbLec.lectureId, lectureObj, creator, [], {})],
                 [0, 10000, 0, 10000, 0, 10000, 0, 10000, 0, 10000, 0, 0, 0, 0],
             )
 
         # Reviewers didn't get anything throughout entire process
         self.assertEqual(
-            [a['coins_awarded'] for a in parseAnswerQueue(lectureId, lectureObj, reviewers[0], [], {})],
+            [a['coins_awarded'] for a in parseAnswerQueue(dbLec.lectureId, lectureObj, reviewers[0], [], {})],
             [0, 0, 0, 0, 0, 0, 0] * 2,
         )

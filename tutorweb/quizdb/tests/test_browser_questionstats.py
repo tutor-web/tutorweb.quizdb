@@ -41,7 +41,7 @@ class QuestionStatsViewTest(IntegrationTestCase):
 
         # Sync plone questions, should store stats in DB
         syncPloneQuestions(
-            portal.restrictedTraverse('dept1/tut1/lec1/@@question-stats').getLectureId(),
+            portal.restrictedTraverse('dept1/tut1/lec1/@@question-stats').getDbLecture(),
             portal['dept1']['tut1']['lec1'],
         )
         transaction.commit()

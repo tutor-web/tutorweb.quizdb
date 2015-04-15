@@ -31,8 +31,8 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
 
-        def getAllocStats(lectureId, student, targetDifficulty, settings = dict(question_cap=10)):
-            (allocs, _) = getQuestionAllocation(lectureId, student, 'http://x', settings, targetDifficulty=targetDifficulty)
+        def getAllocStats(dbLec, student, targetDifficulty, settings = dict(question_cap=10)):
+            (allocs, _) = getQuestionAllocation(dbLec, student, 'http://x', settings, targetDifficulty=targetDifficulty)
             difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs if qn['chosen'] > 10]
             mean = sum(difficulty) / len(difficulty)
             variance = sum((x - mean) **2 for x in difficulty) / len(difficulty)
@@ -53,13 +53,13 @@ class GetQuestionAllocationTest(FunctionalTestCase):
             )
         lectureObj = self.createTestLecture(qnCount=qnCount, qnOpts=questionOpts)
         login(portal, USER_A_ID)
-        lectureId = lectureObj.restrictedTraverse('@@quizdb-sync').getLectureId()
-        syncPloneQuestions(lectureId, lectureObj)
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
 
         # A should get an even spread, B focuses on easy, C focuses on hard
-        statsA = getAllocStats(lectureId, self.studentA, None)
-        statsB = getAllocStats(lectureId, self.studentB, 0.175)
-        statsC = getAllocStats(lectureId, self.studentC, 0.925)
+        statsA = getAllocStats(dbLec, self.studentA, None)
+        statsB = getAllocStats(dbLec, self.studentB, 0.175)
+        statsC = getAllocStats(dbLec, self.studentC, 0.925)
         self.assertLess(abs(0.500 - statsA['mean']), 0.15)
         self.assertLess(abs(0.175 - statsB['mean']), 0.15)
         self.assertLess(abs(0.925 - statsC['mean']), 0.15)
@@ -81,12 +81,12 @@ class GetQuestionAllocationTest(FunctionalTestCase):
             )
         lectureObj = self.createTestLecture(qnCount=qnCount, qnOpts=questionOpts)
         login(portal, USER_A_ID)
-        lectureId = lectureObj.restrictedTraverse('@@quizdb-sync').getLectureId()
-        syncPloneQuestions(lectureId, lectureObj)
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
 
         def gqa(targetDifficulty, reAllocQuestions, student=self.studentA):
             (allocs, _) = getQuestionAllocation(
-                lectureId,
+                dbLec,
                 student,
                 'http://x',
                 dict(question_cap=10),
