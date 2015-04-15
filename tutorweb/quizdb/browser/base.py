@@ -56,7 +56,7 @@ class BrowserViewHelpers(object):
         return dbStudent
 
     @view.memoize
-    def getLectureId(self):
+    def getDbLecture(self):
         """Return database ID for the current lecture"""
         if self.context.portal_type != 'tw_lecture':
             # Could go up to find lecture at this point, but no need yet.
@@ -65,12 +65,15 @@ class BrowserViewHelpers(object):
         try:
             dbLec = Session.query(db.Lecture) \
                 .filter(db.Lecture.plonePath == plonePath).one()
-            return dbLec.lectureId
+            return dbLec
         except NoResultFound:
             dbLec = db.Lecture(plonePath=plonePath)
             Session.add(dbLec)
             Session.flush()
-            return dbLec.lectureId
+            return dbLec
+
+    def getLectureId(self):
+        return self.getDbLecture().lectureId
 
     def texToHTML(self, f):
         """Encode TeX in f into HTML"""
