@@ -18,7 +18,7 @@ class ReviewUgQnView(JSONBrowserView):
         ugAnswers = (Session.query(db.UserGeneratedAnswer)
             .join(db.UserGeneratedQuestion).join(db.Question)
             .filter(db.UserGeneratedQuestion.studentId == student.studentId)
-            .filter(db.Question.lectureId == self.getLectureId())
+            .filter(db.Question.lectures.contains(self.getDbLecture()))
             .order_by(db.UserGeneratedQuestion.ugQuestionId)
             .all())
 
@@ -32,7 +32,7 @@ class ReviewUgQnView(JSONBrowserView):
                 .filter(db.Allocation.active == True)
                 .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                 .filter(db.UserGeneratedQuestion.superseded == None)
-                .filter(db.Question.lectureId == self.getLectureId())
+                .filter(db.Question.lectures.contains(self.getDbLecture()))
                 .order_by(db.UserGeneratedQuestion.ugQuestionId)
                 .all()):
 

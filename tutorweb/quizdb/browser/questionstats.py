@@ -15,6 +15,7 @@ class QuestionStatsView(BrowserView, BrowserViewHelpers):
 
     def getStats(self):
         """Get statistics for all questions in the lecture"""
+
         if IQuestion.providedBy(self.context):
             # Return just the current question and it's DB object
             plQns = [RealContentListingObject(self.context)]
@@ -28,7 +29,7 @@ class QuestionStatsView(BrowserView, BrowserViewHelpers):
                 sort_on="id",
             )
             dbQns = dict((x.plonePath, x) for x in Session.query(db.Question)
-                .filter(db.Question.lectureId == self.getLectureId())
+                .filter(db.Question.lectures.contains(self.getDbLecture()))
                 .filter(db.Question.active == True))
 
         out = []

@@ -2,6 +2,8 @@ from hashlib import md5
 from datetime import datetime
 from random import random
 
+from sqlalchemy import Table
+from sqlalchemy.orm import relationship
 import sqlalchemy.event
 import sqlalchemy.schema
 import sqlalchemy.types
@@ -95,6 +97,21 @@ class Host(ORMBase):
     )
 
 
+lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,
+    sqlalchemy.schema.Column(
+        'lectureId',
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        nullable=False,
+    ),
+    sqlalchemy.schema.Column(
+        'questionId',
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('question.questionId'),
+        nullable=False,
+    ),
+)
+
 class Lecture(ORMBase):
     """DB -> Plone question lookup table"""
     __tablename__ = 'lecture'
@@ -114,6 +131,9 @@ class Lecture(ORMBase):
         unique=True,
         index=True,
     )
+    questions = relationship("Question",
+        secondary=lectureQuestionTable,
+        backref="lectures")
 
 
 class Question(ORMBase):
@@ -139,11 +159,6 @@ class Question(ORMBase):
         sqlalchemy.types.String(128),
         nullable=False,
         unique=True,
-    )
-    lectureId = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
-        nullable=False,
     )
     correctChoices = sqlalchemy.schema.Column(
         # JSON Array of correct answers

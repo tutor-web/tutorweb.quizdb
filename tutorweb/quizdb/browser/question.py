@@ -91,8 +91,10 @@ class QuestionView(JSONBrowserView):
                 cap_template_qns=5,
                 cap_template_qn_reviews=10,
             )
+            if len(dbQn.lectures) != 1:
+                raise NotImplementedError("Can't work out which lecture question is in")
             for row in (Session.query(db.LectureSetting)
-                    .filter(db.LectureSetting.lectureId == dbQn.lectureId)
+                    .filter(db.LectureSetting.lectureId == dbQn.lectures[0].lectureId)
                     .filter(db.LectureSetting.studentId == student.studentId)
                     .filter(db.LectureSetting.key.in_(settings.keys()))):
                 settings[row.key] = float(row.value)
@@ -231,7 +233,7 @@ class GetLectureQuestionsView(QuestionView):
         # Get all questions from DB and their allocations
         dbAllocs = Session.query(db.Question, db.Allocation) \
             .join(db.Allocation) \
-            .filter(db.Question.lectureId == self.getLectureId()) \
+            .filter(db.Question.lectures.contains(self.getDbLecture())) \
             .filter(db.Question.active == True) \
             .filter(db.Allocation.studentId == student.studentId) \
             .filter(db.Allocation.active == True) \

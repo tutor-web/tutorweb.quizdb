@@ -34,6 +34,8 @@ def syncPloneQuestions(lectureId, lectureObj):
             return json.dumps([])
         return json.dumps([i for i, a in enumerate(allChoices) if a['correct']])
 
+    dbLec = Session.query(db.Lecture).filter(db.Lecture.lectureId == lectureId).one()
+
     # Get all plone questions, turn it into a dict by path
     listing = lectureObj.portal_catalog.unrestrictedSearchResults(
         path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
@@ -42,7 +44,7 @@ def syncPloneQuestions(lectureId, lectureObj):
     ploneQns = dict((b.getPath(), b) for b in listing)
 
     # Get all questions currently in the database
-    for dbQn in (Session.query(db.Question).filter(db.Question.lectureId == lectureId)):
+    for dbQn in (Session.query(db.Question).filter(db.Question.lectures.contains(dbLec))):
         brain = ploneQns.get(dbQn.plonePath, None)
         if brain is not None:
             # Question still there (or returned), update
@@ -65,11 +67,11 @@ def syncPloneQuestions(lectureId, lectureObj):
         Session.add(db.Question(
             plonePath=path,
             qnType=obj.portal_type,
-            lectureId=lectureId,
             lastUpdate=toUTCDateTime(brain['modified']),
             correctChoices=correctChoices(obj),
             timesAnswered=getattr(obj, 'timesanswered', 0),
             timesCorrect=getattr(obj, 'timescorrect', 0),
+            lectures=[dbLec],
         ))
 
     Session.flush()
@@ -79,6 +81,7 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
     def questionUrl(publicId):
         return questionRoot + '/quizdb-get-question/' + publicId
 
+    dbLec = Session.query(db.Lecture).filter(db.Lecture.lectureId == lectureId).one()
     # Get all existing allocations from the DB and their questions
     allocsByType = dict(
         tw_latexquestion=[],
@@ -90,7 +93,7 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
             .join(db.Question)
             .filter(db.Allocation.studentId == student.studentId)
             .filter(db.Allocation.active == True)
-            .filter(db.Question.lectureId == lectureId)):
+            .filter(db.Question.lectures.contains(dbLec))):
         if not(dbQn.active) or (dbAlloc.allocationTime < dbQn.lastUpdate):
             # Question has been removed or is stale
             removedQns.append(questionUrl(dbAlloc.publicId))
@@ -136,7 +139,7 @@ def getQuestionAllocation(lectureId, student, questionRoot, settings, targetDiff
             else:
                 targetExp = func.abs(round(targetDifficulty * 50) - func.round((50.0 * db.Question.timesCorrect) / db.Question.timesAnswered))
             for dbQn in (Session.query(db.Question)
-                    .filter(db.Question.lectureId == lectureId)
+                    .filter(db.Question.lectures.contains(dbLec))
                     .filter(~db.Question.questionId.in_([a['alloc'].questionId for a in allocs]))
                     .filter(db.Question.qnType == qnType)
                     .filter(db.Question.active == True)
