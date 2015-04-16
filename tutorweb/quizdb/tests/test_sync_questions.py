@@ -1,11 +1,81 @@
+# -*- coding: utf8 -*-
 import transaction
 
 from plone.app.testing import login
+from plone.namedfile.file import NamedBlobFile
 
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
 from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+
+
+class SyncPloneQuestionsTest(IntegrationTestCase):
+    maxDiff = None
+
+    def getAllocation(self, alloc, user):
+        portal = self.layer['portal']
+        login(portal, USER_A_ID)
+        view = portal.restrictedTraverse('quizdb-get-question')
+        view.questionId = alloc.replace("http://x/quizdb-get-question/", "")
+        return view.asDict({})
+
+    def test_questionPacks(self):
+        """A question pack should be stored as a bunch of separate questions"""
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create a question pack
+        lectureObj = portal['dept1']['tut1']['lec1']
+        qnPack = lectureObj[lectureObj.invokeFactory(
+            type_name="tw_questionpack",
+            id='qnpack01',
+            questionfile=NamedBlobFile(
+                data="""
+%ID umGen1-0
+%title Einföld Umröðun
+%format latex
+Einangrið og finnið þannig gildi $x$ í eftirfarandi jöfnu. Merkið við þann möguleika sem best á við.
+$$\frac{7}{4x-8}-8=3$$
+
+a.true) $\frac{95}{44}$
+b) $-\frac{95}{44}$
+c) $-\frac{19}{4}$
+d) $\frac{19}{4}$
+
+%Explanation
+Við leggjum 8 við báðum megin við jafnaðarmerkið, og fáum þá $\frac{7}{4x-8}=11$
+%===
+%ID Ag10q16
+%title Táknmál mengjafræðinnar - mengi
+%format latex
+%image data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+Hvert af eftirtöldu er rétt fyrir öll mengi $A,B,C$?
+
+a.true) $\left((A \cup B) \cap C \right) \backslash B \subset A \cap C$
+b) $\left((A \cup B) \cap C \right) \backslash B =  \emptyset $
+c) $\left((A \cup B) \cap C \right) \backslash B \supset  A \cap C$
+
+%Explanation
+Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
+                """,
+                contentType='text/x-tex',
+                filename=u'qnpackcontent.tex',
+            ),
+        )]
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
+
+        # Allocate to user A, should get all questions seperately
+        login(portal, USER_A_ID)
+        self.studentA = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
+        (allocs, _) = getQuestionAllocation(dbLec, self.studentA, 'http://x', dict(question_cap=10))
+        self.assertEqual(sorted(self.getAllocation(qn['uri'], USER_A_ID)['title'] for qn in allocs), [
+            u'Einf\xf6ld Umr\xf6\xf0un',
+            u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
+            u'Unittest D1 T1 L1 Q1',
+            u'Unittest D1 T1 L1 Q2',
+        ])
 
 
 class GetQuestionAllocationTest(FunctionalTestCase):

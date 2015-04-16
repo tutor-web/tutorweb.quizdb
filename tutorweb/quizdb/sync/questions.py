@@ -26,29 +26,51 @@ def toUTCDateTime(t):
 
 def syncPloneQuestions(dbLec, lectureObj):
     """Ensure database has same questions as Plone"""
-    def correctChoices(ploneQn):
-        try:
-            allChoices = ploneQn.unrestrictedTraverse('@@data').allChoices()
-        except AttributeError:
-            # Template questions don't have correct answers
-            return json.dumps([])
-        return json.dumps([i for i, a in enumerate(allChoices) if a['correct']])
-
     # Get all plone questions, turn it into a dict by path
+    ploneQns = {}
     listing = lectureObj.portal_catalog.unrestrictedSearchResults(
         path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
         object_provides=IQuestion.__identifier__
     )
-    ploneQns = dict((b.getPath(), b) for b in listing)
+    for l in listing:
+        obj = l.getObject()
+        data = obj.unrestrictedTraverse('@@data')
+
+        if l['portal_type'] == 'tw_questionpack':
+            # Expand question pack out into individual questions
+            for (id, qn) in data.allQuestionsDict().iteritems():
+                ploneQns['%s?question_id=%s' % (l.getPath(), id)] = dict(
+                    qnType='tw_latexquestion',
+                    lastUpdate=toUTCDateTime(l['modified']),
+                    correctChoices=[i for (i, x) in enumerate(qn['choices']) if x['correct']],
+                    timesAnswered=qn.get('timesanswered', 0),
+                    timesCorrect=qn.get('timescorrect', 0),
+                )
+        else:
+            # Add individual question
+            try:
+                allChoices = data.allChoices()
+            except AttributeError:
+                # Template questions don't have correct answers
+                allChoices = []
+            correctChoices = [i for i, a in enumerate(allChoices) if a['correct']]
+
+            ploneQns[l.getPath()] = dict(
+                qnType=l['portal_type'],
+                lastUpdate=toUTCDateTime(l['modified']),
+                correctChoices=correctChoices,
+                timesAnswered=getattr(obj, 'timesanswered', 0),
+                timesCorrect=getattr(obj, 'timescorrect', 0),
+            )
 
     # Get all questions currently in the database
     for dbQn in (Session.query(db.Question).filter(db.Question.lectures.contains(dbLec))):
-        brain = ploneQns.get(dbQn.plonePath, None)
-        if brain is not None:
+        qn = ploneQns.get(dbQn.plonePath, None)
+        if qn is not None:
             # Question still there (or returned), update
             dbQn.active = True
-            dbQn.correctChoices = correctChoices(brain.getObject())
-            dbQn.lastUpdate = toUTCDateTime(brain['modified'])
+            dbQn.correctChoices = json.dumps(qn['correctChoices'])
+            dbQn.lastUpdate = qn['lastUpdate']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
         elif dbQn.active:
@@ -60,15 +82,14 @@ def syncPloneQuestions(dbLec, lectureObj):
             pass
 
     # Insert any remaining questions
-    for (path, brain) in ploneQns.iteritems():
-        obj = brain.getObject()
+    for (path, qn) in ploneQns.iteritems():
         Session.add(db.Question(
             plonePath=path,
-            qnType=obj.portal_type,
-            lastUpdate=toUTCDateTime(brain['modified']),
-            correctChoices=correctChoices(obj),
-            timesAnswered=getattr(obj, 'timesanswered', 0),
-            timesCorrect=getattr(obj, 'timescorrect', 0),
+            qnType=qn['qnType'],
+            lastUpdate=qn['lastUpdate'],
+            correctChoices=json.dumps(qn['correctChoices']),
+            timesAnswered=qn['timesAnswered'],
+            timesCorrect=qn['timesCorrect'],
             lectures=[dbLec],
         ))
 

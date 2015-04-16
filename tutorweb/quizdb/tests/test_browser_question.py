@@ -13,6 +13,8 @@ from .base import USER_A_ID, USER_B_ID, USER_C_ID, USER_D_ID, MANAGER_ID
 class GetQuestionViewTest(FunctionalTestCase):
     maxDiff = None
 
+    # NB: Getting questions with querystrings tested in test_sync_questions.test_questionPacks
+
     def test_invalidUrl(self):
         """Test some definitely broken cases"""
         # Not supplying a question id is bad

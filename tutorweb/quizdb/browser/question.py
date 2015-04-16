@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import urlparse
 import random
 
 from AccessControl import getSecurityManager
@@ -59,12 +60,18 @@ class QuestionView(JSONBrowserView):
         out = None
 
         def getQuestionDict(plonePath):
+            if '?' in plonePath:
+                (plonePath, querystring) = plonePath.split('?', 1)
+                querystring = urlparse.parse_qs(querystring)
+            else:
+                querystring = {}
+
             try:
                 #NB: Unrestricted so we can see this even when direct access is banned
                 dataView = self.portalObject().unrestrictedTraverse(str(plonePath) + '/@@data')
             except KeyError:
                 raise NotFound(self, str(plonePath), self.request)
-            return dataView.asDict()
+            return dataView.asDict(querystring)
 
         # Is the student requesting a particular question they've done before?
         if not out and dbQn.qnType == 'tw_questiontemplate' and 'question_id' in self.request.form and 'author_qn' not in self.request.form:
