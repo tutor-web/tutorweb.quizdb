@@ -36,7 +36,7 @@ class GetCoinAwardTest(FunctionalTestCase):
             for qnCount in range(7):
                 # user 1 generates a question (assign, answer), don't get any coin for that
                 login(portal, creator.userName)
-                (creatorAllocs, _) = getQuestionAllocation(dbLec, creator, portal.absolute_url(), {})
+                creatorAllocs = getQuestionAllocation(dbLec, creator, portal.absolute_url(), {})
 
                 creatorAq = parseAnswerQueue(dbLec.lectureId, lectureObj, creator, [
                     dict(
@@ -71,7 +71,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                 # Start reviewing question
                 for (i, reviewer) in enumerate(reviewers):
                     login(portal, reviewer.userName)
-                    (reviewerAllocs, _) = getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {})
+                    reviewerAllocs = getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {})
                     # Don't know which of reviewerAllocs matches creatorAq[-1], so guess
                     try:
                         parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [

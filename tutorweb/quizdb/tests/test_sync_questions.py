@@ -69,7 +69,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         # Allocate to user A, should get all questions seperately
         login(portal, USER_A_ID)
         self.studentA = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
-        (allocs, _) = getQuestionAllocation(dbLec, self.studentA, 'http://x', dict(question_cap=10))
+        allocs = getQuestionAllocation(dbLec, self.studentA, 'http://x', dict(question_cap=10))
         self.assertEqual(sorted(self.getAllocation(qn['uri'], USER_A_ID)['title'] for qn in allocs), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
@@ -102,7 +102,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         login(portal, MANAGER_ID)
 
         def getAllocStats(dbLec, student, targetDifficulty, settings = dict(question_cap=10)):
-            (allocs, _) = getQuestionAllocation(dbLec, student, 'http://x', settings, targetDifficulty=targetDifficulty)
+            allocs = getQuestionAllocation(dbLec, student, 'http://x', settings, targetDifficulty=targetDifficulty)
             difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs if qn['chosen'] > 10]
             mean = sum(difficulty) / len(difficulty)
             variance = sum((x - mean) **2 for x in difficulty) / len(difficulty)
@@ -155,7 +155,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         syncPloneQuestions(dbLec, lectureObj)
 
         def gqa(targetDifficulty, reAllocQuestions, student=self.studentA):
-            (allocs, _) = getQuestionAllocation(
+            allocs = getQuestionAllocation(
                 dbLec,
                 student,
                 'http://x',

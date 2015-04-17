@@ -147,7 +147,7 @@ class SyncLectureView(JSONBrowserView):
         )
 
         # ... then fetch question lists
-        (questions, removedQuestions) = getQuestionAllocation(
+        questions = getQuestionAllocation(
             dbLec,
             student,
             portalObj.absolute_url(),
@@ -167,5 +167,4 @@ class SyncLectureView(JSONBrowserView):
             settings=settings,
             answerQueue=answerQueue,
             questions=questions,
-            removed_questions=removedQuestions,
         )

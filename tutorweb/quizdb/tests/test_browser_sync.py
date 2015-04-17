@@ -243,7 +243,6 @@ class SyncViewFunctional(FunctionalTestCase):
             sorted(aQuestions.keys()),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
-        self.assertEquals(aAlloc['removed_questions'], [])
 
         # Keep this version of question 3
         qn3 = aQuestions[u'Unittest D1 T1 L1 Q3']
@@ -257,7 +256,6 @@ class SyncViewFunctional(FunctionalTestCase):
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
-        self.assertEquals(aAlloc['removed_questions'], [qn3])
 
         # Gone completely second time around
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
@@ -265,7 +263,6 @@ class SyncViewFunctional(FunctionalTestCase):
             sorted([self.getJson(qn['uri'])['title'] for qn in aAlloc['questions']]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q4'],
         )
-        self.assertEquals(aAlloc['removed_questions'], [])
 
         # Recreate it - gets removed and re-added under a different allocation
         time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
@@ -287,7 +284,6 @@ class SyncViewFunctional(FunctionalTestCase):
             sorted(aQuestions.keys()),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3', u'Unittest D1 T1 L1 Q4'],
         )
-        self.assertEquals(aAlloc['removed_questions'], [])
         self.assertNotEquals(aQuestions[u'Unittest D1 T1 L1 Q3'], qn3)
 
         # Keep this version of question 3
@@ -304,7 +300,6 @@ class SyncViewFunctional(FunctionalTestCase):
             sorted(aQuestions.keys()),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 Q3b', u'Unittest D1 T1 L1 Q4'],
         )
-        self.assertEquals(aAlloc['removed_questions'], [qn3a])
         self.assertNotEquals(aQuestions[u'Unittest D1 T1 L1 Q3b'], qn3)
         self.assertNotEquals(aQuestions[u'Unittest D1 T1 L1 Q3b'], qn3a)
 
@@ -1382,20 +1377,17 @@ class SyncViewFunctional(FunctionalTestCase):
         import transaction ; transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 5)
-        self.assertEquals(len(aAlloc['removed_questions']), 10)
 
         # On the second round, we forget about the removed questions
         # NB: This isn't brilliant behaviour, but saves cluttering the DB
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 5)
-        self.assertEquals(len(aAlloc['removed_questions']), 0)
 
         # Bump cap back up a bit, should get more questions
         portal['dept1']['mediumtut']['largelec'].settings = [dict(key='question_cap', value='7')]
         import transaction ; transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 7)
-        self.assertEquals(len(aAlloc['removed_questions']), 0)
 
         # Delete some questions, should go back down again
         for qn in [x.id for x in portal['dept1']['mediumtut']['largelec'].getChildNodes()][:15]:

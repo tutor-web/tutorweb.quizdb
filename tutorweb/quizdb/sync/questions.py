@@ -106,7 +106,6 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
         tw_questiontemplate=[],
         # NB: Need to add rows for each distinct question type, otherwise won't try and assign them
     )
-    removedQns = []
     for (dbAlloc, dbQn) in (Session.query(db.Allocation, db.Question)
             .join(db.Question)
             .filter(db.Allocation.studentId == student.studentId)
@@ -114,7 +113,6 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
             .filter(db.Question.lectures.contains(dbLec))):
         if not(dbQn.active) or (dbAlloc.allocationTime < dbQn.lastUpdate):
             # Question has been removed or is stale
-            removedQns.append(questionUrl(dbAlloc.publicId))
             dbAlloc.active = False
         else:
             # Still around, so save it
@@ -126,7 +124,6 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
 
         # If there's too many allocs, throw some away
         for i in sorted(random.sample(xrange(len(allocs)), max(len(allocs) - questionCap, 0)), reverse=True):
-            removedQns.append(questionUrl(allocs[i]['alloc'].publicId))
             allocs[i]['alloc'].active = False
             del allocs[i]
 
@@ -175,13 +172,10 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
     Session.flush()
 
     # Return all active questions
-    return (
-        [dict(
-            _type="template" if a['question'].qnType == 'tw_questiontemplate' else None,
-            uri=questionUrl(a['alloc'].publicId),
-            chosen=a['question'].timesAnswered,
-            correct=a['question'].timesCorrect,
-            online_only = (a['question'].qnType == 'tw_questiontemplate'),
-        ) for allocs in allocsByType.values() for a in allocs],
-        removedQns,
-    )
+    return [dict(
+        _type="template" if a['question'].qnType == 'tw_questiontemplate' else None,
+        uri=questionUrl(a['alloc'].publicId),
+        chosen=a['question'].timesAnswered,
+        correct=a['question'].timesCorrect,
+        online_only = (a['question'].qnType == 'tw_questiontemplate'),
+    ) for allocs in allocsByType.values() for a in allocs]
