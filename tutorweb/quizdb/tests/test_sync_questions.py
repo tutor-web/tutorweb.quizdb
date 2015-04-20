@@ -9,16 +9,15 @@ from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
 from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 
+def getAllocation(portal, alloc, user):
+    login(portal, USER_A_ID)
+    view = portal.restrictedTraverse('quizdb-get-question')
+    view.questionId = alloc.replace("http://x/quizdb-get-question/", "")
+    return view.asDict({})
+
 
 class SyncPloneQuestionsTest(IntegrationTestCase):
     maxDiff = None
-
-    def getAllocation(self, alloc, user):
-        portal = self.layer['portal']
-        login(portal, USER_A_ID)
-        view = portal.restrictedTraverse('quizdb-get-question')
-        view.questionId = alloc.replace("http://x/quizdb-get-question/", "")
-        return view.asDict({})
 
     def test_questionPacks(self):
         """A question pack should be stored as a bunch of separate questions"""
@@ -70,7 +69,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         login(portal, USER_A_ID)
         self.studentA = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
         allocs = getQuestionAllocation(dbLec, self.studentA, 'http://x', dict(question_cap=10))
-        self.assertEqual(sorted(self.getAllocation(qn['uri'], USER_A_ID)['title'] for qn in allocs), [
+        self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
             u'Unittest D1 T1 L1 Q1',
