@@ -1,6 +1,11 @@
 # -*- coding: utf8 -*-
 import transaction
 
+from z3c.relationfield import RelationValue
+from zope.intid.interfaces import IIntIds
+from zope.component import getUtility
+
+from Products.CMFCore.utils import getToolByName
 from plone.app.testing import login
 from plone.namedfile.file import NamedBlobFile
 
@@ -8,6 +13,7 @@ from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
 from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+from ..sync.answers import parseAnswerQueue
 
 def getAllocation(portal, alloc, user):
     login(portal, USER_A_ID)
@@ -200,3 +206,205 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         self.assertEquals(len(newItems), 2)
         for a in newItems:
             self.assertLess(a['correct'], 25)
+
+    def test_lectureSymlink(self):
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Make a symlink of lec1
+        origLec = portal['dept1']['tut1']['lec1']
+        pt = getToolByName(portal, 'portal_types')
+        linkLec = portal['dept1']['tut1'][pt.constructContent(
+            type_name="collective.alias",
+            container=portal['dept1']['tut1'],
+            id="linkLec",
+            _aliasTarget=RelationValue(getUtility(IIntIds).getId(origLec))
+        )]
+        transaction.commit()
+
+        # Allocate questions from here to user A, will get lecture 1 questions
+        login(portal, USER_A_ID)
+        syncView = linkLec.restrictedTraverse('@@quizdb-sync')
+        dbLec = syncView.getDbLecture()
+        student = syncView.getCurrentStudent()
+        syncPloneQuestions(dbLec, linkLec)
+        allocs = getQuestionAllocation(
+            dbLec,
+            student,
+            'http://x',
+            dict(question_cap=10),
+        )
+        self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
+            u'Unittest D1 T1 L1 Q1',
+            u'Unittest D1 T1 L1 Q2',
+        ])
+
+        # Add a question to lecture 1
+        login(portal, MANAGER_ID)
+        origLec.invokeFactory(
+            type_name="tw_latexquestion",
+            id="qn99",
+            title="Unittest D1 T1 L1 Q99",
+            choices=[dict(text="pink", correct=False), dict(text="purple", correct=True)],
+            finalchoices=[],
+        )
+        transaction.commit()
+
+        # User A will see it when taking the link lecture
+        login(portal, USER_A_ID)
+        syncPloneQuestions(dbLec, linkLec)
+        allocs = getQuestionAllocation(
+            dbLec,
+            student,
+            'http://x',
+            dict(question_cap=10),
+        )
+        self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
+            u'Unittest D1 T1 L1 Q1',
+            u'Unittest D1 T1 L1 Q2',
+            u'Unittest D1 T1 L1 Q99',
+        ])
+
+    def test_questionSymLink(self):
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Create a question pack in lec1
+        origLec = portal['dept1']['tut1']['lec1']
+        qnPack = origLec[origLec.invokeFactory(
+            type_name="tw_questionpack",
+            id='qnpack01',
+            questionfile=NamedBlobFile(
+                data="""
+%ID umGen1-0
+%title Einföld Umröðun
+%format latex
+Einangrið og finnið þannig gildi $x$ í eftirfarandi jöfnu. Merkið við þann möguleika sem best á við.
+$$\frac{7}{4x-8}-8=3$$
+
+a.true) $\frac{95}{44}$
+b) $-\frac{95}{44}$
+c) $-\frac{19}{4}$
+d) $\frac{19}{4}$
+
+%Explanation
+Við leggjum 8 við báðum megin við jafnaðarmerkið, og fáum þá $\frac{7}{4x-8}=11$
+%===
+%ID Ag10q16
+%title Táknmál mengjafræðinnar - mengi
+%format latex
+%image data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+Hvert af eftirtöldu er rétt fyrir öll mengi $A,B,C$?
+
+a.true) $\left((A \cup B) \cap C \right) \backslash B \subset A \cap C$
+b) $\left((A \cup B) \cap C \right) \backslash B =  \emptyset $
+c) $\left((A \cup B) \cap C \right) \backslash B \supset  A \cap C$
+
+%Explanation
+Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
+                """,
+                contentType='text/x-tex',
+                filename=u'qnpackcontent.tex',
+            ),
+        )]
+
+        # Create a new lecture, with 2 of it's own questions, and links to question pack and another question
+        testLec = self.createTestLecture(2)
+        getToolByName(portal, 'portal_types').constructContent(
+            type_name="collective.alias",
+            container=testLec,
+            id=qnPack.id,
+            _aliasTarget=RelationValue(getUtility(IIntIds).getId(qnPack))
+        )
+        getToolByName(portal, 'portal_types').constructContent(
+            type_name="collective.alias",
+            container=testLec,
+            id=origLec['qn1'].id,
+            _aliasTarget=RelationValue(getUtility(IIntIds).getId(origLec['qn1']))
+        )
+        transaction.commit()
+
+        # Assign questions, get combination of linked and original questions
+        login(portal, USER_A_ID)
+        syncPloneQuestions(origLec.restrictedTraverse('@@quizdb-sync').getDbLecture(), origLec)
+        syncView = testLec.restrictedTraverse('@@quizdb-sync')
+        dbLec = syncView.getDbLecture()
+        student = syncView.getCurrentStudent()
+        syncPloneQuestions(dbLec, testLec)
+        allocByTitle = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
+            dbLec,
+            student,
+            'http://x',
+            dict(question_cap=10),
+        ))
+        self.assertEqual(sorted(allocByTitle.keys()), [
+            u'Einf\xf6ld Umr\xf6\xf0un',
+            u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
+            u'Unittest D1 T1 L1 Q1',
+            u'Unittest tw_latexquestion 0',
+            u'Unittest tw_latexquestion 1',
+        ])
+
+        # Get question stats for lecture, should be 0
+        self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+            {'id': 'qn2', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q2', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn2'},
+            {'id': 'qnpack01?question_id=Ag10q16', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=Ag10q16'},
+            {'id': 'qnpack01?question_id=umGen1-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=umGen1-0'},
+        ])
+        self.assertEqual(testLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 0', 'url': testLec.absolute_url() + '/qn-0'},
+            {'id': 'qn-1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 1', 'url': testLec.absolute_url() + '/qn-1'},
+            {'id': 'qn1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+            {'id': 'qnpack01?question_id=Ag10q16', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=Ag10q16'},
+            {'id': 'qnpack01?question_id=umGen1-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=umGen1-0'},
+        ])
+
+        # Answer a symlinked question, should update both lectures
+        parseAnswerQueue(dbLec.lectureId, testLec, student, [
+            dict(
+                synced=False,
+                uri=allocByTitle[u'Unittest D1 T1 L1 Q1']['uri'],
+                student_answer=1,
+                correct=True,
+                quiz_time=  1000000000,
+                answer_time=1000000001,
+                grade_after=0.1,
+            ),
+        ], {})
+        self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+            {'id': 'qn2', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q2', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn2'},
+            {'id': 'qnpack01?question_id=Ag10q16', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=Ag10q16'},
+            {'id': 'qnpack01?question_id=umGen1-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=umGen1-0'},
+        ])
+        self.assertEqual(testLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 0', 'url': testLec.absolute_url() + '/qn-0'},
+            {'id': 'qn-1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 1', 'url': testLec.absolute_url() + '/qn-1'},
+            {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+            {'id': 'qnpack01?question_id=Ag10q16', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=Ag10q16'},
+            {'id': 'qnpack01?question_id=umGen1-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': '', 'url': 'http://nohost/plone/dept1/tut1/lec1/qnpack01?question_id=umGen1-0'},
+        ])
+
+        # Remove symlinked question, should dissapear from both
+        del origLec[qnPack.id]
+        self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+            {'id': 'qn2', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q2', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn2'},
+        ])
+        self.assertEqual(testLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 0', 'url': testLec.absolute_url() + '/qn-0'},
+            {'id': 'qn-1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 1', 'url': testLec.absolute_url() + '/qn-1'},
+            {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+        ])
+
+        # Remove qn1 from our linked lecture, still in the original lecture
+        del testLec['qn1']
+        self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
+            {'id': 'qn2', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q2', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn2'},
+        ])
+        self.assertEqual(testLec.unrestrictedTraverse('@@question-stats').getStats(), [
+            {'id': 'qn-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 0', 'url': testLec.absolute_url() + '/qn-0'},
+            {'id': 'qn-1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 1', 'url': testLec.absolute_url() + '/qn-1'},
+        ])

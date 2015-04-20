@@ -5,6 +5,7 @@ import random
 import pytz
 
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import func
 
 from z3c.saconfig import Session
@@ -28,6 +29,8 @@ def syncPloneQuestions(dbLec, lectureObj):
     """Ensure database has same questions as Plone"""
     # Get all plone questions, turn it into a dict by path
     ploneQns = {}
+    if getattr(lectureObj, 'isAlias', False):
+        lectureObj = lectureObj._target
     listing = lectureObj.portal_catalog.unrestrictedSearchResults(
         path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
         object_provides=IQuestion.__identifier__
@@ -35,11 +38,14 @@ def syncPloneQuestions(dbLec, lectureObj):
     for l in listing:
         obj = l.getObject()
         data = obj.unrestrictedTraverse('@@data')
+        # objPath is the canonical location of the question
+        objPath = '/'.join(obj._target.getPhysicalPath()) \
+                  if getattr(obj, 'isAlias', False) else l.getPath()
 
         if l['portal_type'] == 'tw_questionpack':
             # Expand question pack out into individual questions
             for (id, qn) in data.allQuestionsDict().iteritems():
-                ploneQns['%s?question_id=%s' % (l.getPath(), id)] = dict(
+                ploneQns['%s?question_id=%s' % (objPath, id)] = dict(
                     qnType='tw_latexquestion',
                     lastUpdate=toUTCDateTime(l['modified']),
                     correctChoices=[i for (i, x) in enumerate(qn['choices']) if x['correct']],
@@ -55,7 +61,7 @@ def syncPloneQuestions(dbLec, lectureObj):
                 allChoices = []
             correctChoices = [i for i, a in enumerate(allChoices) if a['correct']]
 
-            ploneQns[l.getPath()] = dict(
+            ploneQns[objPath] = dict(
                 qnType=l['portal_type'],
                 lastUpdate=toUTCDateTime(l['modified']),
                 correctChoices=correctChoices,
@@ -73,8 +79,14 @@ def syncPloneQuestions(dbLec, lectureObj):
             dbQn.lastUpdate = qn['lastUpdate']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
+        elif dbQn.active and getattr(obj, 'isAlias', False):
+            # Remove symlink question from lecture
+            dbQn.lectures = [l for l in dbQn.lectures if l != dbLec]
+            dbQn.active = len(dbQn.lectures) > 0
+            dbQn.lastUpdate = datetime.datetime.utcnow()
         elif dbQn.active:
-            # Question has been removed, disable in database & record when we did it
+            # Remove question from all lectures and mark as inactive
+            dbQn.lectures = []
             dbQn.active = False
             dbQn.lastUpdate = datetime.datetime.utcnow()
         else:
@@ -83,15 +95,21 @@ def syncPloneQuestions(dbLec, lectureObj):
 
     # Insert any remaining questions
     for (path, qn) in ploneQns.iteritems():
-        Session.add(db.Question(
-            plonePath=path,
-            qnType=qn['qnType'],
-            lastUpdate=qn['lastUpdate'],
-            correctChoices=json.dumps(qn['correctChoices']),
-            timesAnswered=qn['timesAnswered'],
-            timesCorrect=qn['timesCorrect'],
-            lectures=[dbLec],
-        ))
+        try:
+            # If question already exists, add it to this lecture.
+            dbQn = Session.query(db.Question).filter(db.Question.plonePath == path).one()
+            dbQn.lectures.append(dbLec)
+            dbQn.active = True
+        except NoResultFound:
+            Session.add(db.Question(
+                plonePath=path,
+                qnType=qn['qnType'],
+                lastUpdate=qn['lastUpdate'],
+                correctChoices=json.dumps(qn['correctChoices']),
+                timesAnswered=qn['timesAnswered'],
+                timesCorrect=qn['timesCorrect'],
+                lectures=[dbLec],
+            ))
 
     Session.flush()
 

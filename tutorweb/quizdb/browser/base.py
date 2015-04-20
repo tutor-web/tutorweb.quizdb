@@ -58,10 +58,17 @@ class BrowserViewHelpers(object):
     @view.memoize
     def getDbLecture(self):
         """Return database ID for the current lecture"""
-        if self.context.portal_type != 'tw_lecture':
-            # Could go up to find lecture at this point, but no need yet.
-            raise NotImplementedError
-        plonePath = '/'.join(self.context.getPhysicalPath())
+        # Go up until we find a lecture
+        context = self.context
+        while context.portal_type != 'tw_lecture':
+            context = context.aq_parent
+
+        # Resolve any lecture symlink
+        if getattr(context, 'isAlias', False):
+            plonePath = '/'.join(context._target.getPhysicalPath())
+        else:
+            plonePath = '/'.join(context.getPhysicalPath())
+
         try:
             dbLec = Session.query(db.Lecture) \
                 .filter(db.Lecture.plonePath == plonePath).one()
