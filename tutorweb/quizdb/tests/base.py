@@ -184,7 +184,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
                     tw_questiontemplate="tmplqn",
                     )[opts['type_name']], i)
             if not opts['title']:
-                opts['title'] = "Unittest %s %d" % (opts['type_name'], i),
+                opts['title'] = u"Unittest %s %d" % (opts['type_name'], i)
 
             obj = parent[parent.invokeFactory(**opts)]
             if not hasattr(self, 'tempObjects'):
