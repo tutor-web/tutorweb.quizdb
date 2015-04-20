@@ -8,6 +8,7 @@ from Products.Five.browser import BrowserView
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
+from tutorweb.quizdb.sync.questions import syncPloneQuestions
 from .base import BrowserViewHelpers
 
 class QuestionStatsView(BrowserView, BrowserViewHelpers):
@@ -17,37 +18,37 @@ class QuestionStatsView(BrowserView, BrowserViewHelpers):
         """Get statistics for all questions in the lecture"""
 
         if IQuestion.providedBy(self.context):
+            # Sync DB first, in case any questions had been created
+            syncPloneQuestions(self.getDbLecture(), self.context.aq_parent)
+
             # Return just the current question and it's DB object
-            plQns = [RealContentListingObject(self.context)]
-            dbQns = dict((x.plonePath, x) for x in Session.query(db.Question)
+            dbQns = (Session.query(db.Question)
                 .filter(db.Question.plonePath == '/'.join(self.context.getPhysicalPath()))
-                .filter(db.Question.active == True))
+                .filter(db.Question.active == True)
+                .order_by(db.Question.plonePath))
         else:
+            # Sync DB first, in case any questions had been created
+            syncPloneQuestions(self.getDbLecture(), self.context)
+
             # TODO: Batching, optimise query
-            plQns = self.context.restrictedTraverse('@@folderListing')(
-                object_provides=IQuestion.__identifier__,
-                sort_on="id",
-            )
-            dbQns = dict((x.plonePath, x) for x in Session.query(db.Question)
+            dbQns = (Session.query(db.Question)
                 .filter(db.Question.lectures.contains(self.getDbLecture()))
-                .filter(db.Question.active == True))
+                .filter(db.Question.active == True)
+                .order_by(db.Question.plonePath))
 
         out = []
-        for l in plQns:
-            out.append(dict(
-                url=l.getURL(),
-                id=l.getId(),
-                title=l.Title(),
-            ))
+        for dbQn in dbQns:
+            plonePath = str(dbQn.plonePath)
+            queryString = None
+            if '?' in plonePath:
+                (plonePath, queryString) = plonePath.split('?', 1)
+            plQn = self.portalObject().unrestrictedTraverse(plonePath)
 
-            dbQn = dbQns.get(l.getPath(), None)
-            if dbQn is not None:
-                # Use DB answers
-                out[-1]['timesAnswered'] = dbQn.timesAnswered
-                out[-1]['timesCorrect'] = dbQn.timesCorrect
-            else:
-                # Not in DB yet, fall back to initial values
-                plQn = l.getObject()
-                out[-1]['timesAnswered'] = getattr(plQn, 'timesanswered', 0)
-                out[-1]['timesCorrect'] = getattr(plQn, 'timescorrect', 0)
+            out.append(dict(
+                url=plQn.absolute_url() + ('?%s' % queryString if queryString else ""),
+                id=plQn.getId() + ('?%s' % queryString if queryString else ""),
+                title=plQn.Title(),
+                timesAnswered=dbQn.timesAnswered,
+                timesCorrect=dbQn.timesCorrect,
+            ))
         return out

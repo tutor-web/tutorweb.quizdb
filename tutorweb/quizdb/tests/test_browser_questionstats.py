@@ -39,13 +39,6 @@ class QuestionStatsViewTest(IntegrationTestCase):
             dict(id='qn2', timesAnswered=6, timesCorrect=3, title='Unittest D1 T1 L1 Q2', url='http://nohost/plone/dept1/tut1/lec1/qn2'),
         ])
 
-        # Sync plone questions, should store stats in DB
-        syncPloneQuestions(
-            portal.restrictedTraverse('dept1/tut1/lec1/@@question-stats').getDbLecture(),
-            portal['dept1']['tut1']['lec1'],
-        )
-        transaction.commit()
-
         # Update in-plone stats, has no effect on stats now stored in db
         portal['dept1']['tut1']['lec1']['qn1'].timesanswered = 8
         portal['dept1']['tut1']['lec1']['qn1'].timescorrect = 4
