@@ -30,9 +30,9 @@ class ReviewUgQnView(JSONBrowserView):
                 # NB: question/student/revision would be unique, this *should* be.
                 .filter(db.Allocation.studentId == student.studentId)
                 .filter(db.Allocation.active == True)
+                .filter(db.Allocation.lectureId == self.getDbLecture().lectureId)
                 .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                 .filter(db.UserGeneratedQuestion.superseded == None)
-                .filter(db.Question.lectures.contains(self.getDbLecture()))
                 .order_by(db.UserGeneratedQuestion.ugQuestionId)
                 .all()):
 

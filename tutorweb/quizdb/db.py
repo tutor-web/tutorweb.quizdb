@@ -48,6 +48,11 @@ class Allocation(ORMBase):
         nullable=False,
         index=True,
     )
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        nullable=False,
+    )
     questionId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('question.questionId'),

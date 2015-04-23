@@ -55,7 +55,7 @@ class QuestionView(JSONBrowserView):
                 out['answer']['correct'].append(i)
         return out
 
-    def getQuestionData(self, dbQn):
+    def getQuestionData(self, dbQn, dbAlloc):
         """Fetch dict for question, obsfucating the answer"""
         out = None
 
@@ -98,10 +98,8 @@ class QuestionView(JSONBrowserView):
                 cap_template_qns=5,
                 cap_template_qn_reviews=10,
             )
-            if len(dbQn.lectures) != 1:
-                raise NotImplementedError("Can't work out which lecture question is in")
             for row in (Session.query(db.LectureSetting)
-                    .filter(db.LectureSetting.lectureId == dbQn.lectures[0].lectureId)
+                    .filter(db.LectureSetting.lectureId == dbAlloc.lectureId)
                     .filter(db.LectureSetting.studentId == student.studentId)
                     .filter(db.LectureSetting.key.in_(settings.keys()))):
                 settings[row.key] = float(row.value)
@@ -208,7 +206,7 @@ class GetQuestionView(QuestionView):
 
         isAdmin = self.isAdmin()
         try:
-            query = Session.query(db.Question) \
+            query = Session.query(db.Question, db.Allocation) \
                 .join(db.Allocation) \
                 .filter(db.Allocation.publicId == self.questionId) \
                 .filter(db.Question.active == True)
@@ -216,14 +214,14 @@ class GetQuestionView(QuestionView):
             if not isAdmin:
                 student = self.getCurrentStudent()
                 query = query.filter(db.Allocation.studentId == student.studentId)
-            dbQn = query.one()
+            (dbQn, dbAlloc) = query.one()
         except NoResultFound:
             raise NotFound(self, self.questionId, self.request)
         except MultipleResultsFound:
             raise NotFound(self, self.questionId, self.request)
 
         try:
-            qn = self.getQuestionData(dbQn)
+            qn = self.getQuestionData(dbQn, dbAlloc)
         except NotFound:
             # Mask question plonePath
             raise NotFound(self, self.questionId, self.request)
@@ -244,6 +242,7 @@ class GetLectureQuestionsView(QuestionView):
             .filter(db.Question.active == True) \
             .filter(db.Allocation.studentId == student.studentId) \
             .filter(db.Allocation.active == True) \
+            .filter(db.Allocation.lectureId == self.getDbLecture().lectureId) \
             .filter(db.Question.qnType != 'tw_questiontemplate') \
             .all() # NB: qnType != '...' ~== online_only = false
 
@@ -253,7 +252,7 @@ class GetLectureQuestionsView(QuestionView):
         for (dbQn, dbAlloc) in dbAllocs:
             try:
                 uri = portal.absolute_url() + '/quizdb-get-question/' + dbAlloc.publicId
-                out[uri] = self.getQuestionData(dbQn)
+                out[uri] = self.getQuestionData(dbQn, dbAlloc)
             except NotFound:
                 pass
         return out

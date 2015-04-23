@@ -128,7 +128,7 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
             .join(db.Question)
             .filter(db.Allocation.studentId == student.studentId)
             .filter(db.Allocation.active == True)
-            .filter(db.Question.lectures.contains(dbLec))):
+            .filter(db.Allocation.lectureId == dbLec.lectureId)):
         if not(dbQn.active) or (dbAlloc.allocationTime < dbQn.lastUpdate):
             # Question has been removed or is stale
             dbAlloc.active = False
@@ -182,6 +182,7 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
                 dbAlloc = db.Allocation(
                     studentId=student.studentId,
                     questionId=dbQn.questionId,
+                    lectureId=dbLec.lectureId,
                     allocationTime=datetime.datetime.utcnow(),
                 )
                 Session.add(dbAlloc)

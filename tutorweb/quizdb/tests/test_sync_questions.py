@@ -331,19 +331,40 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         dbLec = syncView.getDbLecture()
         student = syncView.getCurrentStudent()
         syncPloneQuestions(dbLec, testLec)
-        allocByTitle = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
+        allocByTitleTestLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
             dbLec,
             student,
             'http://x',
             dict(question_cap=10),
         ))
-        self.assertEqual(sorted(allocByTitle.keys()), [
+        self.assertEqual(sorted(allocByTitleTestLec.keys()), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
             u'Unittest D1 T1 L1 Q1',
             u'Unittest tw_latexquestion 0',
             u'Unittest tw_latexquestion 1',
         ])
+
+        # Allocate original lecture too, should have same questions, but different allocations
+        allocByTitleOrigLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
+            origLec.restrictedTraverse('@@quizdb-sync').getDbLecture(),
+            student,
+            'http://x',
+            dict(question_cap=10),
+        ))
+        self.assertEqual(sorted(allocByTitleOrigLec.keys()), [
+            u'Einf\xf6ld Umr\xf6\xf0un',
+            u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
+            u'Unittest D1 T1 L1 Q1',
+            u'Unittest D1 T1 L1 Q2',
+        ])
+        for k in allocByTitleOrigLec.keys():
+            if k not in allocByTitleTestLec.keys():
+                continue
+            self.assertNotEqual(
+                allocByTitleTestLec[k]['uri'],
+                allocByTitleOrigLec[k]['uri'],
+            )
 
         # Get question stats for lecture, should be 0
         self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
@@ -364,7 +385,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         parseAnswerQueue(dbLec.lectureId, testLec, student, [
             dict(
                 synced=False,
-                uri=allocByTitle[u'Unittest D1 T1 L1 Q1']['uri'],
+                uri=allocByTitleTestLec[u'Unittest D1 T1 L1 Q1']['uri'],
                 student_answer=1,
                 correct=True,
                 quiz_time=  1000000000,
