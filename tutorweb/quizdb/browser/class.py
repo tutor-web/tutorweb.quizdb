@@ -48,12 +48,13 @@ class StudentResultsView(BrowserView):
         """
         Get entries from AnswerSummary for the classes lectures / students
         """
+        allStudents = self.context.students or []
         lecturePaths = [r.to_path for r in self.context.lectures]
         dbTotals = (
             Session.query(db.AnswerSummary)
             .add_columns(db.Student.userName, db.Lecture.plonePath)
             .join(db.Student)
-            .filter(db.Student.userName.in_(self.context.students))
+            .filter(db.Student.userName.in_(allStudents))
             .join(db.Lecture)
             .filter(db.Lecture.plonePath.in_(lecturePaths))
             .all())
@@ -67,7 +68,7 @@ class StudentResultsView(BrowserView):
         return [dict(
             username=student,
             grades=[toDict[student][l] for l in lecturePaths],
-        ) for student in self.context.students]
+        ) for student in allStudents]
 
 
 class StudentSummaryTableView(CSVView, StudentResultsView):
@@ -99,12 +100,13 @@ class StudentTableView(CSVView):
             'Practice',
         ]
 
+        allStudents = self.context.students or []
         lecturePaths = [r.to_path for r in self.context.lectures]
         for row in (
             Session.query(db.Answer)
                 .add_columns(db.Student.userName, db.Lecture.plonePath, db.Question.plonePath)
                 .join(db.Student)
-                .filter(db.Student.userName.in_(self.context.students))
+                .filter(db.Student.userName.in_(allStudents))
                 .join(db.Lecture)
                 .filter(db.Lecture.plonePath.in_(lecturePaths))
                 .join(db.Question, db.Question.questionId == db.Answer.questionId)
