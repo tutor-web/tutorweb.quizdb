@@ -1,8 +1,15 @@
+import calendar
+import dateutil.parser
+
 from .base import IntegrationTestCase, FunctionalTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 
 import tutorweb.quizdb.tests.test_coin
 from .test_coin import chooseOpener, MockHTTPHandler, nextResponse
+
+def toTimestamp(iso):
+    """Convert ISO string into timestamp"""
+    return calendar.timegm(dateutil.parser.parse(iso).timetuple())
 
 class TotalCoinViewTest(IntegrationTestCase):
     def tearDown(self):
@@ -75,8 +82,8 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:21:40')),
+                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:15:40')),
             ])
         )
 
@@ -90,7 +97,7 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:23:40')),
             ])
         )
 
@@ -100,8 +107,8 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
                 walletId='$$UNITTEST:01',
             )),
             dict(coin_available=0, walletId='$$UNITTEST:01', tx_id='UNITTESTTX:$$UNITTEST:01:11000', history=[
-                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:21:40')),
+                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:15:40')),
             ])
         )
 
@@ -109,7 +116,7 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:23:40')),
             ])
         )
 
@@ -117,8 +124,8 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=0, walletId='$$UNITTEST:01', tx_id=None, history=[
-                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:21:40')),
+                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:15:40')),
             ])
         )
 
@@ -126,7 +133,7 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:23:40')),
             ])
         )
 
@@ -140,9 +147,9 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=111000, walletId='$$UNITTEST:01', tx_id=None, history=[
-                dict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:25:40'),
-                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:21:40'),
-                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=toTimestamp('2013-08-20T12:25:40')),
+                dict(amount=10000, claimed=True, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:21:40')),
+                dict(amount=1000,  claimed=True, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:15:40')),
             ])
         )
 
@@ -150,6 +157,6 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:23:40'),
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:23:40')),
             ])
         )

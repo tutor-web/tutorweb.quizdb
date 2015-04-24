@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import json
 import logging
@@ -169,7 +170,7 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
         if (Session.query(db.Answer)
                 .filter(db.Answer.studentId == student.studentId)
                 .filter(db.Answer.questionId == dbQn.questionId)
-                .filter(db.Answer.timeEnd == datetime.datetime.fromtimestamp(a['answer_time']))
+                .filter(db.Answer.timeEnd == datetime.datetime.utcfromtimestamp(a['answer_time']))
                 .count()) > 0:
             continue
 
@@ -271,8 +272,8 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
             chosenAnswer=a['student_answer'],
             correct=a.get('correct', None),
             grade=a.get('grade_after', None),
-            timeStart=datetime.datetime.fromtimestamp(a['quiz_time']),
-            timeEnd=datetime.datetime.fromtimestamp(a['answer_time']),
+            timeStart=datetime.datetime.utcfromtimestamp(a['quiz_time']),
+            timeEnd=datetime.datetime.utcfromtimestamp(a['answer_time']),
             practice=a.get('practice', False),
             coinsAwarded=coinsAwarded,
         ))
@@ -288,8 +289,8 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
         .all())
     out = [dict(  # NB: Not fully recreating what JS creates, but shouldn't be a problem
         correct=dbAns.correct,
-        quiz_time=int(time.mktime(dbAns.timeStart.timetuple())),
-        answer_time=int(time.mktime(dbAns.timeEnd.timetuple())),
+        quiz_time=calendar.timegm(dbAns.timeStart.timetuple()),
+        answer_time=calendar.timegm(dbAns.timeEnd.timetuple()),
         student_answer=dbAns.chosenAnswer,
         grade_after=dbAns.grade,
         coins_awarded=dbAns.coinsAwarded,

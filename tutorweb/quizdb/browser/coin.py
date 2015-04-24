@@ -1,3 +1,4 @@
+import calendar
 # import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
@@ -50,7 +51,7 @@ class StudentAwardView(JSONBrowserView):
             coinAwarded += row[1]
             history.insert(0, dict(
                 lecture=row[2],
-                time=row[0].isoformat() if row[1] else None,
+                time=calendar.timegm(row[0].timetuple()) if row[1] else None,
                 amount=row[1],
                 claimed=(coinAwarded <= coinClaimed and row[0] <= lastAwardTime)
             ))

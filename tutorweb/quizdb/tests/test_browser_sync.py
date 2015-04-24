@@ -946,7 +946,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=1000, walletId='', tx_id=None, history=[
-                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -969,7 +969,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=1000, walletId='', tx_id=None, history=[
-                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -983,8 +983,8 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
-                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377002380),
+                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -1004,8 +1004,8 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
-                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377002380),
+                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -1029,9 +1029,9 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             dict(coin_available=22000, walletId='', tx_id=None, history=[
-                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:55:40'),
-                dict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
-                dict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377003340),
+                dict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377002380),
+                dict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -1055,10 +1055,10 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
             uniDict(coin_available=133000, walletId='', tx_id=None, history=[
-                uniDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time='2013-08-20T14:15:40'),
-                uniDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T13:55:40'),
-                uniDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:39:40'),
-                uniDict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T13:15:40'),
+                uniDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time=1377004540),
+                uniDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377003340),
+                uniDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377002380),
+                uniDict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -1084,8 +1084,8 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             uniDict(coin_available=11000, walletId='', tx_id=None, history=[
-                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:49:40'),
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:43:40'),
+                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006580),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006220),
             ])
         )
 
@@ -1110,9 +1110,9 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
             uniDict(coin_available=12000, walletId='', tx_id=None, history=[
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time='2013-08-20T15:07:40'),
-                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:49:40'),
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time='2013-08-20T14:43:40'),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377007660),
+                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006580),
+                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006220),
             ])
         )
 
