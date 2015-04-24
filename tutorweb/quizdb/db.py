@@ -61,7 +61,7 @@ class Allocation(ORMBase):
     allocationTime = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
         nullable=False,
-        default=datetime.now,
+        default=datetime.utcnow,
     )
     active = sqlalchemy.schema.Column(
         sqlalchemy.types.Boolean(),
@@ -76,7 +76,7 @@ def generatePublicId(mapper, connection, instance):
     instance.publicId = md5('%s:%s:%s:%s' % (
         instance.studentId,
         instance.questionId,
-        datetime.now(),
+        datetime.utcnow(),
         random(),
     )).hexdigest()
 
@@ -184,7 +184,7 @@ class Question(ORMBase):
     lastUpdate = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
         nullable=False,
-        default=datetime.now,
+        default=datetime.utcnow,
     )
     active = sqlalchemy.schema.Column(
         sqlalchemy.types.Boolean(),
@@ -571,5 +571,5 @@ class CoinAward(ORMBase):
     awardTime = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
         nullable=False,
-        default=datetime.now,
+        default=datetime.utcnow,
     )
