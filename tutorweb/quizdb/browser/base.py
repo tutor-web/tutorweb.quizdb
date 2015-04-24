@@ -19,6 +19,17 @@ from tutorweb.quizdb import db
 
 
 class BrowserViewHelpers(object):
+    def getDbHost(self):
+        try:
+            dbHost = (Session.query(db.Host)
+                .filter(db.Host.fqdn == socket.getfqdn())
+                .one())
+        except NoResultFound:
+            dbHost = db.Host(fqdn=socket.getfqdn())
+            Session.add(dbHost)
+        Session.flush()
+        return dbHost
+
     def getCurrentStudent(self):
         """Try fetching the current student, create if they don't exist"""
         membership = self.context.portal_membership
@@ -31,15 +42,7 @@ class BrowserViewHelpers(object):
         if hasattr(self, 'dbStudent') and self.dbStudent.userName == mb.getUserName():
             return self.dbStudent
 
-        try:
-            dbHost = (Session.query(db.Host)
-                .filter(db.Host.fqdn == socket.getfqdn())
-                .one())
-        except NoResultFound:
-            dbHost = db.Host(fqdn=socket.getfqdn())
-            Session.add(dbHost)
-            Session.flush()
-
+        dbHost = self.getDbHost()
         try:
             dbStudent = Session.query(db.Student) \
                 .filter(db.Student.hostId == dbHost.hostId) \
