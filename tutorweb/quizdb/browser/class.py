@@ -10,6 +10,7 @@ from z3c.saconfig import Session
 from Products.Five.browser import BrowserView
 
 from tutorweb.quizdb import db
+from .base import BrowserViewHelpers
 
 
 class CSVView(BrowserView):
@@ -33,7 +34,7 @@ class CSVView(BrowserView):
         return out.getvalue()
 
 
-class StudentResultsView(BrowserView):
+class StudentResultsView(BrowserView, BrowserViewHelpers):
     """Show a table of student results for the class"""
 
     def lecturesInClass(self):
@@ -56,6 +57,7 @@ class StudentResultsView(BrowserView):
             .join(db.Student)
             .filter(db.Student.userName.in_(allStudents))
             .join(db.Lecture)
+            .filter(db.Lecture.hostId == self.getDbHost().hostId)
             .filter(db.Lecture.plonePath.in_(lecturePaths))
             .all())
 
@@ -81,7 +83,7 @@ class StudentSummaryTableView(CSVView, StudentResultsView):
             yield [row['username']] + row['grades']
 
 
-class StudentTableView(CSVView):
+class StudentTableView(CSVView, BrowserViewHelpers):
     """Download a CSV file of all students' answers"""
     fileId = "results"
 
@@ -108,6 +110,7 @@ class StudentTableView(CSVView):
                 .join(db.Student)
                 .filter(db.Student.userName.in_(allStudents))
                 .join(db.Lecture)
+                .filter(db.Lecture.hostId == self.getDbHost().hostId)
                 .filter(db.Lecture.plonePath.in_(lecturePaths))
                 .join(db.Question, db.Question.questionId == db.Answer.questionId)
                 .order_by(db.Student.userName, db.Lecture.plonePath, db.Answer.timeEnd)):

@@ -134,6 +134,11 @@ class Lecture(ORMBase):
         autoincrement=True,
         primary_key=True,
     )
+    hostId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('host.hostId'),
+        nullable=False,
+    )
     plonePath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(128),
         nullable=False,

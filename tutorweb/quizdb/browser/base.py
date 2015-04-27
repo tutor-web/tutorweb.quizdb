@@ -20,6 +20,7 @@ from tutorweb.quizdb import db
 
 
 class BrowserViewHelpers(object):
+    @view.memoize
     def getDbHost(self):
         try:
             dbHost = (Session.query(db.Host)
@@ -80,10 +81,14 @@ class BrowserViewHelpers(object):
 
         try:
             dbLec = Session.query(db.Lecture) \
+                .filter(db.Lecture.hostId == self.getDbHost().hostId) \
                 .filter(db.Lecture.plonePath == plonePath).one()
             return dbLec
         except NoResultFound:
-            dbLec = db.Lecture(plonePath=plonePath)
+            dbLec = db.Lecture(
+                plonePath=plonePath,
+                hostId=self.getDbHost().hostId,
+            )
             Session.add(dbLec)
             Session.flush()
             return dbLec

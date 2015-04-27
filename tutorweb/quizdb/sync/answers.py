@@ -50,7 +50,7 @@ def getAnswerSummary(lectureId, student):
     return dbAnsSummary
 
 
-def getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings):
+def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
     """How many coins does this earn a student?"""
     newGrade = a.get('grade_after', None)
     out = 0
@@ -75,6 +75,7 @@ def getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings):
         if (Session.query(db.AnswerSummary)
                 .join(db.Lecture)
                 .filter(db.AnswerSummary.studentId == student.studentId)
+                .filter(db.Lecture.hostId == dbLec.hostId)
                 .filter(db.Lecture.plonePath.in_(siblingPaths))
                 .filter(db.AnswerSummary.gradeHighWaterMark >= 9.998)
                 .count() >= len(siblingPaths)):
@@ -256,7 +257,8 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
                 dbAnsSummary.practiceCorrect += 1
 
         # Does this earn the student any coins?
-        coinsAwarded = getCoinAward(lectureObj, student, dbAnsSummary, dbQn, a, settings)
+        dbLec = Session.query(db.Lecture).filter(db.Lecture.lectureId == lectureId).one()
+        coinsAwarded = getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings)
 
         # Post-awards, update grade
         if a.get('grade_after', None) is not None:

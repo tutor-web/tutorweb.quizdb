@@ -43,6 +43,7 @@ class StudentAwardView(JSONBrowserView):
         coinAwarded = 0
         for row in (Session.query(db.Answer.timeEnd, db.Answer.coinsAwarded, db.Lecture.plonePath)
                 .join(db.Lecture)
+                .filter(db.Lecture.hostId == self.getDbHost().hostId)
                 .filter(db.Answer.studentId == student.studentId)
                 .filter(db.Answer.practice == False)
                 .filter(db.Answer.coinsAwarded > 0)
