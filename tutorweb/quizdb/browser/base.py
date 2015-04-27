@@ -118,7 +118,7 @@ class JSONBrowserView(BrowserView, BrowserViewHelpers):
                 self.request.stdin.seek(0)
                 data = json.loads(self.request.stdin.read())
             else:
-                data = None
+                data = self.request.form
 
             out = self.asDict(data)
             self.request.response.setStatus(200)
