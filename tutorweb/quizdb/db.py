@@ -100,6 +100,10 @@ class Host(ORMBase):
         unique=True,
         index=True,
     )
+    hostKey = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(32),
+        nullable=False,
+    )
 
 
 lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,

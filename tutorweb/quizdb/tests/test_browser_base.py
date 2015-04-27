@@ -21,6 +21,16 @@ class JSONBrowserViewTest(IntegrationTestCase):
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
 
+    def test_getDbHost(self):
+        """Should get current host along with a key"""
+        import socket
+        portal = self.layer['portal']
+
+        # dbHost should be current host, and have random key
+        dbHost = self.getView().getDbHost()
+        self.assertEqual(dbHost.fqdn, socket.getfqdn())
+        self.assertEqual(len(dbHost.hostKey), 32)
+
     def test_getCurrentStudent(self):
         """Should create users, and keep email addresses up to date"""
         portal = self.layer['portal']

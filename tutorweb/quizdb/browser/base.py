@@ -1,6 +1,7 @@
 import json
 import logging
 import socket
+import uuid
 
 from AccessControl import Unauthorized
 from Globals import DevelopmentMode
@@ -27,6 +28,11 @@ class BrowserViewHelpers(object):
         except NoResultFound:
             dbHost = db.Host(fqdn=socket.getfqdn())
             Session.add(dbHost)
+
+        # Make sure we have a key associated with this host
+        if not dbHost.hostKey:
+            dbHost.hostKey = str(uuid.uuid4().get_hex())
+
         Session.flush()
         return dbHost
 
