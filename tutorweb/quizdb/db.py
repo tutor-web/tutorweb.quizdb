@@ -12,15 +12,6 @@ from sqlalchemy.sql import func
 from tutorweb.quizdb import ORMBase
 
 
-class ForceInt(sqlalchemy.types.TypeDecorator):
-    """Round any passed parameter to int"""
-
-    impl = sqlalchemy.types.Integer
-
-    def process_bind_param(self, value, dialect):
-        return round(value) if value else value
-
-
 class Allocation(ORMBase):
     """Allocation table: Which students are working on which questions"""
     __tablename__ = 'allocation'
