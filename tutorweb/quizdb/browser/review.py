@@ -19,7 +19,7 @@ class ReviewUgQnView(JSONBrowserView):
             .join(db.UserGeneratedQuestion).join(db.Question)
             .filter(db.UserGeneratedQuestion.studentId == student.studentId)
             .filter(db.Question.lectures.contains(self.getDbLecture()))
-            .order_by(db.UserGeneratedQuestion.ugQuestionId)
+            .order_by(db.UserGeneratedQuestion.ugQuestionGuid)
             .all())
 
         # Get all our questions, interleave questions with answers
@@ -33,16 +33,15 @@ class ReviewUgQnView(JSONBrowserView):
                 .filter(db.Allocation.lectureId == self.getDbLecture().lectureId)
                 .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                 .filter(db.UserGeneratedQuestion.superseded == None)
-                .order_by(db.UserGeneratedQuestion.ugQuestionId)
+                .order_by(db.UserGeneratedQuestion.ugQuestionGuid)
                 .all()):
 
             out.append(dict(
-                uri='%s/quizdb-get-question/%s?author_qn=yes&question_id=%d' % (
+                uri='%s/quizdb-get-question/%s?author_qn=yes&question_id=%s' % (
                     self.portalObject().absolute_url(),
                     alloc.publicId,
-                    ugQn.ugQuestionId,
+                    ugQn.ugQuestionGuid,
                 ),
-                id=ugQn.ugQuestionId,
                 text=self.texToHTML(ugQn.text),
                 choices=[x for x in [
                     dict(answer=self.texToHTML(ugQn.choice_0_answer), correct=ugQn.choice_0_correct),
@@ -61,8 +60,8 @@ class ReviewUgQnView(JSONBrowserView):
                 verdict=(-2 if ugQn.superseded else None),
             ))
 
-            # NB: Both arrays are ordered by ugQuestionId, so can iterate through at same pace
-            while answerIndex < len(ugAnswers) and ugAnswers[answerIndex].ugQuestionId == ugQn.ugQuestionId:
+            # NB: Both arrays are ordered by ugQuestionGuid, so can iterate through at same pace
+            while answerIndex < len(ugAnswers) and ugAnswers[answerIndex].ugQuestionGuid == ugQn.ugQuestionGuid:
                 out[-1]['answers'].append(dict(
                     id=ugAnswers[answerIndex].ugAnswerId,
                     rating=ugAnswers[answerIndex].questionRating,
@@ -78,4 +77,4 @@ class ReviewUgQnView(JSONBrowserView):
             ratings = [a['rating'] for a in qn['answers'] if a['rating'] is not None]
             qn['verdict'] = max(set(ratings), key=ratings.count) if len(ratings) > 0 else None
 
-        return sorted(out, key=lambda k: k['verdict'], reverse = True)
+        return sorted(out, key=lambda k: (k['verdict'], k['uri']), reverse = True)

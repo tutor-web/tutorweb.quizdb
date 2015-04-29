@@ -1,3 +1,4 @@
+from uuid import uuid4
 from hashlib import md5
 from datetime import datetime
 from random import random
@@ -9,8 +10,7 @@ import sqlalchemy.schema
 import sqlalchemy.types
 from sqlalchemy.sql import func
 
-from tutorweb.quizdb import ORMBase
-
+from tutorweb.quizdb import ORMBase, customtypes
 
 class Allocation(ORMBase):
     """Allocation table: Which students are working on which questions"""
@@ -255,7 +255,7 @@ class Answer(ORMBase):
         index=True,
     )
     chosenAnswer = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
+        sqlalchemy.types.String(32),
         nullable=True,
     )
     correct = sqlalchemy.schema.Column(
@@ -383,6 +383,13 @@ class UserGeneratedQuestion(ORMBase):
         primary_key=True,
         autoincrement=True,
     )
+    ugQuestionGuid = sqlalchemy.schema.Column(
+        customtypes.GUID(),
+        nullable=False,
+        index=True,
+        unique=True,
+        default=uuid4,
+    )
     questionId = sqlalchemy.schema.Column( # i.e. the question template
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('question.questionId'),
@@ -486,8 +493,8 @@ class UserGeneratedQuestion(ORMBase):
         default='',
     )
     superseded = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionId'),
+        customtypes.GUID(),
+        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionGuid'),
         nullable=True,
     )
 
@@ -511,9 +518,9 @@ class UserGeneratedAnswer(ORMBase):
         nullable=False,
         index=True,
     )
-    ugQuestionId = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionId'),
+    ugQuestionGuid = sqlalchemy.schema.Column(
+        customtypes.GUID(),
+        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionGuid'),
         nullable=False,
         index=True,
     )

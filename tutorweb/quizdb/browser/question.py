@@ -31,12 +31,12 @@ class QuestionView(JSONBrowserView):
         qnUri = self.request.getURL()
         if '?' in qnUri:
             qnUri = qnUri.split('?')[0]
-        qnUri = qnUri + '?question_id=%d' % ugQn.ugQuestionId
+        qnUri = qnUri + '?question_id=%s' % ugQn.ugQuestionGuid
 
         out = dict(
             _type='usergenerated',
             uri=qnUri,
-            question_id=ugQn.ugQuestionId,
+            question_id=str(ugQn.ugQuestionGuid),
             text=self.texToHTML(ugQn.text),
             choices=[],
             shuffle=[],
@@ -78,7 +78,7 @@ class QuestionView(JSONBrowserView):
             student = self.getCurrentStudent()
 
             ugQn = (Session.query(db.UserGeneratedQuestion)
-                .filter(db.UserGeneratedQuestion.ugQuestionId == self.request.form['question_id'])
+                .filter(db.UserGeneratedQuestion.ugQuestionGuid == self.request.form['question_id'])  # TODO: Support ugQuestionId too?
                 .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                 .filter(db.UserGeneratedQuestion.studentId != student.studentId)
                 .first())
@@ -119,15 +119,15 @@ class QuestionView(JSONBrowserView):
 
             if reviewQuestion:
                 # Try and find a user-generated question that student hasn't answered before
-                ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer.ugQuestionId)
+                ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
-                ).union(Session.query(db.UserGeneratedAnswer.ugQuestionId)
-                    .group_by(db.UserGeneratedAnswer.ugQuestionId)
+                ).union(Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
+                    .group_by(db.UserGeneratedAnswer.ugQuestionGuid)
                     .having(func.count(db.UserGeneratedAnswer.ugAnswerId) >= settings['cap_template_qn_reviews'])).subquery())
 
                 ugQn = (Session.query(db.UserGeneratedQuestion)
                     .outerjoin(ugAnswerQuery)
-                    .filter(ugAnswerQuery.ugQuestionId == None)
+                    .filter(ugAnswerQuery.ugQuestionGuid == None)
                     .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                     .filter(db.UserGeneratedQuestion.studentId != student.studentId)
                     .filter(db.UserGeneratedQuestion.superseded == None)
@@ -149,14 +149,14 @@ class QuestionView(JSONBrowserView):
                 if 'question_id' in self.request.form:
                     # Trying to rewrite a question, so add in what was written before
                     ugQn = (Session.query(db.UserGeneratedQuestion)
-                        .filter(db.UserGeneratedQuestion.ugQuestionId == self.request.form['question_id'])
+                        .filter(db.UserGeneratedQuestion.ugQuestionGuid == self.request.form['question_id'])
                         .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                         .filter(db.UserGeneratedQuestion.studentId == student.studentId)
                         .filter(db.UserGeneratedQuestion.superseded == None)
                         .first())
                     if ugQn is not None:
                         # Found one, add it to question
-                        out['uri'] += '&question_id=%d' % ugQn.ugQuestionId
+                        out['uri'] += '&question_id=%s' % ugQn.ugQuestionGuid
                         out['student_answer'] = dict(
                             text=ugQn.text,
                             choices=[dict(

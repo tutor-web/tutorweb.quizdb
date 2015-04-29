@@ -76,7 +76,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                     try:
                         parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [
                             dict(
-                                uri='%s?question_id=%d' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']),
+                                uri='%s?question_id=%s' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']),
                                 question_type='usergenerated',
                                 student_answer=dict(choice=3, rating=75, comments="monkey!"),
                                 quiz_time=  1000000000 + creatorIndex * 100000 + qnCount * 1000 + 100 + i * 10,
@@ -86,7 +86,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                     except NoResultFound:
                         parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [
                             dict(
-                                uri='%s?question_id=%d' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']),
+                                uri='%s?question_id=%s' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']),
                                 question_type='usergenerated',
                                 student_answer=dict(choice=3, rating=75, comments="monkey!"),
                                 quiz_time=  1000000000 + creatorIndex * 100000 + qnCount * 1000 + 100 + i * 10,
