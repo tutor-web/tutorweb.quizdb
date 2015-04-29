@@ -143,11 +143,6 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         self.assertEquals(
             self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID),
             [
-                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
-                    {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
-                    {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
-                ], u'answers': [
-                ], u'verdict': None, u'uri': aAlloc['questions'][0]['uri'] + "?author_qn=yes&question_id=1"},
                 {u'id':2, u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
@@ -155,6 +150,11 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
                 ], u'verdict': None, u'uri': aAlloc['questions'][1]['uri'] + "?author_qn=yes&question_id=2"},
+                {u'id':1, u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
+                    {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
+                    {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
+                ], u'answers': [
+                ], u'verdict': None, u'uri': aAlloc['questions'][0]['uri'] + "?author_qn=yes&question_id=1"},
             ]
         )
         # A has nothing in another lecture

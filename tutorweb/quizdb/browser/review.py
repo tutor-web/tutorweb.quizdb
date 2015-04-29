@@ -78,4 +78,4 @@ class ReviewUgQnView(JSONBrowserView):
             ratings = [a['rating'] for a in qn['answers'] if a['rating'] is not None]
             qn['verdict'] = max(set(ratings), key=ratings.count) if len(ratings) > 0 else None
 
-        return sorted(out, key=lambda k: k['verdict'], reverse = True)
+        return sorted(out, key=lambda k: (k['verdict'], k['text']), reverse = True)
