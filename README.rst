@@ -25,8 +25,9 @@ Getting SQL to create a table
 Useful for upgrades, you can print out the SQL for a table using ``CreateTable``::
 
     >>> from sqlalchemy.schema import CreateTable
+    >>> from sqlalchemy.dialects import mysql
     >>> from tutorweb.quizdb import db
-    >>> print CreateTable(db.Allocation.__table__).compile()
+    >>> print CreateTable(db.Allocation.__table__).compile(dialect=mysql.dialect())
 
 Timezone Cheatsheet
 -------------------
