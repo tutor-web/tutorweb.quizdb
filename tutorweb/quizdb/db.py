@@ -110,6 +110,9 @@ lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,
         sqlalchemy.schema.ForeignKey('question.questionId'),
         nullable=False,
     ),
+
+    mysql_engine='InnoDB',
+    mysql_charset='utf8',
 )
 
 class Lecture(ORMBase):
