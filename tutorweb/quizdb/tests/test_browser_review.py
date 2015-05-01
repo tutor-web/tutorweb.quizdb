@@ -115,7 +115,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     ),
                     correct=True,
                     quiz_time=1377000000,
-                    answer_time=1377000010,
+                    answer_time=1377000001,
                     grade_after=0.1,
                 ),
                 dict(
@@ -132,8 +132,8 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                         ],
                     ),
                     correct=True,
-                    quiz_time=1377000000,
-                    answer_time=1377000010,
+                    quiz_time=1377000010,
+                    answer_time=1377000011,
                     grade_after=0.1,
                 ),
             ],
@@ -149,12 +149,12 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
-                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][0]['student_answer']) },
+                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
                 {u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
-                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
+                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']) },
             ]
         )
         # A has nothing in another lecture
@@ -193,8 +193,8 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                         comments="I've never played Return to Zork",
                     ),
                     correct=False,
-                    quiz_time=1377000000,
-                    answer_time=1377000010,
+                    quiz_time=1377000020,
+                    answer_time=1377000021,
                     grade_after=0.1,
                 ),
                 dict(
@@ -208,8 +208,8 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                         comments="You don't actually respond like this, you tip the drink into the plant pot",
                     ),
                     correct=False,
-                    quiz_time=1377000000,
-                    answer_time=1377000010,
+                    quiz_time=1377000030,
+                    answer_time=1377000031,
                     grade_after=0.1,
                 ),
             ],
@@ -221,15 +221,16 @@ class ReviewUgQnViewTest(FunctionalTestCase):
         self.assertEqual(len(bUgQns), 0)
 
         # B's answer now appears in A's review
+        aReview = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID)
         self.assertEquals(
-            self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID),
+            aReview,
             [
                 {u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"I've never played Return to Zork", u'id': 1, u'rating': 25},
-                ], u'verdict': 25, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
+                ], u'verdict': 25, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']) },
                 {u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
@@ -237,11 +238,54 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"You don't actually respond like this, you tip the drink into the plant pot", u'id': 2, u'rating': -1},
-                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][0]['student_answer']) },
+                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
             ]
         )
         # B still hasn't done anything yet
         self.assertEquals(
             self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-review-ugqn', user=USER_B_ID),
             []
+        )
+
+        # A writes a replacement question
+        aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aReview[0]['uri'],
+                    student_answer=dict(
+                        text=u"Want some more rye?",
+                        explanation=u"moo",
+                        choices=[
+                            dict(answer="Course you do", correct=True),
+                            dict(answer="You keep that.", correct=False),
+                        ],
+                    ),
+                    correct=True,
+                    quiz_time=1377000040,
+                    answer_time=1377000041,
+                    grade_after=0.1,
+                ),
+            ]
+        ))
+
+        # Original question no longer in review
+        aReview = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-review-ugqn', user=USER_A_ID)
+        self.assertEquals(
+            aReview,
+            [
+                {u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
+                    {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
+                    {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
+                    {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
+                    {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
+                ], u'answers': [
+                    {u'comments': u"You don't actually respond like this, you tip the drink into the plant pot", u'id': 2, u'rating': -1},
+                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
+                {u'text': self.texToHTML(u"Want some more rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
+                    {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
+                    {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
+                ], u'answers': [
+                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']) },
+            ]
         )
