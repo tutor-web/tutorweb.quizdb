@@ -85,23 +85,23 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
     if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
         # Did they grade it as 50 or more?
         ugAns = (Session.query(db.UserGeneratedAnswer)
-            .filter(db.UserGeneratedAnswer.ugAnswerId == a['student_answer'])
+            .filter(db.UserGeneratedAnswer.ugQuestionGuid == a['student_answer'])
             .filter(db.UserGeneratedAnswer.studentId == student.studentId)
             .one())
         if ugAns.questionRating >= 50:
             # Are the majority of reviews positive?
             if (Session.query(db.UserGeneratedAnswer)
-                    .filter(db.UserGeneratedAnswer.ugQuestionId == ugAns.ugQuestionId)
+                    .filter(db.UserGeneratedAnswer.ugQuestionGuid == ugAns.ugQuestionGuid)
                     .filter(db.UserGeneratedAnswer.questionRating >= 50)
                     .count()) >= round(float(settings.get('cap_template_qn_reviews', '10')) / 2):
                 # Has the author received an award for this question yet?
-                ugQn = (Session.query(db.UserGeneratedQuestion)
-                    .filter(db.UserGeneratedQuestion.ugQuestionId == ugAns.ugQuestionId)
+                ugQn = (Session.query(db.UserGeneratedQuestion) # The question student answered
+                    .filter(db.UserGeneratedQuestion.ugQuestionGuid == ugAns.ugQuestionGuid)
                     .one())
-                ugQnAns = (Session.query(db.Answer)
+                ugQnAns = (Session.query(db.Answer)  # The Answer row of the original question
                     .filter(db.Answer.questionId == dbQn.questionId)
                     .filter(db.Answer.studentId == ugQn.studentId)
-                    .filter(db.Answer.chosenAnswer == ugQn.ugQuestionId)
+                    .filter(db.Answer.chosenAnswer == str(ugQn.ugQuestionGuid))
                     .one())
                 if ugQnAns.coinsAwarded == 0:
                     # Has the author of the ugQuestion already received award_templateqn_aced the maximum number of times?
@@ -181,9 +181,17 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
                 logger.warn("Missing ID of the question being answered")
                 continue
 
+            # Find matching ugQn, to make sure there is such a thing
+            try:
+                ugQn = (Session.query(db.UserGeneratedQuestion)
+                    .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
+                    .filter(db.UserGeneratedQuestion.ugQuestionGuid == queryString['question_id'][0])
+                    .one())
+            except NoResultFound:
+                raise ValueError("Cannot find matching question for %s" % queryString['question_id'][0])
             ugAns = db.UserGeneratedAnswer(
                     studentId=student.studentId,
-                    ugQuestionId=queryString['question_id'][0],
+                    ugQuestionGuid=ugQn.ugQuestionGuid,
                     chosenAnswer=a['student_answer'].get('choice', None),
                     questionRating=a['student_answer'].get('rating', None),
                     comments=a['student_answer'].get('comments', ""),
@@ -191,9 +199,8 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
             )
             Session.add(ugAns)
 
-            # Store ID of full answer row
-            Session.flush()
-            a['student_answer'] = ugAns.ugAnswerId
+            # Store GUID of question answered
+            a['student_answer'] = ugQn.ugQuestionGuid
 
         elif dbQn.qnType == 'tw_questiontemplate':
             if a.get('student_answer', None) and a['student_answer'].get('text', None):
@@ -209,18 +216,21 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
                     setattr(ugQn, 'choice_%d_correct' % i, c['correct'])
                 Session.add(ugQn)
 
-                # student_answer should contain the ID of our answer
+                # student_answer should contain the GUID of our answer
                 Session.flush()
-                a['student_answer'] = ugQn.ugQuestionId
+                a['student_answer'] = ugQn.ugQuestionGuid
 
                 # If this replaces an old question, note this in DB
                 if 'question_id' in queryString:
+                    dbUgQn = (Session.query(db.UserGeneratedQuestion)
+                        .filter(db.UserGeneratedQuestion.ugQuestionGuid == queryString['question_id'][0])
+                        .one())
                     a['correct'] = None # NB: Can't award yourself infinite corrects
                     (Session.query(db.UserGeneratedQuestion)
-                        .filter(db.UserGeneratedQuestion.ugQuestionId == queryString['question_id'][0])
+                        .filter(db.UserGeneratedQuestion.ugQuestionId == dbUgQn.ugQuestionId)
                         .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                         .filter(db.UserGeneratedQuestion.studentId == student.studentId)
-                        .one()).superseded = ugQn.ugQuestionId
+                        .one()).superseded = ugQn.ugQuestionGuid
                     Session.flush()
                 else:
                     a['correct'] = True
@@ -271,7 +281,7 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
             lectureId=lectureId,
             studentId=student.studentId,
             questionId=dbQn.questionId,
-            chosenAnswer=a['student_answer'],
+            chosenAnswer=str(a['student_answer']) if a['student_answer'] is not None else None,
             correct=a.get('correct', None),
             grade=a.get('grade_after', None),
             timeStart=datetime.datetime.utcfromtimestamp(a['quiz_time']),
@@ -293,7 +303,7 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
         correct=dbAns.correct,
         quiz_time=calendar.timegm(dbAns.timeStart.timetuple()),
         answer_time=calendar.timegm(dbAns.timeEnd.timetuple()),
-        student_answer=dbAns.chosenAnswer,
+        student_answer=int(dbAns.chosenAnswer) if dbAns.chosenAnswer is not None and dbAns.chosenAnswer.isdigit() else dbAns.chosenAnswer,
         grade_after=dbAns.grade,
         coins_awarded=dbAns.coinsAwarded,
         synced=True,

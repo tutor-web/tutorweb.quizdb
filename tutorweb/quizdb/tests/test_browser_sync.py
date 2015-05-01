@@ -1,6 +1,7 @@
 import random
 import time
 import transaction
+import uuid
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
@@ -807,9 +808,14 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         # Answers have been replaced by question IDs (if they were "correct")
         self.assertEquals(
-            [[x['correct'], x['student_answer']] for x in aAlloc['answerQueue']],
-            [[True, 1], [False, None], [True, 2]],
-            )
+            [x['correct'] for x in aAlloc['answerQueue']],
+            [True, False, True],
+        )
+        self.assertNotEqual(
+            uuid.UUID(aAlloc['answerQueue'][0]['student_answer']),
+            uuid.UUID(aAlloc['answerQueue'][2]['student_answer']),
+        )
+        self.assertEquals(aAlloc['answerQueue'][1]['student_answer'], None)
 
         # Allocate to user B
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
@@ -839,16 +845,24 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         # IDs are global, since everything is going in one table
         self.assertEquals(
-            [[x['correct'], x['student_answer']] for x in bAlloc['answerQueue']],
-            [[True, 3]],
-            )
+            [x['correct'] for x in bAlloc['answerQueue']],
+            [True],
+        )
+        self.assertNotEqual(
+            uuid.UUID(aAlloc['answerQueue'][0]['student_answer']),
+            uuid.UUID(bAlloc['answerQueue'][0]['student_answer']),
+        )
+        self.assertNotEqual(
+            uuid.UUID(aAlloc['answerQueue'][2]['student_answer']),
+            uuid.UUID(bAlloc['answerQueue'][0]['student_answer']),
+        )
 
         # Rewrite a question
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
                     synced=False,
-                    uri="%s?author_qn=yes&question_id=%d" % (
+                    uri="%s?author_qn=yes&question_id=%s" % (
                         aQuestions[u'Unittest tmpllec tmplQ0'],
                         aAlloc['answerQueue'][0]['student_answer'],
                     ),
