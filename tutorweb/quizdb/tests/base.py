@@ -164,7 +164,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
 
-    def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}):
+    def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}, lecOpts=lambda i: {}):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
         tutorial = portal.restrictedTraverse('dept1/tut1')
@@ -195,7 +195,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         # Create dept/tutorial/lecture
         deptObj = createContent(portal, dict(type_name="tw_department"))
         tutorialObj = createContent(deptObj, dict(type_name="tw_tutorial"))
-        lectureObj = createContent(tutorialObj, dict(type_name="tw_lecture"))
+        lectureObj = createContent(tutorialObj, dict(type_name="tw_lecture"), optsFn=lecOpts)
 
         # Create required questions inside
         for i in xrange(qnCount):

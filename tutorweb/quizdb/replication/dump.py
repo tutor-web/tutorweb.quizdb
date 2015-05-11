@@ -25,7 +25,7 @@ def dumpDateRange(dateFrom, dateTo):
             for c in x.__table__.columns
         )
 
-    def toDate(d, dayDelta=0):
+    def atMidnight(d, dayDelta=0):
         """Return datetime at midnight"""
         return datetime.datetime(
             year=d.year,
@@ -33,9 +33,9 @@ def dumpDateRange(dateFrom, dateTo):
             day=d.day + dayDelta,
         )
 
-    # Common filters required
-    answerDateFilter = db.Answer.timeEnd.between(toDate(dateFrom), toDate(dateTo, 1)) 
-    coinDateFilter = db.CoinAward.awardTime.between(toDate(dateFrom), toDate(dateTo, 1)) 
+    # Parse dates to nearest day
+    dateFrom = atMidnight(dateFrom)
+    dateTo = atMidnight(dateTo, dayDelta=1)
 
     return dict(
         date_from=calendar.timegm(dateFrom.timetuple()),
@@ -43,35 +43,36 @@ def dumpDateRange(dateFrom, dateTo):
         host=[objDict(r) for r in Session.query(db.Host)],
         student=[objDict(r) for r in Session.query(db.Student)
             .join(db.Answer, db.Answer.studentId == db.Student.studentId)
-            .filter(answerDateFilter)
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
             .order_by(db.Student.studentId)
             .distinct()],
         question=[dict(questionId=r.questionId, plonePath=r.plonePath) for r in Session.query(db.Question)
             .join(db.Answer)
-            .filter(answerDateFilter)
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
             .order_by(db.Question.questionId)
             .distinct()],
         lecture=[objDict(r) for r in Session.query(db.Lecture)
             .join(db.Answer, db.Answer.lectureId == db.Lecture.lectureId)
-            .filter(answerDateFilter)],
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
         answer=[objDict(r) for r in Session.query(db.Answer)
-            .filter(answerDateFilter)
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
             .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd)],
         # NB: Return data for all relevant lectures, regardless of host
-        lecture_settings=[objDict(r) for r in Session.query(db.LectureSetting)
+        lecture_setting=[objDict(r) for r in Session.query(db.LectureSetting)
             .join(db.Answer, db.Answer.lectureId == db.LectureSetting.lectureId)
-            .filter(answerDateFilter)
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
             .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key)
             .distinct()],
         coin_award=[objDict(r) for r in Session.query(db.CoinAward)
-            .filter(coinDateFilter)
+            .filter(db.CoinAward.awardTime.between(dateFrom, dateTo))
             .order_by(db.CoinAward.studentId, db.CoinAward.awardTime)],
         ug_question=[objDict(r) for r in Session.query(db.UserGeneratedQuestion)
+            # TODO: This is broken, chosenAnswer has '-' in it
             .join(db.Answer, db.Answer.chosenAnswer == db.UserGeneratedQuestion.ugQuestionGuid)
             .filter(db.Answer.studentId == db.UserGeneratedQuestion.studentId)
-            .filter(answerDateFilter)],
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
         ug_answer=[objDict(r) for r in Session.query(db.UserGeneratedAnswer)
             .join(db.Answer, db.Answer.chosenAnswer == db.UserGeneratedAnswer.ugQuestionGuid)
             .filter(db.Answer.studentId == db.UserGeneratedAnswer.studentId)
-            .filter(answerDateFilter)],
+            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
     )
