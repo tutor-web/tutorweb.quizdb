@@ -81,4 +81,11 @@
       class=".coin.TotalCoinView"
       permission="zope2.View"
       />
+
+    <!-- replication.py -->
+    <browser:page name="quizdb-replication-dump"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".replication.ReplicationDumpView"
+      permission="zope2.View"
+      />
 </configure>
