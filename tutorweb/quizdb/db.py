@@ -136,7 +136,7 @@ class Lecture(ORMBase):
     plonePath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(128),
         nullable=False,
-        unique=True,
+        # unique=True, # TODO: Unique with hostId.
         index=True,
     )
     questions = relationship("Question",
@@ -217,13 +217,13 @@ class Student(ORMBase):
     userName = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
-        unique=True,
+        # unique=True, # TODO: Should be unique with hostId, queries to alter?
         index=True,
     )
     eMail = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
-        unique=True,
+        # unique=True, # TODO: Should be unique with hostId, queries to alter?
         index=True,
     )
 

@@ -88,4 +88,14 @@
       class=".replication.ReplicationDumpView"
       permission="zope2.View"
       />
+    <browser:page name="quizdb-replication-ingest"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".replication.ReplicationIngestView"
+      permission="zope2.View"
+      />
+    <browser:page name="quizdb-replication-updatehost"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".replication.ReplicationUpdateHostView"
+      permission="cmf.ManagePortal"
+      />
 </configure>
