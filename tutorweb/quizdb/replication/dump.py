@@ -67,12 +67,11 @@ def dumpDateRange(dateFrom, dateTo):
             .filter(db.CoinAward.awardTime.between(dateFrom, dateTo))
             .order_by(db.CoinAward.studentId, db.CoinAward.awardTime)],
         ug_question=[objDict(r) for r in Session.query(db.UserGeneratedQuestion)
-            # TODO: This is broken, chosenAnswer has '-' in it
-            .join(db.Answer, db.Answer.chosenAnswer == db.UserGeneratedQuestion.ugQuestionGuid)
+            .join(db.Answer, db.Answer.ugQuestionGuid == db.UserGeneratedQuestion.ugQuestionGuid)
             .filter(db.Answer.studentId == db.UserGeneratedQuestion.studentId)
             .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
         ug_answer=[objDict(r) for r in Session.query(db.UserGeneratedAnswer)
-            .join(db.Answer, db.Answer.chosenAnswer == db.UserGeneratedAnswer.ugQuestionGuid)
+            .join(db.Answer, db.Answer.ugQuestionGuid == db.UserGeneratedAnswer.ugQuestionGuid)
             .filter(db.Answer.studentId == db.UserGeneratedAnswer.studentId)
             .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
     )
