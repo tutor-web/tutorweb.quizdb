@@ -258,8 +258,7 @@ class Answer(ORMBase):
         index=True,
     )
     chosenAnswer = sqlalchemy.schema.Column(
-        # Either the id of the choice, or the UUID of a ugQuestion
-        sqlalchemy.types.String(32),
+        sqlalchemy.types.Integer(),
         nullable=True,
     )
     correct = sqlalchemy.schema.Column(
@@ -287,6 +286,11 @@ class Answer(ORMBase):
         sqlalchemy.types.Integer(),
         nullable=False,
         default=0,
+    )
+    ugQuestionGuid = sqlalchemy.schema.Column(
+        customtypes.GUID(),
+        nullable=True,
+        index=True,
     )
 
 

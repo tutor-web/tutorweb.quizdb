@@ -76,7 +76,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                     try:
                         parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [
                             dict(
-                                uri='%s?question_id=%s' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']),
+                                uri='%s?question_id=%s' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']['question_id']),
                                 question_type='usergenerated',
                                 student_answer=dict(choice=3, rating=75, comments="monkey!"),
                                 quiz_time=  1000000000 + creatorIndex * 100000 + qnCount * 1000 + 100 + i * 10,
@@ -85,11 +85,11 @@ class GetCoinAwardTest(FunctionalTestCase):
                         ], {})
                     except ValueError as e:
                         # Should be complaining that can't find question
-                        if creatorAq[-1]['student_answer'] not in e.message:
+                        if creatorAq[-1]['student_answer']['question_id'] not in e.message:
                             self.fail()
                         parseAnswerQueue(dbLec.lectureId, lectureObj, reviewer, [
                             dict(
-                                uri='%s?question_id=%s' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']),
+                                uri='%s?question_id=%s' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']['question_id']),
                                 question_type='usergenerated',
                                 student_answer=dict(choice=4, rating=75, comments="monkey!"),
                                 quiz_time=  1000000000 + creatorIndex * 100000 + qnCount * 1000 + 100 + i * 10,

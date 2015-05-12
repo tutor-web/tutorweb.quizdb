@@ -149,12 +149,12 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"Damn few!"), u'correct':True},
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
-                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
+                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']['question_id']) },
                 {u'text': self.texToHTML(u"Want some rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
-                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']) },
+                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']['question_id']) },
             ]
         )
         # A has nothing in another lecture
@@ -230,7 +230,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"I've never played Return to Zork", u'id': 1, u'rating': 25},
-                ], u'verdict': 25, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']) },
+                ], u'verdict': 25, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']['question_id']) },
                 {u'text': self.texToHTML(u"Who's like us?"), u'explanation': self.texToHTML(u"oink"), u'choices':[
                     {u'answer': self.texToHTML(u"Here's to us."), u'correct':False},
                     {u'answer': self.texToHTML(u"Who's like us?"), u'correct':False},
@@ -238,7 +238,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"You don't actually respond like this, you tip the drink into the plant pot", u'id': 2, u'rating': -1},
-                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
+                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']['question_id']) },
             ]
         )
         # B still hasn't done anything yet
@@ -281,11 +281,11 @@ class ReviewUgQnViewTest(FunctionalTestCase):
                     {u'answer': self.texToHTML(u"And they're all dead!"), u'correct':False}
                 ], u'answers': [
                     {u'comments': u"You don't actually respond like this, you tip the drink into the plant pot", u'id': 2, u'rating': -1},
-                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']) },
+                ], u'verdict': -1, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][1]['uri'], aAlloc['answerQueue'][1]['student_answer']['question_id']) },
                 {u'text': self.texToHTML(u"Want some more rye?"), u'explanation': self.texToHTML(u"moo"), u'choices':[
                     {u'answer': self.texToHTML(u'Course you do'), u'correct':True},
                     {u'answer': self.texToHTML(u'You keep that.'), u'correct':False}
                 ], u'answers': [
-                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']) },
+                ], u'verdict': None, u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']['question_id']) },
             ]
         )

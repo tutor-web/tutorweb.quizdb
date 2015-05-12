@@ -201,7 +201,7 @@ class GetQuestionViewTest(FunctionalTestCase):
         self.assertTrue('Want some rye?' in qn['text'])
         self.assertTrue('Course you do' in qn['choices'][0])
         self.assertTrue('No thanks' in qn['choices'][1])
-        self.assertEqual(qn['question_id'], aAlloc['answerQueue'][0]['student_answer'])
+        self.assertEqual(qn['question_id'], aAlloc['answerQueue'][0]['student_answer']['question_id'])
         self.assertEqual(qn['shuffle'], [0, 1])
         answer = json.loads(base64.b64decode(qn['answer']))
         self.assertTrue('So you can get the keys' in answer['explanation'])
@@ -343,9 +343,9 @@ class GetQuestionViewTest(FunctionalTestCase):
         ]))
 
         # A can fetch their question again for more authoring
-        self.assertEqual(self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']), user=USER_A_ID), {
+        self.assertEqual(self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']['question_id']), user=USER_A_ID), {
             u'_type': u'template',
-            u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']),
+            u'uri': "%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']['question_id']),
             u'title': u'Unittest tmpllec tmplQ0',
             u'example_choices': [],
             u'example_explanation': u'',
@@ -365,14 +365,14 @@ class GetQuestionViewTest(FunctionalTestCase):
         self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], uuid.uuid4()), user=USER_A_ID, expectedStatus = 404)
 
         # B can't get A's question
-        self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']), user=USER_B_ID, expectedStatus = 404)
+        self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][0]['student_answer']['question_id']), user=USER_B_ID, expectedStatus = 404)
 
         # A writes a a new version of 3rd question
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
             answerQueue=[
                 dict(
                     synced=False,
-                    uri="%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']),
+                    uri="%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']['question_id']),
                     student_answer=dict(
                         text=u"Damn Few! My keys? Sure.",
                         choices=[
@@ -390,7 +390,7 @@ class GetQuestionViewTest(FunctionalTestCase):
         ))
 
         # After this, can't fetch original question for re-authoring
-        self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']), user=USER_A_ID, expectedStatus=404)
+        self.getJson("%s?author_qn=yes&question_id=%s" % (aAlloc['questions'][0]['uri'], aAlloc['answerQueue'][2]['student_answer']['question_id']), user=USER_A_ID, expectedStatus=404)
 
         # C doesn't get to review original version of replaced question anymore
         self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID)['usergenerated']), set([

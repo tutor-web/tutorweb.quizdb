@@ -812,8 +812,8 @@ class SyncViewFunctional(FunctionalTestCase):
             [True, False, True],
         )
         self.assertNotEqual(
-            uuid.UUID(aAlloc['answerQueue'][0]['student_answer']),
-            uuid.UUID(aAlloc['answerQueue'][2]['student_answer']),
+            uuid.UUID(aAlloc['answerQueue'][0]['student_answer']['question_id']),
+            uuid.UUID(aAlloc['answerQueue'][2]['student_answer']['question_id']),
         )
         self.assertEquals(aAlloc['answerQueue'][1]['student_answer'], None)
 
@@ -849,12 +849,12 @@ class SyncViewFunctional(FunctionalTestCase):
             [True],
         )
         self.assertNotEqual(
-            uuid.UUID(aAlloc['answerQueue'][0]['student_answer']),
-            uuid.UUID(bAlloc['answerQueue'][0]['student_answer']),
+            uuid.UUID(aAlloc['answerQueue'][0]['student_answer']['question_id']),
+            uuid.UUID(bAlloc['answerQueue'][0]['student_answer']['question_id']),
         )
         self.assertNotEqual(
-            uuid.UUID(aAlloc['answerQueue'][2]['student_answer']),
-            uuid.UUID(bAlloc['answerQueue'][0]['student_answer']),
+            uuid.UUID(aAlloc['answerQueue'][2]['student_answer']['question_id']),
+            uuid.UUID(bAlloc['answerQueue'][0]['student_answer']['question_id']),
         )
 
         # Rewrite a question
@@ -864,7 +864,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     synced=False,
                     uri="%s?author_qn=yes&question_id=%s" % (
                         aQuestions[u'Unittest tmpllec tmplQ0'],
-                        aAlloc['answerQueue'][0]['student_answer'],
+                        aAlloc['answerQueue'][0]['student_answer']['question_id'],
                     ),
                     student_answer=dict(
                         text=u"My first question, again",
