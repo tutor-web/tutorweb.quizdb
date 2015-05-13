@@ -289,8 +289,8 @@ class Answer(ORMBase):
     )
     ugQuestionGuid = sqlalchemy.schema.Column(
         customtypes.GUID(),
+        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionGuid'),
         nullable=True,
-        index=True,
     )
 
 
