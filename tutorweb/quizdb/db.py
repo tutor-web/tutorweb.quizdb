@@ -3,7 +3,7 @@ from hashlib import md5
 from datetime import datetime
 from random import random
 
-from sqlalchemy import Table
+from sqlalchemy import Table, UniqueConstraint
 from sqlalchemy.orm import relationship
 import sqlalchemy.event
 import sqlalchemy.schema
@@ -118,9 +118,12 @@ lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,
 class Lecture(ORMBase):
     """DB -> Plone question lookup table"""
     __tablename__ = 'lecture'
-    __table_args__ = dict(
-        mysql_engine='InnoDB',
-        mysql_charset='utf8',
+    __table_args__ = (
+        UniqueConstraint('hostId', 'plonePath'),
+        dict(
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        )
     )
 
     lectureId = sqlalchemy.schema.Column(
@@ -136,7 +139,6 @@ class Lecture(ORMBase):
     plonePath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(128),
         nullable=False,
-        # unique=True, # TODO: Unique with hostId.
         index=True,
     )
     questions = relationship("Question",
@@ -199,9 +201,13 @@ class Question(ORMBase):
 class Student(ORMBase):
     """Student table: Students of quizzes"""
     __tablename__ = 'student'
-    __table_args__ = dict(
-        mysql_engine='InnoDB',
-        mysql_charset='utf8',
+    __table_args__ = (
+        UniqueConstraint('hostId', 'userName'),
+        UniqueConstraint('hostId', 'eMail'),
+        dict(
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        ),
     )
 
     studentId = sqlalchemy.schema.Column(
@@ -217,13 +223,11 @@ class Student(ORMBase):
     userName = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
-        # unique=True, # TODO: Should be unique with hostId, queries to alter?
         index=True,
     )
     eMail = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
-        # unique=True, # TODO: Should be unique with hostId, queries to alter?
         index=True,
     )
 
