@@ -2,17 +2,27 @@ import unittest
 
 from ..replication.ingest import findMissingEntries
 
-# TODO: def findMissingEntries(dataRawEntries, dbQuery, sortCols=[], ignoreCols=[], idMap={}):
 class TestfindMissingEntries(unittest.TestCase):
     maxDiff = None
 
     def asList(self, iter):
         """Convert iterator to list, but bail out"""
         out = []
-        for x in iter:
+        for x, y in iter:
             out.append(x)
             if len(out) > 100:
                 out.append("Too many entries!")
+                return out
+        return out
+
+    def asTwoLists(self, iter):
+        """Convert iterator into 2 lists, one for each half"""
+        out = [[], []]
+        for x, y in iter:
+            out[0].append(x)
+            out[1].append(x)
+            if len(out[0]) > 100:
+                out[0].append("Too many entries!")
                 return out
         return out
 
@@ -73,3 +83,15 @@ class TestfindMissingEntries(unittest.TestCase):
             [dict(a=1,b=2,c=3), ],
             sortCols=['a'],
         )), [])
+
+    def returnUpdates(self):
+        """Can get updates returned too"""
+        self.assertEqual(self.asTwoLists(findMissingEntries(
+            [dict(a=1,x=2),               dict(a=3,x=9), dict(a=4,x=3), dict(a=5,x=1)],
+            [              dict(a=2,x=3), dict(a=3,x=3), dict(a=3,x=8)               ],
+            sortCols=['a', 'b'],
+            returnUpdates=True,
+        )), [
+            [dict(a=1,x=2),               dict(a=3,x=9), dict(a=4,x=3), dict(a=5,x=1)],
+            [None,                        dict(a=3,x=3), dict(a=3,x=8), None         ],
+        ])
