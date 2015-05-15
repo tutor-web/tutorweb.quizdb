@@ -342,12 +342,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEqual(aAlloc['settings'], dict(
-            hist_sel='0.8',
-            value_a='x',
-            value_b='y',
-            value_c='y',
-        ))
+        self.assertEqual(aAlloc['settings']['hist_sel'], '0.8')
+        self.assertEqual(aAlloc['settings']['value_a'], 'x')
+        self.assertEqual(aAlloc['settings']['value_b'], 'y')
+        self.assertEqual(aAlloc['settings']['value_c'], 'y')
 
         # Still works if lecture is None
         portal['dept1']['tut1'].settings = toList(dict(
@@ -358,11 +356,9 @@ class SyncViewFunctional(FunctionalTestCase):
         portal['dept1']['tut1']['lec1'].settings = None
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEqual(aAlloc['settings'], dict(
-            hist_sel='0.8',
-            value_a='x',
-            value_b='x',
-        ))
+        self.assertEqual(aAlloc['settings']['hist_sel'], '0.8')
+        self.assertEqual(aAlloc['settings']['value_a'], 'x')
+        self.assertEqual(aAlloc['settings']['value_b'], 'x')
 
         # Still works if tutorial is none
         portal['dept1']['tut1'].settings = None
@@ -372,10 +368,8 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertEqual(aAlloc['settings'], dict(
-            value_b='y',
-            value_c='y',
-        ))
+        self.assertEqual(aAlloc['settings']['value_b'], 'y')
+        self.assertEqual(aAlloc['settings']['value_c'], 'y')
 
     def test_answerQueuePersistent(self):
         """Make sure answerQueue gets logged and is returned"""

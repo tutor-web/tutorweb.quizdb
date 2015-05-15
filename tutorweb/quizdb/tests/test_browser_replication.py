@@ -11,6 +11,8 @@ from .base import MANAGER_ID
 
 
 class ReplicationDumpIngestViewTest(FunctionalTestCase):
+    maxDiff = None
+
     def submitAnswers(self, lecObj, student, rawAnswers):
         portal = self.layer['portal']
         login(portal, student.userName)
@@ -140,7 +142,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (2, 3, 1271080000),
             (2, 3, 1272090000),
         ])
-        self.assertEqual(dump['lecture_setting'], [
+        self.assertEqual([x for x in dump['lecture_setting'] if x['key'] in [u'hist_sel']], [
             dict(studentId=1, lectureId=1, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
             dict(studentId=1, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
             dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
@@ -180,11 +182,15 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
             dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath())),
         ])
-        self.assertEqual(dump['lecture_setting'], [
+        self.assertEqual([x for x in dump['lecture_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
+            dict(studentId=1, lectureId=1, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=1, lectureId=1, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
+            dict(studentId=1, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=1, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
+            dict(studentId=2, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
             dict(studentId=3, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=3, lectureId=4, key=u'hist_sel', value=u'0'),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dump['ug_question']], [
             (1, "My question"),
@@ -281,7 +287,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             student=3,
             lecture=3,
             answer=12,
-            lecture_setting=6,
+            lecture_setting=102,
             coin_award=1,
             ug_question=1,
             ug_answer=2,
@@ -338,19 +344,32 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (5, 7, 1273030000),
             (6, 7, 1273010000),
         ])
-        self.assertEqual(dumpPostIngest['lecture_setting'], [
+        self.assertEqual([x for x in dumpPostIngest['lecture_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
+            dict(studentId=1, lectureId=1, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=1, lectureId=1, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
+            dict(studentId=1, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=1, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
+            dict(studentId=2, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
             dict(studentId=1, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=1, lectureId=4, key=u'hist_sel', value=u'0'),
             dict(studentId=2, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=2, lectureId=4, key=u'hist_sel', value=u'0'),
             dict(studentId=3, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=3, lectureId=4, key=u'hist_sel', value=u'0'),
+
+            dict(studentId=4, lectureId=5, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=4, lectureId=5, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
+            dict(studentId=4, lectureId=6, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=4, lectureId=6, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
+            dict(studentId=5, lectureId=6, key=u'cap_template_qn_reviews', value=u'10'),
             dict(studentId=5, lectureId=6, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
             dict(studentId=4, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=4, lectureId=7, key=u'hist_sel', value=u'0'),
             dict(studentId=5, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=5, lectureId=7, key=u'hist_sel', value=u'0'),
             dict(studentId=6, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
+            dict(studentId=6, lectureId=7, key=u'hist_sel', value=u'0'),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dumpPostIngest['ug_question']], [
             (1, "My question"),
