@@ -6,6 +6,7 @@ import logging
 
 from z3c.saconfig import Session
 
+from sqlalchemy import and_
 from tutorweb.quizdb import db
 
 from Globals import DevelopmentMode
@@ -39,42 +40,59 @@ def dumpDateRange(dateFrom, dateTo):
     # Parse dates to nearest day
     dateFrom = atMidnight(dateFrom)
     dateTo = atMidnight(dateTo, dayDelta=1)
+    matchingAnswers = (Session.query(db.Answer.lectureId, db.Answer.studentId)
+        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .distinct()
+        .subquery())
+    matchingStudents = (Session.query(db.Answer.studentId)
+        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .distinct()
+        .subquery())
+    matchingLectures = (Session.query(db.Answer.lectureId)
+        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .distinct()
+        .subquery())
+    matchingQuestions = (Session.query(db.Answer.questionId)
+        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .distinct()
+        .subquery())
+    matchingUgQuestions = (Session.query(db.Answer.ugQuestionGuid)
+        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .distinct()
+        .subquery())
 
     return dict(
         date_from=calendar.timegm(dateFrom.timetuple()),
         date_to=calendar.timegm(dateTo.timetuple()),
         host=[objDict(r) for r in Session.query(db.Host)],
         student=[objDict(r) for r in Session.query(db.Student)
-            .join(db.Answer, db.Answer.studentId == db.Student.studentId)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+            .join(matchingStudents, matchingStudents.c.studentId == db.Student.studentId)
             .order_by(db.Student.studentId)
             .distinct()],
         question=[dict(questionId=r.questionId, plonePath=r.plonePath) for r in Session.query(db.Question)
-            .join(db.Answer)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+            .join(matchingQuestions, matchingQuestions.c.questionId == db.Question.questionId)
             .order_by(db.Question.questionId)
             .distinct()],
         lecture=[objDict(r) for r in Session.query(db.Lecture)
-            .join(db.Answer, db.Answer.lectureId == db.Lecture.lectureId)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
+            .join(matchingLectures, matchingLectures.c.lectureId == db.Lecture.lectureId)
+            .order_by(db.Lecture.lectureId)],
         answer=[objDict(r) for r in Session.query(db.Answer)
             .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
             .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd)],
         # NB: Return data for all relevant lectures, regardless of host
         lecture_setting=[objDict(r) for r in Session.query(db.LectureSetting)
-            .join(db.Answer, db.Answer.lectureId == db.LectureSetting.lectureId)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
-            .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key)
-            .distinct()],
+            .join(matchingAnswers, and_(
+                matchingAnswers.c.lectureId == db.LectureSetting.lectureId,
+                matchingAnswers.c.studentId == db.LectureSetting.studentId,
+             ))
+            .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key)],
         coin_award=[objDict(r) for r in Session.query(db.CoinAward)
             .filter(db.CoinAward.awardTime.between(dateFrom, dateTo))
             .order_by(db.CoinAward.studentId, db.CoinAward.awardTime)],
         ug_question=[objDict(r) for r in Session.query(db.UserGeneratedQuestion)
-            .join(db.Answer, db.Answer.ugQuestionGuid == db.UserGeneratedQuestion.ugQuestionGuid)
-            .filter(db.Answer.studentId == db.UserGeneratedQuestion.studentId)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
+            .join(matchingUgQuestions, matchingUgQuestions.c.ugQuestionGuid == db.UserGeneratedQuestion.ugQuestionGuid)
+            .order_by(db.UserGeneratedQuestion.studentId, db.UserGeneratedQuestion.ugQuestionGuid)],
         ug_answer=[objDict(r) for r in Session.query(db.UserGeneratedAnswer)
-            .join(db.Answer, db.Answer.ugQuestionGuid == db.UserGeneratedAnswer.ugQuestionGuid)
-            .filter(db.Answer.studentId == db.UserGeneratedAnswer.studentId)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))],
+            .join(matchingUgQuestions, matchingUgQuestions.c.ugQuestionGuid == db.UserGeneratedAnswer.ugQuestionGuid)
+            .order_by(db.UserGeneratedAnswer.studentId, db.UserGeneratedAnswer.ugQuestionGuid)],
     )
