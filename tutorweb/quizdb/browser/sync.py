@@ -11,6 +11,15 @@ from ..sync.answers import parseAnswerQueue
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
+SERVERSIDE_SETTINGS = [
+    'prob_template_eval',
+    'cap_template_qns',
+    'cap_template_qn_reviews',
+    'question_cap',
+    'award_lecture_answered',
+    'award_lecture_aced',
+    'award_tutorial_aced',
+]
 INTEGER_SETTINGS = ['grade_s', 'grade_nmin', 'grade_nmax']  # Randomly-chosen questions that should result in an integer value
 
 
@@ -159,7 +168,7 @@ class SyncLectureView(JSONBrowserView):
             slide_uri=self.context.absolute_url() + '/slide-html',
             review_uri=self.context.absolute_url() + '/quizdb-review-ugqn',
             title=self.context.title,
-            settings=settings,
+            settings=dict((k, v) for k, v in settings.items() if k not in SERVERSIDE_SETTINGS),
             answerQueue=answerQueue,
             questions=questions,
         )

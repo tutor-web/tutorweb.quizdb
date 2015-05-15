@@ -371,6 +371,19 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEqual(aAlloc['settings']['value_b'], 'y')
         self.assertEqual(aAlloc['settings']['value_c'], 'y')
 
+        # Server-side settings are filtered
+        portal['dept1']['tut1'].settings = None
+        portal['dept1']['tut1']['lec1'].settings = toList(dict(
+            value_b='555',
+            value_c='666',
+            question_cap=99
+        ))
+        transaction.commit()
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['settings']['value_b'], '555')
+        self.assertEqual(aAlloc['settings']['value_c'], '666')
+        self.assertTrue('question_cap' not in aAlloc['settings'])
+
     def test_answerQueuePersistent(self):
         """Make sure answerQueue gets logged and is returned"""
         # Allocate to user A
