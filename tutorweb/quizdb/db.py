@@ -203,7 +203,6 @@ class Student(ORMBase):
     __tablename__ = 'student'
     __table_args__ = (
         UniqueConstraint('hostId', 'userName'),
-        UniqueConstraint('hostId', 'eMail'),
         dict(
             mysql_engine='InnoDB',
             mysql_charset='utf8',
