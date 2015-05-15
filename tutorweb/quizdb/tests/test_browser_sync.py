@@ -6,7 +6,7 @@ from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
 
-from ..browser.sync import DEFAULT_QUESTION_CAP
+from ..sync.questions import DEFAULT_QUESTION_CAP
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
@@ -23,25 +23,19 @@ def uniDict(**kwargs):
 
 
 class SyncViewIntegration(IntegrationTestCase):
-    def test_getStudentSettings(self):
+    def test_updateStudentSettings(self):
         """Can get student, and parameters get set if required"""
-        def getSettings(userId=USER_A_ID, lecSettings=None, tutSettings=None):
-            def toList(d):
-                # Bodge actual dicts into what we're storing.
-                return [dict(key=k, value=v) for (k, v) in d.items()]
-
+        def getSettings(userId=USER_A_ID, lecSettings={}):
             portal = self.layer['portal']
-            if lecSettings:
-                portal.restrictedTraverse('dept1/tut1/lec1').settings = toList(lecSettings)
-                transaction.commit()
-            if tutSettings:
-                portal.restrictedTraverse('dept1/tut1').settings = toList(tutSettings)
-                transaction.commit()
             login(portal, userId)
             view = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync')
             student = view.getCurrentStudent()
             self.assertEqual(student.userName, userId)
-            settings = view.getStudentSettings(student)
+            settings = view.updateStudentSettings(
+                view.getDbLecture(),
+                lecSettings,
+                student,
+            )
 
             # Should never leak :min and :max
             self.assertEqual([k for k in settings.keys() if ':min' in k], [])
@@ -53,22 +47,6 @@ class SyncViewIntegration(IntegrationTestCase):
         self.assertEquals(
             getSettings(),
             dict(),
-        )
-
-        # Lecture settings override tutorial settings
-        self.assertEquals(
-            getSettings(
-                tutSettings=dict(hist_sel='0.5'),
-                lecSettings=dict(),
-            ),
-            dict(hist_sel='0.5'),
-        )
-        self.assertEquals(
-            getSettings(
-                tutSettings=dict(hist_sel='0.5'),
-                lecSettings=dict(hist_sel='0.3'),
-            ),
-            dict(hist_sel='0.3'),
         )
 
         # Random items can be generated between ranges

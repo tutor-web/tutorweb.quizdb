@@ -11,7 +11,6 @@ from ..sync.answers import parseAnswerQueue
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
-DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
 INTEGER_SETTINGS = ['grade_s', 'grade_nmin', 'grade_nmax']  # Randomly-chosen questions that should result in an integer value
 
 
@@ -47,16 +46,8 @@ class SyncTutorialView(JSONBrowserView):
 
 
 class SyncLectureView(JSONBrowserView):
-    def getStudentSettings(self, student):
+    def updateStudentSettings(self, dbLec, settings, student):
         """Return a dict of lecture / tutorial settings, choosing a random value if required"""
-        dbLec = self.getDbLecture()
-
-        # Fetch settings from lecture
-        settings = dict(
-            (i['key'], i['value'])
-            for i
-            in (self.context.aq_parent.settings or []) + (self.context.settings or [])
-        )
 
         # Get all current settings as a dict, removing old ones
         allSettings = {}
@@ -129,7 +120,11 @@ class SyncLectureView(JSONBrowserView):
             raise Unauthorized('This drill is for user ' + lecture['user'] + ', not ' + student.userName)
 
         # Fetch lecture settings for current student
-        settings = self.getStudentSettings(student)
+        settings = self.updateStudentSettings(
+            dbLec,
+            self.context.unrestrictedTraverse('@@drill-settings').asDict(),
+            student,
+        )
 
         # Make sure DB is in sync with Plone
         syncPloneQuestions(
