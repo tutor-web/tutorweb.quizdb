@@ -198,7 +198,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         self.assertEqual(dump['ug_answer'], [])
         self.assertEqual(dump['coin_award'], [])
 
-        # Student 0 & 1 review this question, gets an award
+        # Student 0 reviews this question
         self.submitAnswers(ugLecObjs[0], students[0], [
             dict(
                 alloc=0,
@@ -206,15 +206,6 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
                 question_type='usergenerated',
                 quiz_time=1273020000,
                 student_answer=dict(choice=0, rating=75, comments="Question, I'll say")
-            ),
-        ])
-        self.submitAnswers(ugLecObjs[0], students[1], [
-            dict(
-                alloc=0,
-                ugquestion_guid=dump['ug_question'][0]['ugQuestionGuid'],
-                question_type='usergenerated',
-                quiz_time=1273030000,
-                student_answer=dict(choice=0, rating=75, comments="What can I say it's a question")
             ),
         ])
         dump = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
@@ -234,26 +225,15 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (2, 3, 1271080000, 0),
             (2, 3, 1272090000, 0),
             (1, 4, 1273020000, 0),
-            (2, 4, 1273030000, 0),
-            (3, 4, 1273010000, 10000),
+            (3, 4, 1273010000, 0),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dump['ug_question']], [
             (1, "My question"),
         ])
         self.assertEqual(dump['ug_answer'], [
             dict(ugAnswerId=1, studentId=1, ugQuestionGuid=dump['ug_question'][0]['ugQuestionGuid'], chosenAnswer=0, questionRating=75, comments=u"Question, I'll say", studentGrade=0),
-            dict(ugAnswerId=2, studentId=2, ugQuestionGuid=dump['ug_question'][0]['ugQuestionGuid'], chosenAnswer=0, questionRating=75, comments=u"What can I say it's a question", studentGrade=0),
         ])
         self.assertEqual(dump['coin_award'], [])
-
-        # Award coins to student 2
-        login(portal, students[2].userName)
-        portal.unrestrictedTraverse('@@quizdb-student-award').asDict(dict(walletId='$$UNITTEST001'))
-        login(portal, MANAGER_ID)
-        dump = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
-        self.assertEqual([(x['coinAwardId'], x['studentId'], x['amount']) for x in dump['coin_award']], [
-            (1, 3, 10000),
-        ])
 
         # Rework dump, pretend it was from a different host
         dump['host'][0]['fqdn'] = u'beef.tutor-web.net'
@@ -286,11 +266,11 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         self.assertEqual(self.doIngest(dump), dict(
             student=3,
             lecture=3,
-            answer=12,
-            lecture_setting=102,
-            coin_award=1,
+            answer=11,
+            lecture_setting=85,
+            coin_award=0,
             ug_question=1,
-            ug_answer=2,
+            ug_answer=1,
         ))
 
         # All the data should be doubled-up now
@@ -329,7 +309,6 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (2, 3, 1271080000),
             (2, 3, 1272090000),
             (1, 4, 1273020000),
-            (2, 4, 1273030000),
             (3, 4, 1273010000),
             (4, 5, 1271010000),
             (4, 5, 1271020000),
@@ -341,7 +320,6 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (5, 6, 1271080000),
             (5, 6, 1272090000),
             (4, 7, 1273020000),
-            (5, 7, 1273030000),
             (6, 7, 1273010000),
         ])
         self.assertEqual([x for x in dumpPostIngest['lecture_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
@@ -353,8 +331,6 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
             dict(studentId=1, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
             dict(studentId=1, lectureId=4, key=u'hist_sel', value=u'0'),
-            dict(studentId=2, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=2, lectureId=4, key=u'hist_sel', value=u'0'),
             dict(studentId=3, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
             dict(studentId=3, lectureId=4, key=u'hist_sel', value=u'0'),
 
@@ -366,8 +342,6 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(studentId=5, lectureId=6, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
             dict(studentId=4, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
             dict(studentId=4, lectureId=7, key=u'hist_sel', value=u'0'),
-            dict(studentId=5, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=5, lectureId=7, key=u'hist_sel', value=u'0'),
             dict(studentId=6, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
             dict(studentId=6, lectureId=7, key=u'hist_sel', value=u'0'),
         ])
@@ -377,13 +351,9 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ])
         self.assertEqual(dumpPostIngest['ug_answer'], [
             dict(ugAnswerId=1, studentId=1, ugQuestionGuid=ugQnMap.keys()[0], chosenAnswer=0, questionRating=75, comments=u"Question, I'll say", studentGrade=0),
-            dict(ugAnswerId=2, studentId=2, ugQuestionGuid=ugQnMap.keys()[0], chosenAnswer=0, questionRating=75, comments=u"What can I say it's a question", studentGrade=0),
-            dict(ugAnswerId=3, studentId=4, ugQuestionGuid=ugQnMap.values()[0], chosenAnswer=0, questionRating=75, comments=u"Question, I'll say", studentGrade=0),
-            dict(ugAnswerId=4, studentId=5, ugQuestionGuid=ugQnMap.values()[0], chosenAnswer=0, questionRating=75, comments=u"What can I say it's a question", studentGrade=0),
+            dict(ugAnswerId=2, studentId=4, ugQuestionGuid=ugQnMap.values()[0], chosenAnswer=0, questionRating=75, comments=u"Question, I'll say", studentGrade=0),
         ])
         self.assertEqual([(x['coinAwardId'], x['studentId'], x['amount']) for x in dumpPostIngest['coin_award']], [
-            (1, 3, 10000),
-            (2, 6, 10000),
         ])
 
         # Do it again, dump results are the same
@@ -401,3 +371,98 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             self.doDump({'from':'2000-05-01', 'to':'2099-05-08'}),
             dumpPostIngest,
         )
+
+        # Student 1 reviews question, should give award
+        self.submitAnswers(ugLecObjs[0], students[1], [
+            dict(
+                alloc=0,
+                ugquestion_guid=dumpPostIngest['ug_question'][0]['ugQuestionGuid'],
+                question_type='usergenerated',
+                quiz_time=1273030000,
+                student_answer=dict(choice=0, rating=75, comments="What can I say it's a question")
+            ),
+        ])
+        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
+            (1, 1, 1271010000, 0),
+            (1, 1, 1271020000, 0),
+            (1, 1, 1272030000, 0),
+            (1, 3, 1271040000, 0),
+            (1, 3, 1271050000, 0),
+            (1, 3, 1272060000, 0),
+            (2, 3, 1271070000, 0),
+            (2, 3, 1271080000, 0),
+            (2, 3, 1272090000, 0),
+            (1, 4, 1273020000, 0),
+            (2, 4, 1273030000, 0), # NB: We gave an answer here
+            (3, 4, 1273010000, 10000),
+            (4, 5, 1271010000, 0),
+            (4, 5, 1271020000, 0),
+            (4, 5, 1272030000, 0),
+            (4, 6, 1271040000, 0),
+            (4, 6, 1271050000, 0),
+            (4, 6, 1272060000, 0),
+            (5, 6, 1271070000, 0),
+            (5, 6, 1271080000, 0),
+            (5, 6, 1272090000, 0),
+            (4, 7, 1273020000, 0),
+            (6, 7, 1273010000, 0),
+        ])
+        self.assertEqual([(q['ugQuestionId'], q['text']) for q in dumpPostIngest['ug_question']], [
+            (1, "My question"),
+            (2, "My question"),
+        ])
+        self.assertEqual(dumpPostIngest['ug_answer'], [
+            dict(ugAnswerId=1, studentId=1, ugQuestionGuid=dumpPostIngest['ug_question'][0]['ugQuestionGuid'], chosenAnswer=0, questionRating=75, comments=u"Question, I'll say", studentGrade=0),
+            dict(ugAnswerId=3, studentId=2, ugQuestionGuid=dumpPostIngest['ug_question'][0]['ugQuestionGuid'], chosenAnswer=0, questionRating=75, comments=u"What can I say it's a question", studentGrade=0),
+            dict(ugAnswerId=2, studentId=4, ugQuestionGuid=ugQnMap.values()[0], chosenAnswer=0, questionRating=75, comments=u"Question, I'll say", studentGrade=0),
+        ])
+        self.assertEqual(dumpPostIngest['coin_award'], [])
+
+        # Award coins to student 2
+        login(portal, students[2].userName)
+        portal.unrestrictedTraverse('@@quizdb-student-award').asDict(dict(walletId='$$UNITTEST001'))
+        login(portal, MANAGER_ID)
+        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        self.assertEqual([(x['coinAwardId'], x['studentId'], x['amount']) for x in dumpPostIngest['coin_award']], [
+            (1, 3, 10000),
+        ])
+
+        # Add coins to other question by altering dump.
+        dump['answer'][-1]['coinsAwarded'] = 99999
+        self.assertEqual(self.doIngest(dump), dict(
+            student=0,
+            lecture=0,
+            answer=0,
+            lecture_setting=0,
+            coin_award=0,
+            ug_question=0,
+            ug_answer=0,
+        ))
+        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
+            (1, 1, 1271010000, 0),
+            (1, 1, 1271020000, 0),
+            (1, 1, 1272030000, 0),
+            (1, 3, 1271040000, 0),
+            (1, 3, 1271050000, 0),
+            (1, 3, 1272060000, 0),
+            (2, 3, 1271070000, 0),
+            (2, 3, 1271080000, 0),
+            (2, 3, 1272090000, 0),
+            (1, 4, 1273020000, 0),
+            (2, 4, 1273030000, 0),
+            (3, 4, 1273010000, 10000),
+            (4, 5, 1271010000, 0),
+            (4, 5, 1271020000, 0),
+            (4, 5, 1272030000, 0),
+            (4, 6, 1271040000, 0),
+            (4, 6, 1271050000, 0),
+            (4, 6, 1272060000, 0),
+            (5, 6, 1271070000, 0),
+            (5, 6, 1271080000, 0),
+            (5, 6, 1272090000, 0),
+            (4, 7, 1273020000, 0),
+            (6, 7, 1273010000, 99999),
+        ])
+
