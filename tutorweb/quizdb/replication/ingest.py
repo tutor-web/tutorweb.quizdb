@@ -2,12 +2,15 @@ import collections
 import datetime
 import uuid
 import logging
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 from sqlalchemy.orm.exc import NoResultFound
 from z3c.saconfig import Session
 
 from tutorweb.quizdb import db
+
+from Globals import DevelopmentMode
+if DevelopmentMode:
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 
 def updateHost(fqdn, hostKey):
