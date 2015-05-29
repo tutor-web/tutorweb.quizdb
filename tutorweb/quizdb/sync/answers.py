@@ -60,7 +60,7 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
         out += round(float(settings.get('award_lecture_answered', "1000")))
 
     # Has the lecture just been aced?
-    if dbAnsSummary.gradeHighWaterMark < 9.998 and newGrade >= 9.998:
+    if dbAnsSummary.gradeHighWaterMark < 9.750 and newGrade >= 9.750:
         out += round(float(settings.get('award_lecture_aced', "10000")))
 
         # Fetch all sibling lectures
@@ -77,7 +77,7 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
                 .filter(db.AnswerSummary.studentId == student.studentId)
                 .filter(db.Lecture.hostId == dbLec.hostId)
                 .filter(db.Lecture.plonePath.in_(siblingPaths))
-                .filter(db.AnswerSummary.gradeHighWaterMark >= 9.998)
+                .filter(db.AnswerSummary.gradeHighWaterMark >= 9.750)
                 .count() >= len(siblingPaths)):
             out += round(float(settings.get('award_tutorial_aced', "100000")))
 

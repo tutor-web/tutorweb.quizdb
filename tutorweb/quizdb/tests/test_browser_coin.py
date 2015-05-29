@@ -75,8 +75,8 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
                 aqEntry(aAlloc, 0, True, 4.99),
                 aqEntry(aAlloc, 0, True, 5.0),
                 aqEntry(aAlloc, 0, True, 9.0),
-                aqEntry(aAlloc, 0, True, 9.99),
-                aqEntry(aAlloc, 0, True, 9.999),
+                aqEntry(aAlloc, 0, True, 9.25),
+                aqEntry(aAlloc, 0, True, 9.75),
             ],
         ))
         self.assertEqual(
