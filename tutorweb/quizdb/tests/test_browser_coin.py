@@ -7,6 +7,17 @@ from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 import tutorweb.quizdb.tests.test_coin
 from .test_coin import chooseOpener, MockHTTPHandler, nextResponse
 
+def uDict(**kwargs):
+    def unicodify(o):
+        if isinstance(o, str):
+            return unicode(o)
+        return o
+
+    return dict(
+        (unicodify(k), unicodify(v))
+        for k, v in kwargs.items()
+    )
+
 def toTimestamp(iso):
     """Convert ISO string into timestamp"""
     return calendar.timegm(dateutil.parser.parse(iso).timetuple())
@@ -81,9 +92,9 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            dict(coin_available=11000, walletId='', tx_id=None, history=[
-                dict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:21:40')),
-                dict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:15:40')),
+            uDict(coin_available=11000, walletId='', tx_id=None, history=[
+                uDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:21:40')),
+                uDict(amount=1000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:15:40')),
             ])
         )
 

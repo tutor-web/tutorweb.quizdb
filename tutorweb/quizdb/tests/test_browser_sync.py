@@ -10,7 +10,7 @@ from ..sync.questions import DEFAULT_QUESTION_CAP
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
-def uniDict(**kwargs):
+def uDict(**kwargs):
     def unicodify(o):
         if isinstance(o, str):
             return unicode(o)
@@ -1053,11 +1053,11 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
-            uniDict(coin_available=133000, walletId='', tx_id=None, history=[
-                uniDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time=1377004540),
-                uniDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377003340),
-                uniDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377002380),
-                uniDict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
+            uDict(coin_available=133000, walletId='', tx_id=None, history=[
+                uDict(amount=111000, claimed=False, lecture='/plone/dept1/tut1/tmplec3', time=1377004540),
+                uDict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377003340),
+                uDict(amount=10000,  claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377002380),
+                uDict(amount=1000,   claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377000940),
             ])
         )
 
@@ -1082,9 +1082,9 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            uniDict(coin_available=11000, walletId='', tx_id=None, history=[
-                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006580),
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006220),
+            uDict(coin_available=11000, walletId='', tx_id=None, history=[
+                uDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006580),
+                uDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006220),
             ])
         )
 
@@ -1108,10 +1108,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_B_ID),
-            uniDict(coin_available=12000, walletId='', tx_id=None, history=[
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377007660),
-                uniDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006580),
-                uniDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006220),
+            uDict(coin_available=12000, walletId='', tx_id=None, history=[
+                uDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec2', time=1377007660),
+                uDict(amount=10000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006580),
+                uDict(amount=1000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=1377006220),
             ])
         )
 
