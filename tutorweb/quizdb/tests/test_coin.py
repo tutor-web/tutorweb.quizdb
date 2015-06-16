@@ -1,3 +1,4 @@
+import sys
 import base64
 import json
 from StringIO import StringIO
@@ -5,6 +6,16 @@ import unittest
 import urllib2
 
 from zExceptions import BadRequest
+
+class CoinConfig(object):
+    RPC_HOST = "moohost"
+    RPC_PORT = 900
+    RPC_USER = "smly"
+    RPC_PASS = "realgoodpassword"
+    RPC_WALLETPASS = None
+class FakeConfig(object):
+    coin_config = CoinConfig()
+sys.modules["tutorweb.quizdb.config"] = FakeConfig
 
 from .. import coin
 

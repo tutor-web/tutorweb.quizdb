@@ -6,7 +6,7 @@ import urllib2
 
 from zExceptions import BadRequest
 
-import coin_config
+from .config import coin_config
 
 
 def getBlockCount():

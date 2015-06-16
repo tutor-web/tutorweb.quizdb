@@ -6,6 +6,7 @@ from unittest import TestCase
 import json
 
 import transaction
+from App.config import getConfiguration
 from Acquisition import aq_parent
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -29,6 +30,18 @@ from tutorweb.quizdb import ORMBase
 class TestFixture(ContentTestFixture):
     def setUpZope(self, app, configurationContext):
         super(TestFixture, self).setUpZope(app, configurationContext)
+
+        # Create some dummy site configuration to use
+        config = getConfiguration()
+        config.product_config = getattr(config, 'product_config', {})
+        config.product_config['tutorweb.quizdb'] = {
+            'coin-rpc-host': 'ut-rpchost',
+            'coin-rpc-port': 'ut-rpcport',
+            'coin-rpc-user': 'ut-rpcuser',
+            'coin-rpc-pass': 'ut-rpcpass',
+            'coin-rpc-walletpass': 'ut-rpcwalletpass',
+        }
+
         import tutorweb.quizdb
         xmlconfig.include(configurationContext, 'configure.zcml', tutorweb.quizdb)
         self.createTempDatabase(configurationContext)
