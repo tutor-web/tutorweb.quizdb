@@ -36,7 +36,7 @@ class TestFixture(ContentTestFixture):
         config.product_config = getattr(config, 'product_config', {})
         config.product_config['tutorweb.quizdb'] = {
             'coin-rpc-host': 'ut-rpchost',
-            'coin-rpc-port': 'ut-rpcport',
+            'coin-rpc-port': '0818118181',
             'coin-rpc-user': 'ut-rpcuser',
             'coin-rpc-pass': 'ut-rpcpass',
             'coin-rpc-walletpass': 'ut-rpcwalletpass',
