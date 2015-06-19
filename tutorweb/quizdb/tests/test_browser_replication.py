@@ -41,7 +41,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         view = self.layer['portal'].unrestrictedTraverse('@@quizdb-replication-%s' % viewName)
         return view.asDict(data)
 
-    def doDump(self, data, remoteAddr='127.0.0.1'):
+    def doDump(self, data={}, remoteAddr='127.0.0.1'):
         return self.fetchView('dump', data, remoteAddr)
 
     def doIngest(self, data, remoteAddr='127.0.0.1'):
@@ -83,24 +83,9 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(alloc=1, quiz_time=1272090000),
         ])
 
-        # Fetch some of the data. NB: We round up to the nearest day
-        dump = self.doDump({'from':'2010-04-11', 'to':'2010-04-11'})
-        self.assertEqual(dump['date_from'], calendar.timegm((2010, 4, 11, 0, 0, 0)))
-        self.assertEqual(dump['date_to'],  calendar.timegm((2010, 4, 12, 0, 0, 0)))
-        self.assertEqual(dump['student'], [
-            dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
-        ])
-        self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath())),
-        ])
-        self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
-            (1, 1, 1271010000),
-            (1, 1, 1271020000),
-        ])
-
-        dump = self.doDump({'from':'2010-04-12', 'to':'2010-04-12'})
-        self.assertEqual(dump['date_from'], calendar.timegm((2010, 4, 12, 0, 0, 0)))
-        self.assertEqual(dump['date_to'],  calendar.timegm((2010, 4, 13, 0, 0, 0)))
+        # Fetch some of the data.
+        dump = self.doDump(dict(answerId=5, maxVals=4))
+        self.assertEqual(dump['state'], dict(answerId=9, coinAwardId=None))
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
@@ -109,16 +94,15 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
-            (1, 3, 1271040000),
             (1, 3, 1271050000),
+            (1, 3, 1272060000),
             (2, 3, 1271070000),
             (2, 3, 1271080000),
         ])
 
-        # Fetch all of the data with an oversize date range
-        dump = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
-        self.assertEqual(dump['date_from'], calendar.timegm((2000, 5, 1, 0, 0, 0)))
-        self.assertEqual(dump['date_to'],  calendar.timegm((2099, 5, 9, 0, 0, 0)))
+        # Fetch all of the data with an oversize range
+        dump = self.doDump(dict(answerId=1))
+        self.assertEqual(dump['state'], dict(answerId=10, coinAwardId=None))
         self.assertEqual(dump['host'], [
             dict(hostId=1, hostKey=dump['host'][0]['hostKey'], fqdn=dump['host'][0]['fqdn']),
         ])
@@ -159,7 +143,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
                 choices=[dict(answer="Good?", correct=True), dict(answer="Bad?", correct=False)],
             )),
         ])
-        dump = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        dump = self.doDump(dict())
+        self.assertEqual(dump['state'], dict(answerId=11, coinAwardId=None))
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
@@ -208,7 +193,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
                 student_answer=dict(choice=0, rating=75, comments="Question, I'll say")
             ),
         ])
-        dump = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        dump = self.doDump()
+        self.assertEqual(dump['state'], dict(answerId=12, coinAwardId=None))
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
@@ -274,9 +260,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ))
 
         # All the data should be doubled-up now
-        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
-        self.assertEqual(dumpPostIngest['date_from'], calendar.timegm((2000, 5, 1, 0, 0, 0)))
-        self.assertEqual(dumpPostIngest['date_to'],  calendar.timegm((2099, 5, 9, 0, 0, 0)))
+        dumpPostIngest = self.doDump()
+        self.assertEqual(dumpPostIngest['state'], dict(answerId=23, coinAwardId=None))
         self.assertEqual(dumpPostIngest['host'], [
             dict(hostId=1, hostKey=dumpPostIngest['host'][0]['hostKey'], fqdn=dumpPostIngest['host'][0]['fqdn']),
             dict(hostId=2, hostKey=u'0123456789012345678900000000beef', fqdn='beef.tutor-web.net'),
@@ -368,7 +353,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             ug_answer=0,
         ))
         self.assertEqual(
-            self.doDump({'from':'2000-05-01', 'to':'2099-05-08'}),
+            self.doDump(),
             dumpPostIngest,
         )
 
@@ -382,7 +367,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
                 student_answer=dict(choice=0, rating=75, comments="What can I say it's a question")
             ),
         ])
-        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        dumpPostIngest = self.doDump()
+        self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=None))
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
             (1, 1, 1271010000, 0),
             (1, 1, 1271020000, 0),
@@ -423,7 +409,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         login(portal, students[2].userName)
         portal.unrestrictedTraverse('@@quizdb-student-award').asDict(dict(walletId='$$UNITTEST001'))
         login(portal, MANAGER_ID)
-        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        dumpPostIngest = self.doDump()
+        self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=2))
         self.assertEqual([(x['coinAwardId'], x['studentId'], x['amount']) for x in dumpPostIngest['coin_award']], [
             (1, 3, 10000),
         ])
@@ -439,7 +426,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             ug_question=0,
             ug_answer=0,
         ))
-        dumpPostIngest = self.doDump({'from':'2000-05-01', 'to':'2099-05-08'})
+        dumpPostIngest = self.doDump()
+        self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=2))
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
             (1, 1, 1271010000, 0),
             (1, 1, 1271020000, 0),

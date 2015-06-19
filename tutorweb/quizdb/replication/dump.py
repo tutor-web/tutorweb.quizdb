@@ -6,7 +6,7 @@ import logging
 
 from z3c.saconfig import Session
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from tutorweb.quizdb import db
 
 from Globals import DevelopmentMode
@@ -14,56 +14,63 @@ if DevelopmentMode:
     logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 
-def dumpDateRange(dateFrom, dateTo):
-    def objDict(x):
-        """Turn SQLAlchemy row object into a dict"""
-        def enc(o):
-            if isinstance(o, datetime.datetime):
-                return calendar.timegm(o.timetuple())
-            if isinstance(o, uuid.UUID):
-                return str(o)
-            return o
+def objDict(x):
+    """Turn SQLAlchemy row object into a dict"""
+    def enc(o):
+        if isinstance(o, datetime.datetime):
+            return calendar.timegm(o.timetuple())
+        if isinstance(o, uuid.UUID):
+            return str(o)
+        return o
 
-        return dict(
-            (c.name, enc(getattr(x, c.name)))
-            for c in x.__table__.columns
-        )
+    return dict(
+        (c.name, enc(getattr(x, c.name)))
+        for c in x.__table__.columns
+    )
 
-    def atMidnight(d, dayDelta=0):
-        """Return datetime at midnight"""
-        return datetime.datetime(
-            year=d.year,
-            month=d.month,
-            day=d.day + dayDelta,
-        )
 
-    # Parse dates to nearest day
-    dateFrom = atMidnight(dateFrom)
-    dateTo = atMidnight(dateTo, dayDelta=1)
+def dumpData(stateIn={}):
+    """
+    stateIn is a Dict of the last-seen IDs we continue from
+    NB: id Wrapping *shouldn't* be a problem after all:-
+     * MySQL won't wrap autonum, it'll die.
+     * PostgreSQL will only wrap if CYCLE is specified for the sequence
+     * SQLite will wrap if there's gaps in our autonum.
+    """
+    # Recreate state, populating any missing entries
+    state=dict(
+        answerId=int(stateIn.get('answerId', 0)),
+        coinAwardId=int(stateIn.get('coinAwardId', 0)),
+    )
+    maxVals = int(stateIn.get('maxVals', 10000))
+
+    # NB: If answerId has skipped over maxVals values, we are in trouble.
+    # However, that shouldn't happen, unless we make a mess of initalising autonums.
+    answerFilter = db.Answer.answerId.between(state['answerId'], state['answerId'] + maxVals - 1)
+    coinAwardFilter = db.CoinAward.coinAwardId.between(state['coinAwardId'], state['coinAwardId'] + maxVals - 1)
+
     matchingAnswers = (Session.query(db.Answer.lectureId, db.Answer.studentId)
-        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .filter(answerFilter)
         .distinct()
         .subquery())
     matchingStudents = (Session.query(db.Answer.studentId)
-        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .filter(answerFilter)
         .distinct()
         .subquery())
     matchingLectures = (Session.query(db.Answer.lectureId)
-        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .filter(answerFilter)
         .distinct()
         .subquery())
     matchingQuestions = (Session.query(db.Answer.questionId)
-        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .filter(answerFilter)
         .distinct()
         .subquery())
     matchingUgQuestions = (Session.query(db.Answer.ugQuestionGuid)
-        .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+        .filter(answerFilter)
         .distinct()
         .subquery())
 
     return dict(
-        date_from=calendar.timegm(dateFrom.timetuple()),
-        date_to=calendar.timegm(dateTo.timetuple()),
         host=[objDict(r) for r in Session.query(db.Host)],
         student=[objDict(r) for r in Session.query(db.Student)
             .join(matchingStudents, matchingStudents.c.studentId == db.Student.studentId)
@@ -77,7 +84,7 @@ def dumpDateRange(dateFrom, dateTo):
             .join(matchingLectures, matchingLectures.c.lectureId == db.Lecture.lectureId)
             .order_by(db.Lecture.lectureId)],
         answer=[objDict(r) for r in Session.query(db.Answer)
-            .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+            .filter(answerFilter)
             .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd)],
         # NB: Return data for all relevant lectures, regardless of host
         lecture_setting=[objDict(r) for r in Session.query(db.LectureSetting)
@@ -87,7 +94,7 @@ def dumpDateRange(dateFrom, dateTo):
              ))
             .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key)],
         coin_award=[objDict(r) for r in Session.query(db.CoinAward)
-            .filter(db.CoinAward.awardTime.between(dateFrom, dateTo))
+            .filter(coinAwardFilter)
             .order_by(db.CoinAward.studentId, db.CoinAward.awardTime)],
         ug_question=[objDict(r) for r in Session.query(db.UserGeneratedQuestion)
             .join(matchingUgQuestions, matchingUgQuestions.c.ugQuestionGuid == db.UserGeneratedQuestion.ugQuestionGuid)
@@ -95,4 +102,8 @@ def dumpDateRange(dateFrom, dateTo):
         ug_answer=[objDict(r) for r in Session.query(db.UserGeneratedAnswer)
             .join(matchingUgQuestions, matchingUgQuestions.c.ugQuestionGuid == db.UserGeneratedAnswer.ugQuestionGuid)
             .order_by(db.UserGeneratedAnswer.studentId, db.UserGeneratedAnswer.ugQuestionGuid)],
+        state=dict(
+            answerId=Session.query(func.max(db.Answer.answerId) + 1).filter(answerFilter).one()[0],
+            coinAwardId=Session.query(func.max(db.CoinAward.coinAwardId) + 1).filter(coinAwardFilter).one()[0],
+        )
     )

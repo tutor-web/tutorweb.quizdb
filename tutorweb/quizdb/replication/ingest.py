@@ -89,13 +89,9 @@ def findMissingEntries(dataRawEntries, dbQuery, sortCols=[], ignoreCols=[], idMa
         pass
 
 
-def ingestDateRange(data):
+def ingestData(data):
     idMap = collections.defaultdict(dict)
     inserts = {}
-
-    # Fetch range
-    dateFrom = datetime.datetime.utcfromtimestamp(data['date_from'])
-    dateTo = datetime.datetime.utcfromtimestamp(data['date_to'])
 
     # Check all host keys match our stored versions, and map to our IDs
     for host in data['host']:
@@ -164,6 +160,18 @@ def ingestDateRange(data):
         idMap['lectureId'][lecture['lectureId']] = dbLecture.lectureId
     Session.flush()
 
+    # Any answer entries we fetch should be at least as new as the oldest incoming entry
+    minVal = None
+    for a in data['answer']:
+        if minVal is None or a['timeEnd'] < minVal:
+            minVal = a['timeEnd']
+    answerFilter = db.Answer.timeEnd.__ge__(minVal or 0)
+    minVal = None
+    for a in data['coin_award']:
+        if minVal is None or a['awardTime'] < minVal:
+            minVal = a['awardTime']
+    coinAwardFilter = db.CoinAward.awardTime.__ge__(minVal or 0)
+
     # Filter out answer student/question/timeEnd combinations already stored in DB
     inserts['answer'] = 0
     for (dataEntry, dbEntry) in findMissingEntries(
@@ -171,7 +179,7 @@ def ingestDateRange(data):
             Session.query(db.Answer)
                 # NB: In theory we should filter by student too, but shouldn't make much difference to result
                 .filter(db.Answer.lectureId.in_(idMap['lectureId'].values()))
-                .filter(db.Answer.timeEnd.between(dateFrom, dateTo))
+                .filter(answerFilter)
                 .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd),
             sortCols=['lectureId', 'studentId', 'timeEnd'],
             ignoreCols=['answerId'],
@@ -186,12 +194,11 @@ def ingestDateRange(data):
     Session.flush()
 
     inserts['lecture_setting'] = 0
-    answerDateFilter = db.Answer.timeEnd.between(dateFrom, dateTo)
     for (dataEntry, dbEntry) in findMissingEntries(
             data['lecture_setting'],
             Session.query(db.LectureSetting)
                 .join(db.Answer, db.Answer.lectureId == db.LectureSetting.lectureId)
-                .filter(answerDateFilter)
+                .filter(answerFilter)
                 .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key),
             sortCols=['lectureId', 'studentId', 'key'],
             idMap=idMap):
@@ -204,7 +211,7 @@ def ingestDateRange(data):
             data['coin_award'],
             Session.query(db.CoinAward)
                 .filter(db.CoinAward.studentId.in_(idMap['studentId'].values()))
-                .filter(db.CoinAward.awardTime.between(dateFrom, dateTo))
+                .filter(coinAwardFilter)
                 .order_by(db.CoinAward.studentId, db.CoinAward.awardTime),
             sortCols=['studentId', 'awardTime'],
             ignoreCols=['coinAwardId'],

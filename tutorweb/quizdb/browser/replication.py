@@ -1,7 +1,7 @@
 import datetime
 
-from ..replication.dump import dumpDateRange
-from ..replication.ingest import ingestDateRange, updateHost
+from ..replication.dump import dumpData
+from ..replication.ingest import ingestData, updateHost
 from .base import JSONBrowserView
 
 class ReplicationDumpView(JSONBrowserView):
@@ -12,10 +12,7 @@ class ReplicationDumpView(JSONBrowserView):
                 self.request.environ['REMOTE_ADDR'] != '127.0.0.1':
             raise ValueError("Only for use in scripts")  # TODO: 403?
 
-        return dumpDateRange(
-            datetime.datetime.strptime(data.get('from', ''), '%Y-%m-%d'),
-            datetime.datetime.strptime(data.get('to', ''), '%Y-%m-%d'),
-        )
+        return dumpData(data)
 
 class ReplicationIngestView(JSONBrowserView):
     """Dump out the data from given dates"""
@@ -25,7 +22,7 @@ class ReplicationIngestView(JSONBrowserView):
                 self.request.environ['REMOTE_ADDR'] != '127.0.0.1':
             raise ValueError("Only for use in scripts")
 
-        return ingestDateRange(data)
+        return ingestData(data)
 
 class ReplicationUpdateHostView(JSONBrowserView):
     """Update / add the host"""
