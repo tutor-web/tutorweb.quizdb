@@ -75,22 +75,33 @@ def replicateDump():
     )
     args = parser.parse_args()
 
+    # Find most recent state file
+    newestFile = dict(path="", time=0)
+    for dir in [args.work_dir, os.path.join(args.work_dir, 'archive')]:
+        if not os.path.exists(dir):
+            continue
+        for fileName in os.listdir(dir):
+            if not fileName.endswith('.json'):
+                continue
+            fullPath = os.path.join(dir, fileName)
+            if os.path.getctime(fullPath) > newestFile['time']:
+                newestFile['path'] = fullPath
+                newestFile['time'] = os.path.getctime(fullPath)
+
     # Open work_dir, get most recent state
-    listing = [os.path.join(args.work_dir, f) for f in os.listdir(args.work_dir) if f.endswith('.json')]
-    if listing:
-        stateFile = max(listing, key = os.path.getctime)
-        logger.info("Reading statefile %s", stateFile)
-        with open(stateFile, 'r') as f:
+    if newestFile['path']:
+        logger.info("Reading statefile %s", newestFile['path'])
+        with open(newestFile['path'], 'r') as f:
             state = json.load(f)['state']
     else:
         logger.info("No statefile, starting afresh")
         state = {}
-    if args.max_values:
-        state['maxVals'] = args.max_values
 
     # Start Zope, get dump
     logger.info("Dumping data")
     app = getApplication(args.zope_conf)
+    if args.max_values:
+        state['maxVals'] = args.max_values
     out = dumpData(state)
     if dumpIsEmpty(out):
         logger.info("Nothing new to write out")
