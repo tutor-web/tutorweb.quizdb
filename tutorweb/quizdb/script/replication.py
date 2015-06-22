@@ -10,6 +10,7 @@ import socket
 import time
 
 from ..replication.dump import dumpData, dumpIsEmpty
+from ..replication.ingest import ingestData
 
 logger = logging.getLogger(__package__)
 logger.addHandler(logging.StreamHandler())
@@ -22,6 +23,38 @@ def getApplication(configFile):
     configure(configFile)
     import Zope2
     return Zope2.app()
+
+
+def replicateIngest():
+    parser = argparse.ArgumentParser(description='Ingest new data in work dir')
+    parser.add_argument(
+        '--work-dir',
+        help='Where dumps should be stored',
+    )
+    parser.add_argument(
+        '--zope-conf',
+        help='Zope configuration file',
+    )
+    args = parser.parse_args()
+
+    app = getApplication(args.zope_conf)
+    import transaction
+
+    for fileName in os.listdir(args.work_dir):
+        if not fileName.endswith('.json'):
+            continue
+        logger.info("Ingesting dump %s", fileName)
+
+        # Open dump and ingest
+        with open(os.path.join(args.work_dir, fileName), 'r') as f:
+            ingestData(json.load(f))
+        transaction.commit()
+
+        # Worked, move this file to archive
+        os.renames(
+            os.path.join(args.work_dir, fileName),
+            os.path.join(args.work_dir, 'archive', fileName),
+        )
 
 
 def replicateDump():

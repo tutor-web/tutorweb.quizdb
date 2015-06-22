@@ -42,6 +42,7 @@ setup(
         target = plone
         [console_scripts]
         replicate_dump = tutorweb.quizdb.script.replication:replicateDump
+        replicate_ingest = tutorweb.quizdb.script.replication:replicateIngest
     """,
     include_package_data=True,
     zip_safe=False,
