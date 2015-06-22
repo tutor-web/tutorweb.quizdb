@@ -29,6 +29,17 @@ def objDict(x):
     )
 
 
+def dumpIsEmpty(dump):
+    """Return true iff dump has no new interesting data"""
+    for k in dump.keys():
+        if k in ['state', 'host']:
+            # These will always contain something
+            continue
+        if len(dump[k]) > 0:
+            return False
+    return True
+
+
 def dumpData(stateIn={}):
     """
     stateIn is a Dict of the last-seen IDs we continue from
@@ -39,8 +50,8 @@ def dumpData(stateIn={}):
     """
     # Recreate state, populating any missing entries
     state=dict(
-        answerId=int(stateIn.get('answerId', 0)),
-        coinAwardId=int(stateIn.get('coinAwardId', 0)),
+        answerId=int(stateIn.get('answerId', None) or 0),
+        coinAwardId=int(stateIn.get('coinAwardId', None) or 0),
     )
     maxVals = int(stateIn.get('maxVals', 10000))
 
@@ -103,7 +114,7 @@ def dumpData(stateIn={}):
             .join(matchingUgQuestions, matchingUgQuestions.c.ugQuestionGuid == db.UserGeneratedAnswer.ugQuestionGuid)
             .order_by(db.UserGeneratedAnswer.studentId, db.UserGeneratedAnswer.ugQuestionGuid)],
         state=dict(
-            answerId=Session.query(func.max(db.Answer.answerId) + 1).filter(answerFilter).one()[0],
-            coinAwardId=Session.query(func.max(db.CoinAward.coinAwardId) + 1).filter(coinAwardFilter).one()[0],
+            answerId=Session.query(func.max(db.Answer.answerId) + 1).filter(answerFilter).one()[0] or state['answerId'],
+            coinAwardId=Session.query(func.max(db.CoinAward.coinAwardId) + 1).filter(coinAwardFilter).one()[0] or state['coinAwardId'],
         )
     )

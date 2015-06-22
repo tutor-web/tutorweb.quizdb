@@ -40,6 +40,8 @@ setup(
     entry_points="""
         [z3c.autoinclude.plugin]
         target = plone
+        [console_scripts]
+        replicate_dump = tutorweb.quizdb.script.replication:replicateDump
     """,
     include_package_data=True,
     zip_safe=False,
