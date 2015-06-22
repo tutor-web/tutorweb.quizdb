@@ -85,7 +85,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
 
         # Fetch some of the data.
         dump = self.doDump(dict(answerId=5, maxVals=4))
-        self.assertEqual(dump['state'], dict(answerId=9, coinAwardId=None))
+        self.assertEqual(dump['state'], dict(answerId=9, coinAwardId=0))
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
@@ -102,7 +102,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
 
         # Fetch all of the data with an oversize range
         dump = self.doDump(dict(answerId=1))
-        self.assertEqual(dump['state'], dict(answerId=10, coinAwardId=None))
+        self.assertEqual(dump['state'], dict(answerId=10, coinAwardId=0))
         self.assertEqual(dump['host'], [
             dict(hostId=1, hostKey=dump['host'][0]['hostKey'], fqdn=dump['host'][0]['fqdn']),
         ])
@@ -144,7 +144,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             )),
         ])
         dump = self.doDump(dict())
-        self.assertEqual(dump['state'], dict(answerId=11, coinAwardId=None))
+        self.assertEqual(dump['state'], dict(answerId=11, coinAwardId=0))
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
@@ -194,7 +194,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             ),
         ])
         dump = self.doDump()
-        self.assertEqual(dump['state'], dict(answerId=12, coinAwardId=None))
+        self.assertEqual(dump['state'], dict(answerId=12, coinAwardId=0))
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
@@ -261,7 +261,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
 
         # All the data should be doubled-up now
         dumpPostIngest = self.doDump()
-        self.assertEqual(dumpPostIngest['state'], dict(answerId=23, coinAwardId=None))
+        self.assertEqual(dumpPostIngest['state'], dict(answerId=23, coinAwardId=0))
         self.assertEqual(dumpPostIngest['host'], [
             dict(hostId=1, hostKey=dumpPostIngest['host'][0]['hostKey'], fqdn=dumpPostIngest['host'][0]['fqdn']),
             dict(hostId=2, hostKey=u'0123456789012345678900000000beef', fqdn='beef.tutor-web.net'),
@@ -368,7 +368,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             ),
         ])
         dumpPostIngest = self.doDump()
-        self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=None))
+        self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=0))
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
             (1, 1, 1271010000, 0),
             (1, 1, 1271020000, 0),
