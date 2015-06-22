@@ -102,6 +102,16 @@ class TestCoin(unittest.TestCase):
         with self.assertRaisesRegexp(BadRequest, "Smileycoin"):
             coin.sendTransaction('WALL-E', 84)
 
+    def test_httpErrors(self):
+        """Test failures fail"""
+        chooseOpener(MockHTTPHandler)
+        global nextResponse
+
+        # General failure
+        nextResponse = dict(_code=401, _msg='ERROR', _data="<html><body>401 Unauthorized, innit</body></html>")
+        with self.assertRaisesRegexp(ValueError, "ERROR\s+\(401\)"):
+            coin.sendTransaction('WALL-E', 84)
+
     def test_walletOpening(self):
         """Wallets can be opened first"""
         chooseOpener(MockHTTPHandler)
@@ -167,12 +177,12 @@ class MockHTTPHandler(urllib2.HTTPHandler):
             nextResponse['result'] = 1234
 
         resp = urllib2.addinfourl(
-            StringIO(json.dumps(nextResponse)),
+            StringIO(nextResponse['_data'] if '_data' in nextResponse else json.dumps(nextResponse)),
             "Message of some form",
             req.get_full_url(),
         )
-        resp.code = 200
-        resp.msg = "OK"
+        resp.code = nextResponse['_code'] if '_code' in nextResponse else 200
+        resp.msg = nextResponse['_msg'] if '_msg' in nextResponse else "OK"
         nextResponse = dict()
         return resp
 

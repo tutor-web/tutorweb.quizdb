@@ -54,9 +54,15 @@ def callMethod(method, *params):
         response = urllib2.urlopen(request)
         out = json.loads(response.read())
     except urllib2.HTTPError as e:
-        out = json.loads(e.read())
-        if not out['error']:
-            out['error'] = dict(message='', code=e.code)
+        try:
+            out = json.loads(e.read())
+            if not out['error']:
+                out['error'] = dict(message='', code=e.code)
+        except ValueError:
+            out = dict(id=callId, error=dict(
+                message=" ".join([e.msg, e.message]),
+                code=e.code,
+            ))
 
     if out['id'] != callId:
         raise ValueError("Response ID %s doesn't match %s" % (out['id'], callId))
