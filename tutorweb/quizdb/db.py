@@ -371,7 +371,7 @@ class LectureSetting(ORMBase):
         primary_key=True,
     )
     key = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100),
+        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
         nullable=False,
         primary_key=True,
     )
