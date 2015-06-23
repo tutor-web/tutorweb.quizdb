@@ -24,7 +24,7 @@ class BrowserViewHelpers(object):
     def getDbHost(self):
         try:
             dbHost = (Session.query(db.Host)
-                .filter(db.Host.fqdn == socket.getfqdn())
+                .filter(db.Host.hostId == 1)
                 .one())
         except NoResultFound:
             dbHost = db.Host(fqdn=socket.getfqdn())

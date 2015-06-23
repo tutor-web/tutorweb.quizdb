@@ -96,15 +96,9 @@ def ingestData(data):
     # Check all host keys match our stored versions, and map to our IDs
     for host in data['host']:
         try:
-            dbHost = Session.query(db.Host).filter(db.Host.fqdn == host['fqdn']).one()
+            dbHost = Session.query(db.Host).filter(db.Host.hostKey == host['hostKey']).one()
         except NoResultFound:
-            raise ValueError("Unknown host %s, cannot import results" % host['fqdn'])
-        if dbHost.hostKey != host['hostKey']:
-            raise ValueError("Mismatching host key for %s: %s vs %s" % (
-                db.Host.fqdn,
-                dbHost.hostKey,
-                host['hostKey'],
-            ))
+            raise ValueError("Unknown host %s:%s, cannot import results" % (host['hostKey'], host['fqdn']))
         idMap['hostId'][host['hostId']] = dbHost.hostId
 
     # Map students to our IDs

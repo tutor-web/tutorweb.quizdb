@@ -233,7 +233,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             q['ugQuestionGuid'] = ugQnMap[q['ugQuestionGuid']]
 
         # First attempt, don't know what beef is
-        with self.assertRaisesRegexp(ValueError, "Unknown host beef.tutor-web.net"):
+        with self.assertRaisesRegexp(ValueError, "beef.tutor-web.net"):
             ingest = self.doIngest(dump)
 
         # Add beef, get the key wrong, also noticed
@@ -241,7 +241,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             fqdn=u'beef.tutor-web.net',
             hostKey=u'01234567890123456789000000000000',
         ))
-        with self.assertRaisesRegexp(ValueError, u'01234567890123456789000000000000'):
+        with self.assertRaisesRegexp(ValueError, u'0123456789012345678900000000beef'):
             ingest = self.doIngest(dump)
 
         # Finally, get it right.
