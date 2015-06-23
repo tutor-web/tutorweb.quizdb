@@ -35,7 +35,17 @@ def replicateIngest():
         '--zope-conf',
         help='Zope configuration file',
     )
+    parser.add_argument(
+        '--debug',
+        default=False,
+        action='store_true',
+        help='Output debug messages',
+    )
     args = parser.parse_args()
+    if args.debug:
+        sqllog = logging.getLogger('sqlalchemy.engine')
+        sqllog.addHandler(logging.StreamHandler())
+        sqllog.setLevel(logging.INFO)
 
     app = getApplication(args.zope_conf)
     import transaction
@@ -68,12 +78,22 @@ def replicateDump():
         help='Zope configuration file',
     )
     parser.add_argument(
+        '--debug',
+        default=False,
+        action='store_true',
+        help='Output debug messages',
+    )
+    parser.add_argument(
         '--max-values',
         type=int,
         default=None,
         help='Maximum answers to export, to constrain file size',
     )
     args = parser.parse_args()
+    if args.debug:
+        sqllog = logging.getLogger('sqlalchemy.engine')
+        sqllog.addHandler(logging.StreamHandler())
+        sqllog.setLevel(logging.INFO)
 
     # Create work dir if it doesn't exist
     if not os.path.exists(args.work_dir):
