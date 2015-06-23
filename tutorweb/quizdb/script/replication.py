@@ -75,6 +75,10 @@ def replicateDump():
     )
     args = parser.parse_args()
 
+    # Create work dir if it doesn't exist
+    if not os.path.exists(args.work_dir):
+        os.makedirs(args.work_dir)
+
     # Find most recent state file
     newestFile = dict(path="", time=0)
     for dir in [args.work_dir, os.path.join(args.work_dir, 'archive')]:
