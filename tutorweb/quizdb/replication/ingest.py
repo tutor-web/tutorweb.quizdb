@@ -171,8 +171,8 @@ def ingestData(data):
     for (dataEntry, dbEntry) in findMissingEntries(
             data['answer'],
             Session.query(db.Answer)
-                # NB: In theory we should filter by student too, but shouldn't make much difference to result
                 .filter(db.Answer.lectureId.in_(idMap['lectureId'].values()))
+                .filter(db.Answer.studentId.in_(idMap['studentId'].values()))
                 .filter(answerFilter)
                 .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd),
             sortCols=['lectureId', 'studentId', 'timeEnd'],
@@ -191,8 +191,8 @@ def ingestData(data):
     for (dataEntry, dbEntry) in findMissingEntries(
             data['lecture_setting'],
             Session.query(db.LectureSetting)
-                .join(db.Answer, db.Answer.lectureId == db.LectureSetting.lectureId)
-                .filter(answerFilter)
+                .filter(db.LectureSetting.lectureId.in_(idMap['lectureId'].values()))
+                .filter(db.LectureSetting.studentId.in_(idMap['studentId'].values()))
                 .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key),
             sortCols=['lectureId', 'studentId', 'key'],
             idMap=idMap):
