@@ -159,12 +159,12 @@ def ingestData(data):
     for a in data['answer']:
         if minVal is None or a['timeEnd'] < minVal:
             minVal = a['timeEnd']
-    answerFilter = db.Answer.timeEnd.__ge__(minVal or 0)
+    answerFilter = db.Answer.timeEnd.__ge__(datetime.datetime.utcfromtimestamp(minVal or 0))
     minVal = None
     for a in data['coin_award']:
         if minVal is None or a['awardTime'] < minVal:
             minVal = a['awardTime']
-    coinAwardFilter = db.CoinAward.awardTime.__ge__(minVal or 0)
+    coinAwardFilter = db.CoinAward.awardTime.__ge__(datetime.datetime.utcfromtimestamp(minVal or 0))
 
     # Filter out answer student/question/timeEnd combinations already stored in DB
     inserts['answer'] = 0
