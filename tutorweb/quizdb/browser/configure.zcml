@@ -103,4 +103,26 @@
       class=".replication.ReplicationUpdateHostView"
       permission="cmf.ManagePortal"
       />
+
+    <!-- chat.py -->
+    <browser:page name="quizdb-chat-tutor-settings"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".chat.TutorSettingsView"
+      permission="zope2.View"
+      />
+    <browser:page name="quizdb-chat-prospective-tutors"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".chat.ProspectiveTutorsView"
+      permission="zope2.View"
+      />
+    <browser:page name="quizdb-chat-session-start"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".chat.SessionStart"
+      permission="zope2.View"
+      />
+    <browser:page name="quizdb-chat-session-end"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".chat.SessionEnd"
+      permission="zope2.View"
+      />
 </configure>

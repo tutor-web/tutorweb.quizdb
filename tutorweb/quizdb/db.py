@@ -95,6 +95,8 @@ class Host(ORMBase):
         sqlalchemy.types.String(32),
         nullable=False,
     )
+    lectures = relationship("Lecture",
+        backref="host")
 
 
 lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,
@@ -114,6 +116,123 @@ lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,
     mysql_engine='InnoDB',
     mysql_charset='utf8',
 )
+
+
+class Tutor(ORMBase):
+    """Details on all tutors"""
+    __tablename__ = 'tutor'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+    tutorId = sqlalchemy.schema.Column(
+        # Student doing the teaching
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        primary_key=True,
+    )
+    chatSessionsTutored = relationship("ChatSession", backref="tutor")
+    name = sqlalchemy.schema.Column(
+        # Tutor's display name
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
+    rate = sqlalchemy.schema.Column(
+        # Tutor's rate, SMLY/sec
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=1,
+    )
+    details = sqlalchemy.schema.Column(
+        # Tutor "advert"
+        sqlalchemy.types.Text(),
+        nullable=False,
+        default='',
+    )
+
+
+class ChatSession(ORMBase):
+    """Previous / current chat sessions"""
+    __tablename__ = 'chatSession'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    chatSessionGuid = sqlalchemy.schema.Column(
+        # Sparse ID for chat room
+        customtypes.GUID(),
+        primary_key=True,
+        default=uuid4,
+    )
+    tutorId = sqlalchemy.schema.Column(
+        # Student doing the teaching
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('tutor.tutorId'),
+        nullable=False,
+    )
+    tutorStudent = relationship("Student", foreign_keys="ChatSession.tutorId", primaryjoin="ChatSession.tutorId==Student.studentId")
+    pupilId = sqlalchemy.schema.Column(
+        # Student being taught (or NULL, Tutor is waiting)
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        nullable=True,
+    )
+    pupilStudent = relationship("Student", foreign_keys="ChatSession.pupilId")
+    connectTime = sqlalchemy.schema.Column(
+        # When (UTC) the tutor turned up
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+    startTime = sqlalchemy.schema.Column(
+        # When (UTC) the pupil decided to take up this offer
+        sqlalchemy.types.DateTime(),
+        nullable=True,
+    )
+    endTime = sqlalchemy.schema.Column(
+        # When (UTC) one of the party ended this session
+        sqlalchemy.types.DateTime(),
+        nullable=True,
+    )
+    tutorFoundUseful = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+        default=False,
+    )
+    pupilFoundUseful = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+        default=False,
+    )
+    coinsAwarded = sqlalchemy.schema.Column(
+        # Coins awarded from pupilId to tutorId
+        sqlalchemy.types.Integer(),
+        nullable=False,
+        default=0,
+    )
+
+
+tutorCompetenciesTable = Table('tutorCompetencies', ORMBase.metadata,
+    sqlalchemy.schema.Column(
+        'tutorId',
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('tutor.tutorId'),
+        nullable=False,
+        index=True,
+    ),
+    sqlalchemy.schema.Column(
+        'lectureId',
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        nullable=False,
+        index=True,
+    ),
+
+    mysql_engine='InnoDB',
+    mysql_charset='utf8',
+)
+
 
 class Lecture(ORMBase):
     """DB -> Plone question lookup table"""
@@ -144,6 +263,9 @@ class Lecture(ORMBase):
     questions = relationship("Question",
         secondary=lectureQuestionTable,
         backref="lectures")
+    competentTutors = relationship("Tutor",
+        secondary=tutorCompetenciesTable,
+        backref="competentLectures")
 
 
 class Question(ORMBase):
@@ -214,6 +336,7 @@ class Student(ORMBase):
         primary_key=True,
         autoincrement=True,
     )
+    chatTutor = relationship("Tutor", backref="tutorStudent")
     hostId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('host.hostId'),
