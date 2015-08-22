@@ -72,6 +72,7 @@ class BrowserViewHelpers(object):
         """Return database ID for the current lecture"""
         if plonePath:
             # Using string, not context, turn possible URI back into plone path
+            plonePath = str(plonePath)
             plonePath = re.sub(r'^https?://[^/]+', '', plonePath)
             plonePath = re.sub(r'^/*', '/', plonePath)
             plonePath = re.sub(r'/@*quizdb-[^/]+$', '', plonePath)

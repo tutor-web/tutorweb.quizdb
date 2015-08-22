@@ -128,6 +128,11 @@ class JSONBrowserViewTest(IntegrationTestCase):
         with self.assertRaisesRegexp(ValueError, r'not-a-real-lec'):
             dbLec = self.getView().getDbLecture("http://some:host/dept1/super-tut/not-a-real-lec/@@quizdb-sync")
 
+        # Unicode strings are fine
+        dbLec = self.getView().getDbLecture(u"//plone/dept1/tut1/lec1/@@quizdb-sync")
+        self.assertEqual(dbLec.hostId, dbHost.hostId)
+        self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec1')
+
     def getView(self):
         """Look up view for class"""
         lec = self.layer['portal']['dept1']['tut1']['lec1']
