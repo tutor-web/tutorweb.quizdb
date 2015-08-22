@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import socket
 import uuid
 
@@ -7,6 +8,7 @@ from AccessControl import Unauthorized
 from Globals import DevelopmentMode
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
+from zope.component.hooks import getSite
 from zExceptions import Redirect, BadRequest
 
 from plone.memoize import view
@@ -66,18 +68,28 @@ class BrowserViewHelpers(object):
         return dbStudent
 
     @view.memoize
-    def getDbLecture(self):
+    def getDbLecture(self, plonePath=None):
         """Return database ID for the current lecture"""
-        # Go up until we find a lecture
-        context = self.context
-        while context.portal_type != 'tw_lecture':
-            context = context.aq_parent
+        if plonePath:
+            # Using string, not context, turn possible URI back into plone path
+            plonePath = re.sub(r'^https?://[^/]+', '', plonePath)
+            plonePath = re.sub(r'^/*', '/', plonePath)
+            plonePath = re.sub(r'/@*quizdb-[^/]+$', '', plonePath)
 
-        # Resolve any lecture symlink
-        if getattr(context, 'isAlias', False):
-            plonePath = '/'.join(context._target.getPhysicalPath())
+            siteId = '/' + getSite().id
+            if not plonePath.startswith(siteId):
+                plonePath = siteId + plonePath
         else:
-            plonePath = '/'.join(context.getPhysicalPath())
+            # Go up until we find a lecture
+            context = self.context
+            while context.portal_type != 'tw_lecture':
+                context = context.aq_parent
+
+            # Resolve any lecture symlink
+            if getattr(context, 'isAlias', False):
+                plonePath = '/'.join(context._target.getPhysicalPath())
+            else:
+                plonePath = '/'.join(context.getPhysicalPath())
 
         try:
             dbLec = Session.query(db.Lecture) \
@@ -85,6 +97,12 @@ class BrowserViewHelpers(object):
                 .filter(db.Lecture.plonePath == plonePath).one()
             return dbLec
         except NoResultFound:
+            # Make sure the lecture exists in Plone first, to avoid DB spam
+            try:
+                ploneLec = getSite().restrictedTraverse(plonePath)
+            except KeyError:
+                raise ValueError("lecture %s does not exist" % plonePath)
+
             dbLec = db.Lecture(
                 plonePath=plonePath,
                 hostId=self.getDbHost().hostId,
