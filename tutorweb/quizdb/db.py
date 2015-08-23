@@ -1,7 +1,7 @@
+import random
 from uuid import uuid4
 from hashlib import md5
 from datetime import datetime
-from random import random
 
 from sqlalchemy import Table, UniqueConstraint
 from sqlalchemy.orm import relationship
@@ -68,7 +68,7 @@ def generatePublicId(mapper, connection, instance):
         instance.studentId,
         instance.questionId,
         datetime.utcnow(),
-        random(),
+        random.random(),
     )).hexdigest()
 
 
@@ -138,7 +138,7 @@ class Tutor(ORMBase):
         nullable=False,
     )
     rate = sqlalchemy.schema.Column(
-        # Tutor's rate, SMLY/sec
+        # Tutor's rate, mSMLY/sec
         sqlalchemy.types.Integer(),
         nullable=False,
         default=1,
@@ -172,13 +172,20 @@ class ChatSession(ORMBase):
         nullable=False,
     )
     tutorStudent = relationship("Student", foreign_keys="ChatSession.tutorId", primaryjoin="ChatSession.tutorId==Student.studentId")
+
     pupilId = sqlalchemy.schema.Column(
         # Student being taught (or NULL, Tutor is waiting)
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('student.studentId'),
         nullable=True,
     )
+    pupilName = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(32),
+        nullable=False,
+        default=lambda: "pupil-%s" % random.randrange(1000, 9999),
+    )
     pupilStudent = relationship("Student", foreign_keys="ChatSession.pupilId")
+
     connectTime = sqlalchemy.schema.Column(
         # When (UTC) the tutor turned up
         sqlalchemy.types.DateTime(),
@@ -195,18 +202,13 @@ class ChatSession(ORMBase):
         sqlalchemy.types.DateTime(),
         nullable=True,
     )
-    tutorFoundUseful = sqlalchemy.schema.Column(
-        sqlalchemy.types.Boolean(),
-        nullable=False,
-        default=False,
-    )
-    pupilFoundUseful = sqlalchemy.schema.Column(
-        sqlalchemy.types.Boolean(),
-        nullable=False,
-        default=False,
+    maxSeconds = sqlalchemy.schema.Column(
+        # Maximum time (seconds) this chat session can last
+        sqlalchemy.types.Integer(),
+        nullable=True,
     )
     coinsAwarded = sqlalchemy.schema.Column(
-        # Coins awarded from pupilId to tutorId
+        # Coins awarded from pupilId to tutorId, mSMLY
         sqlalchemy.types.Integer(),
         nullable=False,
         default=0,

@@ -42,6 +42,7 @@ class TutorSettingsView(JSONBrowserView):
             # Assign new chat session to tutor
             cs = db.ChatSession(tutorId = self.getCurrentStudent().studentId)
             Session.add(cs)
+            cs.connectTime = cs.connectTime or datetime.datetime.utcnow()
             Session.flush()
         else:
             # If just viewing, don't mangle chat sessions just yet
@@ -61,8 +62,32 @@ class ProspectiveTutorsView(JSONBrowserView):
     def asDict(self, data):
         if 'lec_uri' not in data:
             raise ValueError("Should specify a lecture URI")
+        if 'chat_session' in data:
+            # Kill any active sessions
+            for cs in (Session.query(db.ChatSession)
+                    .filter(db.ChatSession.pupilStudent == self.getCurrentStudent())
+                    .filter(db.ChatSession.endTime == None)):
+                cs.endTime = datetime.datetime.utcnow()
+
+            cs = (Session.query(db.ChatSession)
+                .with_lockmode('update')
+                .filter(db.ChatSession.chatSessionGuid == data['chat_session'])
+                .one())
+            if cs.pupilStudent is not None and cs.pupilStudent != self.getCurrentStudent():
+                raise ValueError("Tutor is busy with another student")
+            cs.pupilStudent = self.getCurrentStudent()
+            cs.pupilName = "pupil-%d" % random.randrange(1000, 9999)
+            cs.startTime = cs.startTime or datetime.datetime.utcnow()
+            cs.maxSeconds = cs.maxSeconds or data.get('max_seconds', 15 * 60)
+            Session.flush()
+
+            return dict(
+                max_seconds=cs.maxSeconds,
+                chat_session=str(cs.chatSessionGuid),
+            )
 
         tutorSessions = (Session.query(db.Tutor, db.ChatSession)
+            .join(db.ChatSession, db.Tutor.tutorId == db.ChatSession.tutorId)
             .filter(db.Tutor.tutorId != self.getCurrentStudent().studentId)
             .filter(db.Tutor.competentLectures.contains(self.getDbLecture(data['lec_uri'])))
             .filter(db.ChatSession.pupilId == None)  # i.e. nobody took up this offer yet
@@ -93,19 +118,29 @@ class SessionStart(JSONBrowserView):
             raise ValueError("Chat session already finished")
         elif cs.tutorStudent == self.getCurrentStudent():
             userRole = 'tutor'
-            cs.connectTime = cs.connectTime or datetime.datetime.utcnow()
+            userNick = cs.tutor.name
         elif cs.pupilStudent is None or cs.pupilStudent == self.getCurrentStudent():
             userRole = 'pupil'
-            cs.pupilStudent = self.getCurrentStudent()
-            cs.startTime = cs.startTime or datetime.datetime.utcnow()
+            userNick = cs.pupilName
         else:
             raise ValueError("Chat session already claimed by another pupil")
+
+        if cs.maxSeconds is not None and cs.startTime is not None:
+            remainingSeconds = cs.maxSeconds - (datetime.datetime.utcnow() - cs.startTime).total_seconds()
+            if remainingSeconds < 0:
+                cs.endTime = datetime.datetime.utcnow()
+                raise ValueError("Chat session already finished")
+        else:
+            remainingSeconds = None
 
         return dict(
             room_name = str(cs.chatSessionGuid),
             user_role = userRole,
+            user_nick = userNick,
             connect_time = calendar.timegm(cs.connectTime.timetuple()) if cs.connectTime else None,
             start_time = calendar.timegm(cs.startTime.timetuple()) if cs.startTime else None,
+            max_seconds = cs.maxSeconds,
+            remaining_seconds = remainingSeconds,
         )
 
 
@@ -119,16 +154,16 @@ class SessionEnd(JSONBrowserView):
 
         if cs.tutorStudent == self.getCurrentStudent():
             userRole = 'tutor'
-            cs.tutorFoundUseful = data.get('was_useful', True)
         elif cs.pupilStudent == self.getCurrentStudent():
             userRole = 'pupil'
-            cs.pupilFoundUseful = data.get('was_useful', True)
         else:
             raise ValueError("You are neither a tutor or a pupil of this session")
 
         cs.endTime = cs.endTime or datetime.datetime.utcnow()
-        if cs.tutorFoundUseful and cs.pupilFoundUseful:
-            cs.coinsAwarded = cs.tutor.rate * (cs.endTime - cs.startTime).total_seconds()
+        if cs.startTime:
+            sessionTime = (cs.endTime - cs.startTime).total_seconds()
+            if sessionTime > 60:
+                cs.coinsAwarded = cs.tutor.rate * sessionTime
 
         return dict(
             room_name = str(cs.chatSessionGuid),
@@ -136,6 +171,5 @@ class SessionEnd(JSONBrowserView):
             connect_time = calendar.timegm(cs.connectTime.timetuple()) if cs.connectTime else None,
             start_time = calendar.timegm(cs.startTime.timetuple()) if cs.startTime else None,
             end_time = calendar.timegm(cs.endTime.timetuple()) if cs.endTime else None,
-            useful_chat = cs.tutorFoundUseful and cs.pupilFoundUseful,
             coins_awarded = cs.coinsAwarded,
         )
