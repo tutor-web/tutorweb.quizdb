@@ -231,6 +231,7 @@ tutorCompetenciesTable = Table('tutorCompetencies', ORMBase.metadata,
         index=True,
     ),
 
+    UniqueConstraint('tutorId', 'lectureId'),
     mysql_engine='InnoDB',
     mysql_charset='utf8',
 )
