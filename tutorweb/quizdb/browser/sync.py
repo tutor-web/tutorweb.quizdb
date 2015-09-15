@@ -17,8 +17,6 @@ SERVERSIDE_SETTINGS = [
     'cap_template_qn_reviews',
     'question_cap',
     'award_lecture_answered',
-    'award_lecture_aced',
-    'award_tutorial_aced',
 ]
 INTEGER_SETTINGS = ['grade_s', 'grade_nmin', 'grade_nmax']  # Randomly-chosen questions that should result in an integer value
 
