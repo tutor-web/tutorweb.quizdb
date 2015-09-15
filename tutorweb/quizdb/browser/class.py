@@ -49,14 +49,21 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
         """
         Get entries from AnswerSummary for the classes lectures / students
         """
-        allStudents = self.context.students or []
+        classStudents = self.context.students or []
+        aliasStudents = {}
+
+        # Query for non-email form too
+        for s in classStudents:
+            if '@' in s and s.split('@', 1)[0] not in classStudents:
+                aliasStudents[s.split('@', 1)[0]] = s
+
         lecturePaths = [r.to_path for r in self.context.lectures]
         dbTotals = (
-            Session.query(db.AnswerSummary)
+            Session.query(db.AnswerSummary.grade)
             .add_columns(db.Student.userName, db.Lecture.plonePath)
             .join(db.Student)
             .filter(db.Student.hostId == self.getDbHost().hostId)
-            .filter(db.Student.userName.in_(allStudents))
+            .filter(db.Student.userName.in_(classStudents + aliasStudents.keys()))
             .join(db.Lecture)
             .filter(db.Lecture.hostId == self.getDbHost().hostId)
             .filter(db.Lecture.plonePath.in_(lecturePaths))
@@ -64,14 +71,16 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
 
         # First convert to deep dict: user -> lecture -> results
         toDict = defaultdict(lambda: defaultdict(lambda: '-'))
-        for t in dbTotals:
-            toDict[t[1]][t[2]] = t[0].grade
+        for (grade, userName, plonePath) in dbTotals:
+            d = toDict[aliasStudents.get(userName, userName)]
+            # If both userName and the alias exist, choose the higest grade
+            d[plonePath] = max(0 if d[plonePath] == '-' else d[plonePath], grade)
 
         # Next, rearrange into a convenient table
         return [dict(
             username=student,
             grades=[toDict[student][l] for l in lecturePaths],
-        ) for student in allStudents]
+        ) for student in classStudents]
 
 
 class StudentSummaryTableView(CSVView, StudentResultsView):

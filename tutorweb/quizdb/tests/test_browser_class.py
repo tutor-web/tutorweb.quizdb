@@ -107,6 +107,70 @@ class StudentResultsViewTest(IntegrationTestCase):
             dict(username=USER_B_ID, grades=[0.2, '-']),
         ])
 
+    def test_combineStudents(self):
+        """We combine moo@hi.is & moo students"""
+        portal = self.layer['portal']
+        lec1 = portal['dept1']['tut1']['lec1']
+        lec2 = portal['dept1']['tut1']['lec2']
+
+        self.createTestStudent(USER_A_ID + '@hi.is')
+        self.createTestStudent(USER_B_ID + '@hi.is')
+        # NB: C has no @hi.is equivalent
+        self.createTestStudent('zia@hi.is')
+
+        login(portal, MANAGER_ID)
+        setRelations(portal['classa'], 'lectures', [lec1, lec2])
+        portal['classa'].students = [
+            USER_A_ID,
+            USER_B_ID,
+            USER_A_ID + '@hi.is',
+            USER_B_ID + '@hi.is',
+            USER_C_ID,
+            'zia@hi.is',
+        ]
+
+        # A, B@hi.is answer question
+        self.updateAnswerQueue(USER_A_ID, lec1, [0.1, 0.32])
+        self.updateAnswerQueue(USER_B_ID + '@hi.is', lec1, [0.2, 0.42])
+        self.updateAnswerQueue(USER_C_ID, lec1, [0.71, 0.72])
+        self.updateAnswerQueue('zia@hi.is', lec1, [0.81, 0.82])
+
+        # A is in class, so use this form.
+        self.assertEqual(self.getView().allStudentGrades(), [
+            dict(username=USER_A_ID,            grades=[0.32, '-']),
+            dict(username=USER_B_ID,            grades=['-',  '-']),
+            dict(username=USER_A_ID + '@hi.is', grades=['-',  '-']),
+            dict(username=USER_B_ID + '@hi.is', grades=[0.42, '-']),
+            dict(username=USER_C_ID,            grades=[0.72, '-']),
+            dict(username='zia@hi.is',          grades=[0.82, '-']),
+        ])
+
+        # Alternate forms also answer, but don't combine yet
+        self.updateAnswerQueue(USER_A_ID + '@hi.is', lec1, [0.92])
+        self.updateAnswerQueue(USER_B_ID, lec1, [0.22])
+        self.assertEqual(self.getView().allStudentGrades(), [
+            dict(username=USER_A_ID,            grades=[0.32,  '-']),
+            dict(username=USER_B_ID,            grades=[0.22,  '-']),
+            dict(username=USER_A_ID + '@hi.is', grades=[0.92, '-']),
+            dict(username=USER_B_ID + '@hi.is', grades=[0.42, '-']),
+            dict(username=USER_C_ID,            grades=[0.72, '-']),
+            dict(username='zia@hi.is',          grades=[0.82, '-']),
+        ])
+
+        # Remove extra students, still see new grades, highest grade wins
+        portal['classa'].students = [
+            USER_A_ID + '@hi.is',
+            USER_B_ID + '@hi.is',
+            USER_C_ID,
+            'zia@hi.is',
+        ]
+        self.assertEqual(self.getView().allStudentGrades(), [
+            dict(username=USER_A_ID + '@hi.is', grades=[0.92, '-']),
+            dict(username=USER_B_ID + '@hi.is', grades=[0.42, '-']),
+            dict(username=USER_C_ID,            grades=[0.72, '-']),
+            dict(username='zia@hi.is',          grades=[0.82, '-']),
+        ])
+
     def test_StudentSummaryTableView(self):
         """Cheat and re-use test infrastructure for allStudentGrades()"""
         portal = self.layer['portal']

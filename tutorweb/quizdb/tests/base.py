@@ -99,6 +99,27 @@ class IntegrationTestCase(TestCase):
             raise ValueError("Did you really mean to use assertTrue?")
         return TestCase.assertTrue(self, expr, msg=msg)
 
+    def createTestStudent(self, id):
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        acl_users = getToolByName(portal, 'acl_users')
+        mtool = getToolByName(portal, 'portal_membership')
+        acl_users.userFolderAddUser(
+            id, 'secret'+id[0],
+            ['Member'],[]
+        )
+        mtool.getMemberById(id).setMemberProperties(dict(
+            email=id.split('@', 1)[0] + '@example.com',
+            accept=True,
+        ))
+
+        login(portal, id)
+        student = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
+        transaction.commit()
+
+        return student
+
 class FunctionalTestCase(ContentFunctionalTestCase):
     layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
 
@@ -232,7 +253,7 @@ class FunctionalTestCase(ContentFunctionalTestCase):
             ['Member'],[]
         )
         mtool.getMemberById(id).setMemberProperties(dict(
-            email=id + '@example.com',
+            email=id.split('@', 1)[0] + '@example.com',
             accept=True,
         ))
 
