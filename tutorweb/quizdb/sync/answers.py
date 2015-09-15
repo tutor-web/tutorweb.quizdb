@@ -85,7 +85,7 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
     if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
         # Did they grade it as 50 or more?
         ugAns = (Session.query(db.UserGeneratedAnswer)
-            .filter(db.UserGeneratedAnswer.ugQuestionGuid == a['student_answer']['question_id'])
+            .filter(db.UserGeneratedAnswer.ugAnswerId == a['student_answer']['uganswer_id'])
             .filter(db.UserGeneratedAnswer.studentId == student.studentId)
             .one())
         if ugAns.questionRating >= 50:
@@ -198,9 +198,13 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
                     studentGrade=a.get('grade_after', None),
             )
             Session.add(ugAns)
+            Session.flush()
 
             # Store GUID of question reviewed
-            a['student_answer'] = dict(question_id=ugQn.ugQuestionGuid)
+            a['student_answer'] = dict(
+                uganswer_id=ugAns.ugAnswerId,
+                question_id=ugQn.ugQuestionGuid,
+            )
 
         elif dbQn.qnType == 'tw_questiontemplate':
             if a.get('student_answer', None) and a['student_answer'].get('text', None):
