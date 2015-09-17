@@ -5,7 +5,7 @@ import transaction
 from plone.app.testing import login
 
 from .base import FunctionalTestCase, IntegrationTestCase
-from .base import MANAGER_ID
+from .base import MANAGER_ID, USER_A_ID
 
 from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
@@ -111,4 +111,75 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.assertEqual(
             [a['coins_awarded'] for a in parseAnswerQueue(dbLec.lectureId, lectureObj, reviewers[0], [], {})],
             [0, 0, 0, 0, 0, 0, 0] * 2,
+        )
+
+    def test_chat_competent_lecture(self):
+        """If turned on, should"""
+        # Shortcut for making answerQueue entries
+        aqTime = [1400000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc[qnIndex]['uri'], user=user)
+            aqTime[0] += 10
+            return dict(
+                uri=qnData.get('uri', alloc[qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 5,
+                answer_time=aqTime[0] - 9,
+                grade_after=grade_after,
+            )
+
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+        lectureObj = portal['dept1']['tut1']['lec1']
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
+
+        # Student isn't a tutor yet
+        login(portal, USER_A_ID)
+        dbStudent = lectureObj.restrictedTraverse('@@quizdb-sync').getCurrentStudent()
+        self.assertEqual(dbStudent.chatTutor, [])
+
+        # Student aces lecture1, but this doesn't make them a tutor
+        aAllocs = getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {})
+        import transaction ; transaction.commit()
+        aAq = parseAnswerQueue(dbLec.lectureId, lectureObj, dbStudent, [
+            aqEntry(aAllocs, 0, True, 0.5),
+            aqEntry(aAllocs, 0, True, 3.5),
+            aqEntry(aAllocs, 0, True, 8.5),
+            aqEntry(aAllocs, 0, True, 9.5),
+            aqEntry(aAllocs, 0, True, 9.9),
+        ], {})
+        self.assertEqual(
+            [a['coins_awarded'] for a in aAq],
+            [0, 0, 1000, 0, 10000],
+        )
+        dbStudent = lectureObj.restrictedTraverse('@@quizdb-sync').getCurrentStudent()
+        self.assertEqual(dbStudent.chatTutor, [])
+
+        # Student stays below threshold for lecture2, isn't competent
+        lectureObj = portal['dept1']['tut1']['lec2']
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
+        aAllocs = getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {})
+        import transaction ; transaction.commit()
+        aAq = parseAnswerQueue(dbLec.lectureId, lectureObj, dbStudent, [
+            aqEntry(aAllocs, 0, True, 0.5),
+            aqEntry(aAllocs, 0, True, 3.5),
+        ], dict(chat_competent_grade=5))
+        dbStudent = lectureObj.restrictedTraverse('@@quizdb-sync').getCurrentStudent()
+        self.assertEqual(dbStudent.chatTutor, [])
+
+        # Goes above threshold, is competent
+        aAq = parseAnswerQueue(dbLec.lectureId, lectureObj, dbStudent, [
+            aqEntry(aAllocs, 0, True, 4.5),
+            aqEntry(aAllocs, 0, True, 5.5),
+        ], dict(chat_competent_grade=5))
+        dbStudent = lectureObj.restrictedTraverse('@@quizdb-sync').getCurrentStudent()
+        self.assertEqual(dbStudent.chatTutor[0].tutorStudent, dbStudent)
+        self.assertEqual(
+            [l.plonePath for l in dbStudent.chatTutor[0].competentLectures],
+            [u'/plone/dept1/tut1/lec2'],
         )

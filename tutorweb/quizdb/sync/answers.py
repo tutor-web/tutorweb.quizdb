@@ -2,6 +2,7 @@ import calendar
 import datetime
 import json
 import logging
+import random
 import re
 import time
 import urlparse
@@ -52,15 +53,31 @@ def getAnswerSummary(lectureId, student):
 
 def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
     """How many coins does this earn a student?"""
+    def crossedGradeBoundary(boundary):
+        """True iff student has crossed grade boundary for the first time"""
+        return dbAnsSummary.gradeHighWaterMark < boundary and newGrade >= boundary
+
     newGrade = a.get('grade_after', None)
     out = 0
 
+    # Are they ready to tutor this lecture?
+    if 'chat_competent_grade' in settings and crossedGradeBoundary(settings['chat_competent_grade']):
+        tutor = Session.query(db.Tutor).get(student.studentId)
+        if tutor is None:
+            tutor = db.Tutor(
+                tutorId=student.studentId,
+                name="tutor-%d" % random.randrange(1000, 9999),
+            )
+            Session.add(tutor)
+        tutor.competentLectures.append(dbLec)
+        Session.flush()
+
     # Got 8 questions right
-    if dbAnsSummary.gradeHighWaterMark < 5.000 and newGrade >= 5.000:
+    if crossedGradeBoundary(5.000):
         out += round(float(settings.get('award_lecture_answered', "1000")))
 
     # Has the lecture just been aced?
-    if dbAnsSummary.gradeHighWaterMark < 9.750 and newGrade >= 9.750:
+    if crossedGradeBoundary(9.750):
         out += round(float(settings.get('award_lecture_aced', "10000")))
 
         # Fetch all sibling lectures
