@@ -143,6 +143,11 @@ class Tutor(ORMBase):
         nullable=False,
         default=1,
     )
+    wallet = sqlalchemy.schema.Column(
+        # Where funds should go
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
     details = sqlalchemy.schema.Column(
         # Tutor "advert"
         sqlalchemy.types.Text(),

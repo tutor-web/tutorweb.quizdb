@@ -31,6 +31,7 @@ class TutorSettingsView(JSONBrowserView):
         if data:
             tutor.name = data.get('name', tutor.name)
             tutor.rate = data.get('rate', tutor.rate)
+            tutor.wallet = data.get('wallet', tutor.wallet)
             tutor.details = data.get('details', tutor.details)
 
             # Kill any active sessions
@@ -51,6 +52,7 @@ class TutorSettingsView(JSONBrowserView):
         return dict(
             name=tutor.name,
             rate=tutor.rate,
+            wallet=tutor.wallet,
             details=tutor.details,
             chat_session=str(cs.chatSessionGuid) if cs else None,
             competencies=[l.plonePath for l in tutor.competentLectures]
@@ -141,6 +143,8 @@ class SessionStart(JSONBrowserView):
             start_time = calendar.timegm(cs.startTime.timetuple()) if cs.startTime else None,
             max_seconds = cs.maxSeconds,
             remaining_seconds = remainingSeconds,
+            smly_amount = (cs.tutor.rate or 0) * (cs.maxSeconds or 0),
+            smly_wallet = cs.tutor.wallet,
         )
 
 
