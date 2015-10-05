@@ -23,7 +23,7 @@ class CSVView(BrowserView):
     def __call__(self):
         """Turn student answers into a CSV"""
         out = StringIO()
-        writer = csv.writer(out)
+        writer = csv.writer(out) # TODO: UTF-8 if you please
         for row in self.generateRows():
             writer.writerow(row)
 
@@ -45,10 +45,12 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
             id='/'.join(lec.getPhysicalPath()[2:]),
         ) for lec in lectures]
 
-    def allStudentGrades(self):
+    def allStudentGrades(self, summaryValue = None):
         """
         Get entries from AnswerSummary for the classes lectures / students
         """
+        if not summaryValue:
+            summaryValue = 'grade'
         classStudents = self.context.students or []
         aliasStudents = {}
 
@@ -59,7 +61,7 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
 
         lecturePaths = [r.to_path for r in self.context.lectures]
         dbTotals = (
-            Session.query(db.AnswerSummary.grade)
+            Session.query(getattr(db.AnswerSummary, summaryValue))
             .add_columns(db.Student.userName, db.Lecture.plonePath)
             .join(db.Student)
             .filter(db.Student.hostId == self.getDbHost().hostId)
@@ -71,26 +73,31 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
 
         # First convert to deep dict: user -> lecture -> results
         toDict = defaultdict(lambda: defaultdict(lambda: '-'))
-        for (grade, userName, plonePath) in dbTotals:
+        for (val, userName, plonePath) in dbTotals:
             d = toDict[aliasStudents.get(userName, userName)]
-            # If both userName and the alias exist, choose the higest grade
-            d[plonePath] = max(0 if d[plonePath] == '-' else d[plonePath], grade)
+            # If both userName and the alias exist, choose the higest value
+            d[plonePath] = max(0 if d[plonePath] == '-' else d[plonePath], val)
 
         # Next, rearrange into a convenient table
-        return [dict(
-            username=student,
-            grades=[toDict[student][l] for l in lecturePaths],
-        ) for student in classStudents]
+        return [{
+            'username': student,
+            summaryValue: [toDict[student][l] for l in lecturePaths],
+        } for student in classStudents]
 
 
 class StudentSummaryTableView(CSVView, StudentResultsView):
     fileId = "summary"
 
     def generateRows(self):
+        summaryValue = self.request.get('value', 'grade')
         lecs = self.lecturesInClass()
-        yield ['Student'] + [l['id'] for l in lecs]
-        for row in self.allStudentGrades():
-            yield [row['username']] + row['grades']
+
+        # Headers
+        yield ['Student ' + summaryValue] + [l['id'] for l in lecs]
+
+        # Data
+        for row in self.allStudentGrades(summaryValue):
+            yield [row['username']] + row[summaryValue]
 
 
 class StudentTableView(CSVView, BrowserViewHelpers):

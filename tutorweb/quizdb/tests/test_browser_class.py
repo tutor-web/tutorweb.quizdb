@@ -1,5 +1,6 @@
 import csv
 import random
+import re
 from StringIO import StringIO
 
 import transaction
@@ -69,42 +70,42 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # No lectures, but get students in specified order
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grades=[]),
-            dict(username=USER_C_ID, grades=[]),
-            dict(username=USER_B_ID, grades=[]),
+            dict(username=USER_A_ID, grade=[]),
+            dict(username=USER_C_ID, grade=[]),
+            dict(username=USER_B_ID, grade=[]),
         ])
 
         # Add lectures, get blank value for each
         setRelations(portal['classa'], 'lectures', [lec2, lec1])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grades=['-', '-']),
-            dict(username=USER_C_ID, grades=['-', '-']),
-            dict(username=USER_B_ID, grades=['-', '-']),
+            dict(username=USER_A_ID, grade=['-', '-']),
+            dict(username=USER_C_ID, grade=['-', '-']),
+            dict(username=USER_B_ID, grade=['-', '-']),
         ])
 
         # Arnold answers a question
         self.updateAnswerQueue(USER_A_ID, lec1, [0.1, 0.3])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grades=['-', 0.3]),
-            dict(username=USER_C_ID, grades=['-', '-']),
-            dict(username=USER_B_ID, grades=['-', '-']),
+            dict(username=USER_A_ID, grade=['-', 0.3]),
+            dict(username=USER_C_ID, grade=['-', '-']),
+            dict(username=USER_B_ID, grade=['-', '-']),
         ])
 
         # More answers appear
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8])
         self.updateAnswerQueue(USER_B_ID, lec2, [0.2])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grades=[0.8, 0.3]),
-            dict(username=USER_C_ID, grades=['-', '-']),
-            dict(username=USER_B_ID, grades=[0.2, '-']),
+            dict(username=USER_A_ID, grade=[0.8, 0.3]),
+            dict(username=USER_C_ID, grade=['-', '-']),
+            dict(username=USER_B_ID, grade=[0.2, '-']),
         ])
 
         # Overwrite old answers
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8, 1.0])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grades=[1.0, 0.3]),
-            dict(username=USER_C_ID, grades=['-', '-']),
-            dict(username=USER_B_ID, grades=[0.2, '-']),
+            dict(username=USER_A_ID, grade=[1.0, 0.3]),
+            dict(username=USER_C_ID, grade=['-', '-']),
+            dict(username=USER_B_ID, grade=[0.2, '-']),
         ])
 
     def test_combineStudents(self):
@@ -137,24 +138,24 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # A is in class, so use this form.
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID,            grades=[0.32, '-']),
-            dict(username=USER_B_ID,            grades=['-',  '-']),
-            dict(username=USER_A_ID + '@hi.is', grades=['-',  '-']),
-            dict(username=USER_B_ID + '@hi.is', grades=[0.42, '-']),
-            dict(username=USER_C_ID,            grades=[0.72, '-']),
-            dict(username='zia@hi.is',          grades=[0.82, '-']),
+            dict(username=USER_A_ID,            grade=[0.32, '-']),
+            dict(username=USER_B_ID,            grade=['-',  '-']),
+            dict(username=USER_A_ID + '@hi.is', grade=['-',  '-']),
+            dict(username=USER_B_ID + '@hi.is', grade=[0.42, '-']),
+            dict(username=USER_C_ID,            grade=[0.72, '-']),
+            dict(username='zia@hi.is',          grade=[0.82, '-']),
         ])
 
         # Alternate forms also answer, but don't combine yet
         self.updateAnswerQueue(USER_A_ID + '@hi.is', lec1, [0.92])
         self.updateAnswerQueue(USER_B_ID, lec1, [0.22])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID,            grades=[0.32,  '-']),
-            dict(username=USER_B_ID,            grades=[0.22,  '-']),
-            dict(username=USER_A_ID + '@hi.is', grades=[0.92, '-']),
-            dict(username=USER_B_ID + '@hi.is', grades=[0.42, '-']),
-            dict(username=USER_C_ID,            grades=[0.72, '-']),
-            dict(username='zia@hi.is',          grades=[0.82, '-']),
+            dict(username=USER_A_ID,            grade=[0.32,  '-']),
+            dict(username=USER_B_ID,            grade=[0.22,  '-']),
+            dict(username=USER_A_ID + '@hi.is', grade=[0.92, '-']),
+            dict(username=USER_B_ID + '@hi.is', grade=[0.42, '-']),
+            dict(username=USER_C_ID,            grade=[0.72, '-']),
+            dict(username='zia@hi.is',          grade=[0.82, '-']),
         ])
 
         # Remove extra students, still see new grades, highest grade wins
@@ -165,17 +166,19 @@ class StudentResultsViewTest(IntegrationTestCase):
             'zia@hi.is',
         ]
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID + '@hi.is', grades=[0.92, '-']),
-            dict(username=USER_B_ID + '@hi.is', grades=[0.42, '-']),
-            dict(username=USER_C_ID,            grades=[0.72, '-']),
-            dict(username='zia@hi.is',          grades=[0.82, '-']),
+            dict(username=USER_A_ID + '@hi.is', grade=[0.92, '-']),
+            dict(username=USER_B_ID + '@hi.is', grade=[0.42, '-']),
+            dict(username=USER_C_ID,            grade=[0.72, '-']),
+            dict(username='zia@hi.is',          grade=[0.82, '-']),
         ])
 
     def test_StudentSummaryTableView(self):
         """Cheat and re-use test infrastructure for allStudentGrades()"""
+        splitString = re.compile(r'\r*\n')
         portal = self.layer['portal']
         lec1 = portal['dept1']['tut1']['lec1']
         lec2 = portal['dept1']['tut1']['lec2']
+        c = self.layer['portal']['classa']
         login(portal, MANAGER_ID)
 
         # Set a bunch of results, should appear in CSV
@@ -183,10 +186,23 @@ class StudentResultsViewTest(IntegrationTestCase):
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8])
         self.updateAnswerQueue(USER_B_ID, lec2, [0.2])
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8, 1.0])
-        self.assertEqual(self.getCSV(), [
-            {'Student': 'Arnold',   'dept1/tut1/lec1': '-', 'dept1/tut1/lec2': '1'},
-            {'Student': 'Caroline', 'dept1/tut1/lec1': '-', 'dept1/tut1/lec2': '-'},
-            {'Student': 'Betty',    'dept1/tut1/lec1': '-', 'dept1/tut1/lec2': '0.2'},
+        self.assertEqual(splitString.split(c.restrictedTraverse('student-summary')()), [
+            "Student grade,dept1/tut1/lec2,dept1/tut1/lec1",
+            "Arnold,1,-",
+            "Caroline,-,-",
+            "Betty,0.2,-",
+            "",
+        ])
+
+        # Can also get # of answered questions
+        request = self.layer['request']
+        request.form['value'] = 'lecAnswered'
+        self.assertEqual(splitString.split(c.restrictedTraverse('student-summary')()), [
+            "Student lecAnswered,dept1/tut1/lec2,dept1/tut1/lec1",
+            "Arnold,5,-",
+            "Caroline,-,-",
+            "Betty,1,-",
+            "",
         ])
 
     def updateAnswerQueue(self, user, lecture, grades):

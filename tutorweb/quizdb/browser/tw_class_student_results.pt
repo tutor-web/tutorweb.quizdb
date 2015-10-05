@@ -24,7 +24,7 @@
   <tbody>
     <tr tal:repeat="student view/allStudentGrades">
       <td tal:content="student/username"></td>
-      <td tal:repeat="grade student/grades" tal:content="grade"></td>
+      <td tal:repeat="grade student/grade" tal:content="grade"></td>
     </tr>
   </tbody>
 </table>
