@@ -70,42 +70,42 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # No lectures, but get students in specified order
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grade=[]),
-            dict(username=USER_C_ID, grade=[]),
-            dict(username=USER_B_ID, grade=[]),
+            dict(username=USER_A_ID.lower(), grade=[]),
+            dict(username=USER_C_ID.lower(), grade=[]),
+            dict(username=USER_B_ID.lower(), grade=[]),
         ])
 
         # Add lectures, get blank value for each
         setRelations(portal['classa'], 'lectures', [lec2, lec1])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grade=['-', '-']),
-            dict(username=USER_C_ID, grade=['-', '-']),
-            dict(username=USER_B_ID, grade=['-', '-']),
+            dict(username=USER_A_ID.lower(), grade=['-', '-']),
+            dict(username=USER_C_ID.lower(), grade=['-', '-']),
+            dict(username=USER_B_ID.lower(), grade=['-', '-']),
         ])
 
         # Arnold answers a question
         self.updateAnswerQueue(USER_A_ID, lec1, [0.1, 0.3])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grade=['-', 0.3]),
-            dict(username=USER_C_ID, grade=['-', '-']),
-            dict(username=USER_B_ID, grade=['-', '-']),
+            dict(username=USER_A_ID.lower(), grade=['-', 0.3]),
+            dict(username=USER_C_ID.lower(), grade=['-', '-']),
+            dict(username=USER_B_ID.lower(), grade=['-', '-']),
         ])
 
         # More answers appear
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8])
         self.updateAnswerQueue(USER_B_ID, lec2, [0.2])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grade=[0.8, 0.3]),
-            dict(username=USER_C_ID, grade=['-', '-']),
-            dict(username=USER_B_ID, grade=[0.2, '-']),
+            dict(username=USER_A_ID.lower(), grade=[0.8, 0.3]),
+            dict(username=USER_C_ID.lower(), grade=['-', '-']),
+            dict(username=USER_B_ID.lower(), grade=[0.2, '-']),
         ])
 
         # Overwrite old answers
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8, 1.0])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID, grade=[1.0, 0.3]),
-            dict(username=USER_C_ID, grade=['-', '-']),
-            dict(username=USER_B_ID, grade=[0.2, '-']),
+            dict(username=USER_A_ID.lower(), grade=[1.0, 0.3]),
+            dict(username=USER_C_ID.lower(), grade=['-', '-']),
+            dict(username=USER_B_ID.lower(), grade=[0.2, '-']),
         ])
 
     def test_combineStudents(self):
@@ -138,11 +138,11 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # A is in class, so use this form.
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID,            grade=[0.32, '-']),
-            dict(username=USER_B_ID,            grade=['-',  '-']),
-            dict(username=USER_A_ID + '@hi.is', grade=['-',  '-']),
-            dict(username=USER_B_ID + '@hi.is', grade=[0.42, '-']),
-            dict(username=USER_C_ID,            grade=[0.72, '-']),
+            dict(username=USER_A_ID.lower(),            grade=[0.32, '-']),
+            dict(username=USER_B_ID.lower(),            grade=['-',  '-']),
+            dict(username=USER_A_ID.lower() + '@hi.is', grade=['-',  '-']),
+            dict(username=USER_B_ID.lower() + '@hi.is', grade=[0.42, '-']),
+            dict(username=USER_C_ID.lower(),            grade=[0.72, '-']),
             dict(username='zia@hi.is',          grade=[0.82, '-']),
         ])
 
@@ -150,11 +150,11 @@ class StudentResultsViewTest(IntegrationTestCase):
         self.updateAnswerQueue(USER_A_ID + '@hi.is', lec1, [0.92])
         self.updateAnswerQueue(USER_B_ID, lec1, [0.22])
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID,            grade=[0.32,  '-']),
-            dict(username=USER_B_ID,            grade=[0.22,  '-']),
-            dict(username=USER_A_ID + '@hi.is', grade=[0.92, '-']),
-            dict(username=USER_B_ID + '@hi.is', grade=[0.42, '-']),
-            dict(username=USER_C_ID,            grade=[0.72, '-']),
+            dict(username=USER_A_ID.lower(),            grade=[0.32,  '-']),
+            dict(username=USER_B_ID.lower(),            grade=[0.22,  '-']),
+            dict(username=USER_A_ID.lower() + '@hi.is', grade=[0.92, '-']),
+            dict(username=USER_B_ID.lower() + '@hi.is', grade=[0.42, '-']),
+            dict(username=USER_C_ID.lower(),            grade=[0.72, '-']),
             dict(username='zia@hi.is',          grade=[0.82, '-']),
         ])
 
@@ -166,9 +166,9 @@ class StudentResultsViewTest(IntegrationTestCase):
             'zia@hi.is',
         ]
         self.assertEqual(self.getView().allStudentGrades(), [
-            dict(username=USER_A_ID + '@hi.is', grade=[0.92, '-']),
-            dict(username=USER_B_ID + '@hi.is', grade=[0.42, '-']),
-            dict(username=USER_C_ID,            grade=[0.72, '-']),
+            dict(username=USER_A_ID.lower() + '@hi.is', grade=[0.92, '-']),
+            dict(username=USER_B_ID.lower() + '@hi.is', grade=[0.42, '-']),
+            dict(username=USER_C_ID.lower(),            grade=[0.72, '-']),
             dict(username='zia@hi.is',          grade=[0.82, '-']),
         ])
 
@@ -188,9 +188,9 @@ class StudentResultsViewTest(IntegrationTestCase):
         self.updateAnswerQueue(USER_A_ID, lec2, [0.4, 0.8, 1.0])
         self.assertEqual(splitString.split(c.restrictedTraverse('student-summary')()), [
             "Student grade,dept1/tut1/lec2,dept1/tut1/lec1",
-            "Arnold,1,-",
-            "Caroline,-,-",
-            "Betty,0.2,-",
+            "arnold,1,-",
+            "caroline,-,-",
+            "betty,0.2,-",
             "",
         ])
 
@@ -199,9 +199,9 @@ class StudentResultsViewTest(IntegrationTestCase):
         request.form['value'] = 'lecAnswered'
         self.assertEqual(splitString.split(c.restrictedTraverse('student-summary')()), [
             "Student lecAnswered,dept1/tut1/lec2,dept1/tut1/lec1",
-            "Arnold,5,-",
-            "Caroline,-,-",
-            "Betty,1,-",
+            "arnold,5,-",
+            "caroline,-,-",
+            "betty,1,-",
             "",
         ])
 

@@ -5,6 +5,7 @@ from collections import defaultdict
 # import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
+from sqlalchemy import func
 from z3c.saconfig import Session
 
 from Products.Five.browser import BrowserView
@@ -51,7 +52,7 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
         """
         if not summaryValue:
             summaryValue = 'grade'
-        classStudents = self.context.students or []
+        classStudents = [s.lower() for s in self.context.students or []]
         aliasStudents = {}
 
         # Query for non-email form too
@@ -62,10 +63,10 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
         lecturePaths = [r.to_path for r in self.context.lectures]
         dbTotals = (
             Session.query(getattr(db.AnswerSummary, summaryValue))
-            .add_columns(db.Student.userName, db.Lecture.plonePath)
+            .add_columns(func.lower(db.Student.userName), db.Lecture.plonePath)
             .join(db.Student)
             .filter(db.Student.hostId == self.getDbHost().hostId)
-            .filter(db.Student.userName.in_(classStudents + aliasStudents.keys()))
+            .filter(func.lower(db.Student.userName).in_(classStudents + aliasStudents.keys()))
             .join(db.Lecture)
             .filter(db.Lecture.hostId == self.getDbHost().hostId)
             .filter(db.Lecture.plonePath.in_(lecturePaths))
