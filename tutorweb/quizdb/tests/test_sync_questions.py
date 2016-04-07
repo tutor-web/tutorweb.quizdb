@@ -382,7 +382,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         ])
 
         # Answer a symlinked question, should update both lectures
-        parseAnswerQueue(dbLec.lectureId, testLec, student, [
+        parseAnswerQueue(dbLec, testLec, student, [
             dict(
                 synced=False,
                 uri=allocByTitleTestLec[u'Unittest D1 T1 L1 Q1']['uri'],

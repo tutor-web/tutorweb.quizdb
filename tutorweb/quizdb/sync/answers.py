@@ -137,7 +137,7 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
     return out
 
 
-def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
+def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
     # Filter nonsense out of answerQueue
     answerQueue = []
     uriSplit = re.compile('\/quizdb-get-question\/|\?')
@@ -172,7 +172,7 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
             dbQns[publicId] = dbQn
 
     # Fetch summary
-    dbAnsSummary = getAnswerSummary(lectureId, student)
+    dbAnsSummary = getAnswerSummary(dbLec.lectureId, student)
 
     for (publicId, queryString, a) in answerQueue:
         # Fetch question for allocation
@@ -288,7 +288,6 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
                 dbAnsSummary.practiceCorrect += 1
 
         # Does this earn the student any coins?
-        dbLec = Session.query(db.Lecture).filter(db.Lecture.lectureId == lectureId).one()
         coinsAwarded = getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings)
 
         # Post-awards, update grade
@@ -316,7 +315,7 @@ def parseAnswerQueue(lectureId, lectureObj, student, rawAnswerQueue, settings):
 
     # Get all previous real answers and send them back.
     dbAnswers = (Session.query(db.Answer)
-        .filter(db.Answer.lectureId == lectureId)
+        .filter(db.Answer.lectureId == dbLec.lectureId)
         .filter(db.Answer.studentId == student.studentId)
         .filter(db.Answer.practice == False)
         .order_by(db.Answer.timeEnd.desc())
