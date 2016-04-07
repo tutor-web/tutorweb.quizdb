@@ -4,6 +4,7 @@ import time
 import uuid
 
 import transaction
+from Products.CMFCore.utils import getToolByName
 
 from plone.app.testing import login
 
@@ -33,6 +34,12 @@ class GetQuestionViewTest(FunctionalTestCase):
 
     def test_permission(self):
         """Who can get at questions?"""
+        mtool = getToolByName(self.layer['portal'], 'portal_membership')
+        mtool.getMemberById(MANAGER_ID).setMemberProperties(dict(
+            accept=True,
+        ))
+        transaction.commit()
+
         # Allocate lecture 1 & 2 to user A & B
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_B_ID)
