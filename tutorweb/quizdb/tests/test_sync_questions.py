@@ -18,7 +18,7 @@ from ..sync.answers import parseAnswerQueue
 def getAllocation(portal, alloc, user):
     login(portal, USER_A_ID)
     view = portal.restrictedTraverse('quizdb-get-question')
-    view.questionId = alloc.replace("http://x/quizdb-get-question/", "")
+    view.questionId = alloc.replace("http://nohost/plone/quizdb-get-question/", "")
     return view.asDict({})
 
 
@@ -74,7 +74,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         # Allocate to user A, should get all questions seperately
         login(portal, USER_A_ID)
         self.studentA = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
-        allocs = getQuestionAllocation(dbLec, self.studentA, 'http://x', dict(question_cap=10))
+        allocs = getQuestionAllocation(dbLec, self.studentA, 'http://nohost/plone', dict(question_cap=10))
         self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
@@ -107,7 +107,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         login(portal, MANAGER_ID)
 
         def getAllocStats(dbLec, student, targetDifficulty, settings = dict(question_cap=10)):
-            allocs = getQuestionAllocation(dbLec, student, 'http://x', settings, targetDifficulty=targetDifficulty)
+            allocs = getQuestionAllocation(dbLec, student, 'http://nohost/plone', settings, targetDifficulty=targetDifficulty)
             difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs if qn['chosen'] > 10]
             mean = sum(difficulty) / len(difficulty)
             variance = sum((x - mean) **2 for x in difficulty) / len(difficulty)
@@ -163,7 +163,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
             allocs = getQuestionAllocation(
                 dbLec,
                 student,
-                'http://x',
+                'http://nohost/plone',
                 dict(question_cap=10),
                 targetDifficulty=targetDifficulty,
                 reAllocQuestions=reAllocQuestions,
@@ -231,7 +231,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         allocs = getQuestionAllocation(
             dbLec,
             student,
-            'http://x',
+            'http://nohost/plone',
             dict(question_cap=10),
         )
         self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
@@ -256,7 +256,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         allocs = getQuestionAllocation(
             dbLec,
             student,
-            'http://x',
+            'http://nohost/plone',
             dict(question_cap=10),
         )
         self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
@@ -334,7 +334,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         allocByTitleTestLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
             dbLec,
             student,
-            'http://x',
+            'http://nohost/plone',
             dict(question_cap=10),
         ))
         self.assertEqual(sorted(allocByTitleTestLec.keys()), [
@@ -349,7 +349,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         allocByTitleOrigLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
             origLec.restrictedTraverse('@@quizdb-sync').getDbLecture(),
             student,
-            'http://x',
+            'http://nohost/plone',
             dict(question_cap=10),
         ))
         self.assertEqual(sorted(allocByTitleOrigLec.keys()), [
