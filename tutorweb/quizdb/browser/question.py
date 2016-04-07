@@ -17,6 +17,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from Products.CMFCore import permissions
 
 from tutorweb.quizdb import db
+from tutorweb.quizdb.allocation.base import Allocation
 from .base import JSONBrowserView
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
@@ -55,7 +56,7 @@ class QuestionView(JSONBrowserView):
                 out['answer']['correct'].append(i)
         return out
 
-    def getQuestionData(self, dbQn, dbAlloc):
+    def getQuestionData(self, dbQn, lectureId):
         """Fetch dict for question, obsfucating the answer"""
         out = None
 
@@ -99,7 +100,7 @@ class QuestionView(JSONBrowserView):
                 cap_template_qn_reviews=10,
             )
             for row in (Session.query(db.LectureSetting)
-                    .filter(db.LectureSetting.lectureId == dbAlloc.lectureId)
+                    .filter(db.LectureSetting.lectureId == lectureId)
                     .filter(db.LectureSetting.studentId == student.studentId)
                     .filter(db.LectureSetting.key.in_(settings.keys()))):
                 settings[row.key] = float(row.value)
@@ -203,56 +204,43 @@ class GetQuestionView(QuestionView):
     def asDict(self, data):
         if self.questionId is None:
             raise NotFound(self, None, self.request)
-
+        # TODO: Should be whole URL? Do we care?
+        questionUri = self.questionId
         isAdmin = self.isAdmin()
-        try:
-            query = Session.query(db.Question, db.Allocation) \
-                .join(db.Allocation) \
-                .filter(db.Allocation.publicId == self.questionId) \
-                .filter(db.Question.active == True)
-            # If not an admin, ensure we're the right user
-            if not isAdmin:
-                student = self.getCurrentStudent()
-                query = query.filter(db.Allocation.studentId == student.studentId)
-            (dbQn, dbAlloc) = query.one()
-        except NoResultFound:
-            raise NotFound(self, self.questionId, self.request)
-        except MultipleResultsFound:
-            raise NotFound(self, self.questionId, self.request)
 
         try:
-            qn = self.getQuestionData(dbQn, dbAlloc)
-        except NotFound:
+            alloc = Allocation.allocFromUri(
+                uri=questionUri,
+                student=self.getCurrentStudent(),
+                urlBase=self.portalObject().absolute_url(),
+            )
+            dbQn = alloc.getQuestion(questionUri, isAdmin=isAdmin)
+            if not dbQn:
+                raise NotFound(self, self.questionId, self.request)
+            qnData = self.getQuestionData(dbQn, alloc.dbLec.lectureId)
+        except (NoResultFound, MultipleResultsFound) as e:
             # Mask question plonePath
             raise NotFound(self, self.questionId, self.request)
         if isAdmin:
-            qn['path'] = dbQn.plonePath
-        return qn
+            qnData['path'] = dbQn.plonePath
+        return qnData
 
 
 class GetLectureQuestionsView(QuestionView):
     """Fetch all questions for a lecture"""
     def asDict(self, data):
-        student = self.getCurrentStudent()
+        dbLec = self.getDbLecture()
+        alloc = Allocation.allocFor(
+            student=self.getCurrentStudent(),
+            dbLec=dbLec,
+            urlBase=self.portalObject().absolute_url(),
+        )
 
-        # Get all questions from DB and their allocations
-        dbAllocs = Session.query(db.Question, db.Allocation) \
-            .join(db.Allocation) \
-            .filter(db.Question.lectures.contains(self.getDbLecture())) \
-            .filter(db.Question.active == True) \
-            .filter(db.Allocation.studentId == student.studentId) \
-            .filter(db.Allocation.active == True) \
-            .filter(db.Allocation.lectureId == self.getDbLecture().lectureId) \
-            .filter(db.Question.qnType != 'tw_questiontemplate') \
-            .all() # NB: qnType != '...' ~== online_only = false
-
-        # Render each question into a dict
-        portal = self.portalObject()
-        out = dict()
-        for (dbQn, dbAlloc) in dbAllocs:
+        out = {}
+        for questionUri, dbQn in alloc.getAllQuestions():
             try:
-                uri = portal.absolute_url() + '/quizdb-get-question/' + dbAlloc.publicId
-                out[uri] = self.getQuestionData(dbQn, dbAlloc)
+                out[questionUri] = self.getQuestionData(dbQn, dbLec.lectureId)
             except NotFound:
+                # TODO: A test needs this, but surely it should be calling updateAllocation after deletion?
                 pass
         return out

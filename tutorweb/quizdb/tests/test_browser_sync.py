@@ -6,7 +6,7 @@ from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
 
-from ..sync.questions import DEFAULT_QUESTION_CAP
+from ..allocation.base import DEFAULT_QUESTION_CAP
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
@@ -599,8 +599,7 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertEquals(len(bAlloc['answerQueue']), 1)
         self.assertEquals(bAlloc['answerQueue'][0]['quiz_time'], 1377000041)
         self.assertTrue((
-            u'No record of allocation %s for student Betty'
-            % aQuestions[u'Unittest D1 T1 L1 Q1'].replace('http://nohost/plone/quizdb-get-question/', '')
+            u'No record of allocation %s for student Betty' % aQuestions[u'Unittest D1 T1 L1 Q1']
         ) in self.logs('sync'))
 
         # A doesn't see B's answer

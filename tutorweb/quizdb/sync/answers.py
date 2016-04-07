@@ -15,6 +15,7 @@ from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
 
 from tutorweb.quizdb import db
+from tutorweb.quizdb.allocation.base import Allocation
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 logger = logging.getLogger(__package__)
@@ -42,13 +43,23 @@ def getAnswerSummary(lectureId, student):
         dbAnsSummary.lecCorrect,
         dbAnsSummary.practiceAnswered,
         dbAnsSummary.practiceCorrect,
-    ) = (int(x) for x in Session.query(
+        maxTimeEnd,
+    ) = Session.query(
         func.count(),
         func.ifnull(func.sum(db.Answer.correct), 0),
         func.ifnull(func.sum(db.Answer.practice), 0),
         func.ifnull(func.sum(expression.case([(db.Answer.practice & db.Answer.correct, 1)], else_=0)), 0),
-    ).filter(db.Answer.lectureId == lectureId).filter(db.Answer.studentId == student.studentId).one())
-    return dbAnsSummary
+        func.max(db.Answer.timeEnd),
+    ).filter(db.Answer.lectureId == lectureId).filter(db.Answer.studentId == student.studentId).one()
+
+    dbAnsSummary.lecAnswered = int(dbAnsSummary.lecAnswered)
+    dbAnsSummary.lecCorrect = int(dbAnsSummary.lecCorrect)
+    dbAnsSummary.practiceAnswered = int(dbAnsSummary.practiceAnswered)
+    dbAnsSummary.practiceCorrect = int(dbAnsSummary.practiceCorrect)
+    if not maxTimeEnd:
+        maxTimeEnd = datetime.datetime.utcfromtimestamp(0)
+
+    return (dbAnsSummary, maxTimeEnd)
 
 
 def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
@@ -138,9 +149,14 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
 
 
 def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
+    alloc = Allocation.allocFor(
+        student=student,
+        dbLec=dbLec,
+        urlBase=lectureObj.portal_url.getPortalObject().absolute_url(),
+    )
+
     # Filter nonsense out of answerQueue
     answerQueue = []
-    uriSplit = re.compile('\/quizdb-get-question\/|\?')
     for a in rawAnswerQueue:
         if a.get('synced', False):
             continue
@@ -149,37 +165,28 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
         if 'answer_time' not in a:
             logger.debug("Unanswered question passed to sync")
             continue
-        parts = uriSplit.split(a['uri'])
-        if len(parts) < 2:
-            logger.warn("Question ID %s malformed" % a['uri'])
-            continue
+        parts = a['uri'].split('?', 1)
         answerQueue.append((
-            parts[1],
-            urlparse.parse_qs(parts[2]) if len(parts) > 2 else {},
+            parts[0],
+            urlparse.parse_qs(parts[1]) if len(parts) > 1 else {},
             a,
         ))
 
-    # Fetch all questions for allocations, locking for update
-    dbQns = {}
-    if len(answerQueue) > 0:
-        # NB: Not checking active, since might be writing historical answers.
-        for (dbQn, publicId) in (Session.query(db.Question, db.Allocation.publicId)
-                .with_lockmode('update')
-                .join(db.Allocation)
-                .filter(db.Allocation.studentId == student.studentId)
-                .filter(db.Allocation.publicId.in_(publicId for (publicId, _, _) in answerQueue))
-                .all()):
-            dbQns[publicId] = dbQn
+    dbQns = dict(alloc.getQuestions(
+        uris=[uri for (uri, _, _) in answerQueue],
+        lockForUpdate=True,
+        active=None,  # NB: Might be writing historical answers
+    ))
 
     # Fetch summary
-    dbAnsSummary = getAnswerSummary(dbLec.lectureId, student)
+    (dbAnsSummary, maxTimeEnd) = getAnswerSummary(dbLec.lectureId, student)
 
-    for (publicId, queryString, a) in answerQueue:
+    for (questionUri, queryString, a) in answerQueue:
         # Fetch question for allocation
-        dbQn = dbQns.get(publicId, None)
+        dbQn = dbQns.get(questionUri, None)
         if dbQn is None:
             logger.error("No record of allocation %s for student %s" % (
-                publicId,
+                questionUri,
                 student.userName,
             ))
             continue
@@ -292,13 +299,14 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
 
         # Post-awards, update grade
         if a.get('grade_after', None) is not None:
-            dbAnsSummary.grade = a['grade_after']
+            if datetime.datetime.utcfromtimestamp(a['answer_time']) > maxTimeEnd:
+                dbAnsSummary.grade = a['grade_after']
             if a['grade_after'] > dbAnsSummary.gradeHighWaterMark:
                 dbAnsSummary.gradeHighWaterMark = a['grade_after']
 
         # Update database with this answer
         Session.add(db.Answer(
-            lectureId=lectureId,
+            lectureId=dbLec.lectureId,
             studentId=student.studentId,
             questionId=dbQn.questionId,
             chosenAnswer=-1 if isinstance(a['student_answer'], dict) else a['student_answer'],
