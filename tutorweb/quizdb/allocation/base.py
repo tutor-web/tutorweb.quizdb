@@ -1,4 +1,5 @@
 import re
+import urllib2
 import importlib
 
 from z3c.saconfig import Session
@@ -37,12 +38,22 @@ class Allocation(object):
 
     @classmethod
     def allocFromUri(cls, student, uri, urlBase="/"):
-        from .original import OriginalAllocation
-
-        # TODO: If URIs look like (lecture-id):(whatever), can choose on that.
+        """Return the correct Allocation Method instance based on a question URI"""
         # NB: URIs Need to be unique for localStorage's sake
+        uri = urllib2.unquote(uri.rsplit('/', 1)[-1])
+        m = re.match(r'(\d+):([^/]*)$', uri)
+
+        if m:
+            # Should be of form (lecture-id):(stuff).
+            dbLec = Session.query(db.Lecture).filter_by(lectureId=int(m.group(1))).one()
+            return cls.allocFor(
+                student=student,
+                dbLec=dbLec,
+                urlBase=urlBase,
+            )
 
         # Fall back to OriginalAllocation
+        from .original import OriginalAllocation
         return OriginalAllocation.allocFromUri(student, uri, urlBase)
 
     def __init__(self, student, dbLec, urlBase="/"):

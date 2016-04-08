@@ -12,8 +12,6 @@ class OriginalAllocation(BaseAllocation):
     @classmethod
     def allocFromUri(cls, student, uri, urlBase="/"):
         # No lecture in URI, so fall back to querying database
-
-        # NB: URIs Need to be unique for localStorage's sake
         publicId = uri.rsplit("/", 1)[-1]
 
         # NB: This isn't very efficient, but in theory it's transitional
