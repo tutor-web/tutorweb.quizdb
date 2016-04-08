@@ -18,6 +18,7 @@ from ..sync.answers import parseAnswerQueue
 def getAllocation(portal, alloc, user):
     login(portal, USER_A_ID)
     view = portal.restrictedTraverse('quizdb-get-question')
+    view.request.set('URL', alloc)
     view.questionId = alloc.replace("http://nohost/plone/quizdb-get-question/", "")
     return view.asDict({})
 

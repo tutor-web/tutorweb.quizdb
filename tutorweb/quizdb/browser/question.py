@@ -204,8 +204,7 @@ class GetQuestionView(QuestionView):
     def asDict(self, data):
         if self.questionId is None:
             raise NotFound(self, None, self.request)
-        # TODO: Should be whole URL? Do we care?
-        questionUri = self.questionId
+        questionUri = self.request.getURL()
         isAdmin = self.isAdmin()
 
         try:
