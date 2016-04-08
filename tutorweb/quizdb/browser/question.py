@@ -240,6 +240,5 @@ class GetLectureQuestionsView(QuestionView):
             try:
                 out[questionUri] = self.getQuestionData(dbQn, dbLec.lectureId)
             except NotFound:
-                # TODO: A test needs this, but surely it should be calling updateAllocation after deletion?
                 pass
         return out
