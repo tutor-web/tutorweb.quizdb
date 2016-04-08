@@ -58,6 +58,7 @@ class ExamAllocationTest(FunctionalTestCase):
 
         # Can't fall off the end
         self.getJson(u'http://nohost/plone/quizdb-get-question/1:qn-99', user=USER_A_ID, expectedStatus=404)
+        self.getJson(u'http://nohost/plone/quizdb-get-question/8:qn-0', user=USER_A_ID, expectedStatus=404)
 
         # Can write questions back
         aAlloc = self.getJson(lecPath + '/@@quizdb-sync', user=USER_A_ID, body=dict(
