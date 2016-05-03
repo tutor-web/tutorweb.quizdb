@@ -636,7 +636,8 @@ class UserGeneratedQuestion(ORMBase):
     )
     superseded = sqlalchemy.schema.Column(
         customtypes.GUID(),
-        sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionGuid'),
+        #TODO: MySQL is getting confused sqlalchemy.schema.ForeignKey('userGeneratedQuestions.ugQuestionGuid'),
+        index=True,
         nullable=True,
     )
 
