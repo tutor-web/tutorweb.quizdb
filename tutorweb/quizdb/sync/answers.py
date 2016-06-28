@@ -172,6 +172,15 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
             a,
         ))
 
+    # Lock answers for this lecture/student, to stop any concurrent updates
+    answerRows = {}
+    for questionId, timeEnd in (Session.query(db.Answer.questionId, db.Answer.timeEnd)
+            .filter(db.Answer.studentId == student.studentId)
+            .filter(db.Answer.lectureId == dbLec.lectureId)
+            .filter(db.Answer.answerId > 0)  # Purely to create a gap lock to block on creates # TODO: Still work when it's 0?
+            .with_lockmode('update')):  # NB: FOR UPDATE gets us a fresh view of the data, SELECT doesn't necessarily? Who knows.
+        answerRows['%d:%d' % (questionId, calendar.timegm(timeEnd.timetuple()))] = True
+
     dbQns = dict(alloc.getQuestions(
         uris=[uri for (uri, _, _) in answerQueue],
         lockForUpdate=True,
@@ -192,12 +201,14 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
             continue
 
         # Does this answer already exist in DB? if so, ignore it.
-        if (Session.query(db.Answer)
-                .filter(db.Answer.studentId == student.studentId)
-                .filter(db.Answer.questionId == dbQn.questionId)
-                .filter(db.Answer.timeEnd == datetime.datetime.utcfromtimestamp(a['answer_time']))
-                .count()) > 0:
+        if '%d:%d' % (dbQn.questionId, a['answer_time']) in answerRows:
+            logger.debug("Ignoring answer for question %d at time %d --- already got one",
+                dbQn.questionId,
+                a['answer_time'],
+            )
             continue
+        else:
+            answerRows['%d:%d' % (dbQn.questionId, a['answer_time'])] = True
 
         if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
             # Evaluated a user-generated question, write it to the DB
@@ -327,6 +338,7 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
         .filter(db.Answer.studentId == student.studentId)
         .filter(db.Answer.practice == False)
         .order_by(db.Answer.timeEnd.desc())
+        .with_lockmode('update')  # NB: Use FOR UPDATE, as otherwise we might get the table state at the start of the transaction
         .all())
     out = [dict(  # NB: Not fully recreating what JS creates, but shouldn't be a problem
         correct=dbAns.correct,

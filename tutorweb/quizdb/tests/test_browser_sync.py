@@ -409,8 +409,8 @@ class SyncViewFunctional(FunctionalTestCase):
                     uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
                     student_answer="A",
                     correct=False,
-                    quiz_time=1377000020,
-                    answer_time=1377000030,
+                    quiz_time=1377000021,
+                    answer_time=1377000031,
                     grade_after=0.2,
                 ),
                 dict(
@@ -435,7 +435,10 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
 
         # Noticed that middle item wasn't correct, last was repetition
-        self.assertEqual(self.logs('sync'), ['Student answer A out of range'])
+        self.assertEqual(self.logs('sync'), [
+            'Student answer A out of range',
+            'Ignoring answer for question 1 at time 1377000010 --- already got one',
+        ])
         # Returned answerQueue without dodgy answer
         self.assertEqual(aAlloc['answerQueue'], [
             {
@@ -464,6 +467,82 @@ class SyncViewFunctional(FunctionalTestCase):
 
         # Fetching again returns the same queue
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertEqual(aAlloc['answerQueue'], [
+            {
+                u'synced': True,
+                u'student_answer': 0,
+                u'correct': False,
+                u'quiz_time': 1377000000,
+                u'answer_time': 1377000010,
+                u'grade_after': 0.1,
+                u'coins_awarded': 0,
+            },
+            {
+                u'synced': True,
+                u'student_answer': 2,
+                u'correct': True,
+                u'quiz_time': 1377000020,
+                u'answer_time': 1377000030,
+                u'grade_after': 0.3,
+                u'lec_answered': 2,
+                u'lec_correct': 1,
+                u'practice_answered': 0,
+                u'practice_correct': 0,
+                u'coins_awarded': 0,
+            },
+        ])
+
+        # Can't write the same answers back again
+        aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                dict(
+                    synced=False,
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
+                    student_answer=0,
+                    correct='wibble',
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.1,
+                ),
+                dict(
+                    synced=False,
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
+                    student_answer="A",
+                    correct=False,
+                    quiz_time=1377000021,
+                    answer_time=1377000031,
+                    grade_after=0.2,
+                ),
+                dict(
+                    synced=False,
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q2'],
+                    student_answer=2,
+                    correct=True,
+                    quiz_time=1377000020,
+                    answer_time=1377000030,
+                    grade_after=0.3,
+                ),
+                dict(
+                    synced=False,
+                    uri=aQuestions[u'Unittest D1 T1 L1 Q1'],
+                    student_answer=1,
+                    correct='wibble',
+                    quiz_time=1377000000,
+                    answer_time=1377000010,
+                    grade_after=0.9,
+                ),
+            ],
+        ))
+        self.assertEqual(self.logs('sync'), [
+            'Student answer A out of range',
+            'Ignoring answer for question 1 at time 1377000010 --- already got one',
+            ######
+            'Ignoring answer for question 1 at time 1377000010 --- already got one',
+            'Student answer A out of range',
+            'Ignoring answer for question 2 at time 1377000030 --- already got one',
+            'Ignoring answer for question 1 at time 1377000010 --- already got one',
+        ])
         self.assertEqual(aAlloc['answerQueue'], [
             {
                 u'synced': True,
