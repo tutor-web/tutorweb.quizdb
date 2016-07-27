@@ -43,7 +43,7 @@ class SyncTutorialView(JSONBrowserView):
         )
 
         return dict(
-            uri=self.context.absolute_url() + '/quizdb-sync',
+            uri=self.lectureObjToUrl(self.context),
             title=self.context.title,
             lectures=[
                 self.context.restrictedTraverse(url).asDict(lectureDict.get(url, None))
@@ -161,11 +161,11 @@ class SyncLectureView(JSONBrowserView):
 
         # Build lecture dict
         return dict(
-            uri=self.context.absolute_url() + '/quizdb-sync',
+            uri=self.lectureObjToUrl(self.context),
             user=student.userName,
-            question_uri=self.context.absolute_url() + '/quizdb-all-questions',
-            slide_uri=self.context.absolute_url() + '/slide-html',
-            review_uri=self.context.absolute_url() + '/quizdb-review-ugqn',
+            question_uri=self.lectureObjToUrl(self.context, 'quizdb-all-questions'),
+            slide_uri=self.lectureObjToUrl(self.context, 'slide-html'),
+            review_uri=self.lectureObjToUrl(self.context, 'quizdb-review-ugqn'),
             title=self.context.title,
             settings=dict((k, v) for k, v in settings.items() if k not in SERVERSIDE_SETTINGS),
             answerQueue=answerQueue,

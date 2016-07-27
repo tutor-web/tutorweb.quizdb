@@ -67,6 +67,16 @@ class BrowserViewHelpers(object):
         self.dbStudent = dbStudent
         return dbStudent
 
+    def lectureUrlToPlonePath(self, lecPath):
+        """Given a public URL, get the internal plonePath"""
+        lecPath = re.sub(r'/quizdb-[^/]*$', '', lecPath)
+        return '/'.join(self.request.physicalPathFromURL(str(lecPath)))
+
+    def lectureObjToUrl(self, lectureObj, view='quizdb-sync'):
+        """Given a plonePath to a lecture, return public URL"""
+        # TODO: Switch to absolute_url_path()
+        return re.sub(r'/?$', '/' + view, lectureObj.absolute_url())
+
     @view.memoize
     def getDbLecture(self, plonePath=None):
         """Return database ID for the current lecture"""
