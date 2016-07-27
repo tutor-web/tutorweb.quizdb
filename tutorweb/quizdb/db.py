@@ -242,6 +242,35 @@ tutorCompetenciesTable = Table('tutorCompetencies', ORMBase.metadata,
 )
 
 
+class Subscription(ORMBase):
+    """Student <-> Lecture subscriptions"""
+    __tablename__ = 'subscription'
+    __table_args__ = (
+        dict(
+            mysql_engine='InnoDB',
+            mysql_charset='utf8',
+        )
+    )
+    subscriptionId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        autoincrement=True,
+        primary_key=True,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        nullable=False,
+        index=True,
+    )
+    student = relationship("Student")
+    plonePath = sqlalchemy.schema.Column(
+        # i.e. the path of the tutorial / class
+        sqlalchemy.types.String(128),
+        nullable=False,
+        index=True,
+    )
+
+
 class Lecture(ORMBase):
     """DB -> Plone question lookup table"""
     __tablename__ = 'lecture'

@@ -125,4 +125,11 @@
       class=".chat.SessionEnd"
       permission="zope2.View"
       />
+
+    <!-- subscriptions.py -->
+    <browser:page name="quizdb-subscriptions"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".subscriptions.SubscriptionView"
+      permission="zope2.View"
+      />
 </configure>
