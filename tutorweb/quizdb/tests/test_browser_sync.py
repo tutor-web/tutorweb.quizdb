@@ -457,10 +457,6 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000020,
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
-                u'lec_answered': 2,
-                u'lec_correct': 1,
-                u'practice_answered': 0,
-                u'practice_correct': 0,
                 u'coins_awarded': 0,
             },
         ])
@@ -484,10 +480,6 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000020,
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
-                u'lec_answered': 2,
-                u'lec_correct': 1,
-                u'practice_answered': 0,
-                u'practice_correct': 0,
                 u'coins_awarded': 0,
             },
         ])
@@ -560,10 +552,6 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000020,
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
-                u'lec_answered': 2,
-                u'lec_correct': 1,
-                u'practice_answered': 0,
-                u'practice_correct': 0,
                 u'coins_awarded': 0,
             },
         ])
@@ -585,10 +573,6 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(len(aAlloc['answerQueue']), 3)
         self.assertEqual(aAlloc['answerQueue'][-1]['answer_time'], 1377000050)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 3)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 2)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 0)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 0)
         self.assertEqual(aAlloc['answerQueue'][-1]['correct'], True)
 
         # Writing an empty answer is still synced
@@ -608,10 +592,6 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(len(aAlloc['answerQueue']), 4)
         self.assertEqual(aAlloc['answerQueue'][-1]['answer_time'], 1377000060)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 4)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 2)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 0)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 0)
         self.assertEqual(aAlloc['answerQueue'][-1]['correct'], False)
 
     def test_answerQueueIsolation(self):
@@ -700,10 +680,6 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'quiz_time': 1377000020,
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
-                u'lec_answered': 2,
-                u'lec_correct': 1,
-                u'practice_answered': 0,
-                u'practice_correct': 0,
                 u'coins_awarded': 0,
             },
         ])
@@ -1242,10 +1218,6 @@ class SyncViewFunctional(FunctionalTestCase):
             [a['answer_time'] for a in aAlloc['answerQueue']],
             [1379900100, 1379900200, 1379900400],  # NB: No practice questions in answerQueue
         )
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 4)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 3)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 1)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 1)
         self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.15)
 
         # Insert answers that predate current work. Should get valid stats
@@ -1260,10 +1232,6 @@ class SyncViewFunctional(FunctionalTestCase):
             [a['answer_time'] for a in aAlloc['answerQueue']],
             [1379900100, 1379900110, 1379900120, 1379900200, 1379900400],
         )
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 7)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 4)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 2)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 1)
         self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.15)
 
         # Destroy answerSummary
@@ -1282,10 +1250,6 @@ class SyncViewFunctional(FunctionalTestCase):
             [a['answer_time'] for a in aAlloc['answerQueue']],
             [1379900100, 1379900110, 1379900120, 1379900200, 1379900400, 1379900510],
         )
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_answered'], 8)
-        self.assertEqual(aAlloc['answerQueue'][-1]['lec_correct'], 5)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_answered'], 2)
-        self.assertEqual(aAlloc['answerQueue'][-1]['practice_correct'], 1)
         self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.41)
 
     def test_practiceMode(self):
@@ -1335,12 +1299,6 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue[11]['quiz_time'],
             answerQueue[12]['quiz_time'],
         ])
-
-        # Practice values are included in the count though
-        self.assertEquals(aAlloc['answerQueue'][-1]['lec_answered'], 13)
-        self.assertEquals(aAlloc['answerQueue'][-1]['lec_correct'], 6)
-        self.assertEquals(aAlloc['answerQueue'][-1]['practice_answered'], 4)
-        self.assertEquals(aAlloc['answerQueue'][-1]['practice_correct'], 2)
 
     def test_lotsofquestions(self):
         """Shouldn't go over the question cap when assigning questions"""

@@ -351,11 +351,4 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
         synced=True,
     ) for dbAns in reversed(dbAnswers)]
 
-    # Tell student how many questions they have answered
-    if len(out) > 0:
-        out[-1]['lec_answered'] = dbAnsSummary.lecAnswered
-        out[-1]['lec_correct'] = dbAnsSummary.lecCorrect
-        out[-1]['practice_answered'] = dbAnsSummary.practiceAnswered
-        out[-1]['practice_correct'] = dbAnsSummary.practiceCorrect
-
     return out
