@@ -70,6 +70,13 @@ def syncPloneQuestions(dbLec, lectureObj):
         object_provides=IQuestion.__identifier__
     )
 
+    # If the lecture has same number of questions as before...
+    if len(listing) == Session.query(db.Question).filter(db.Question.lectures.contains(dbLec)).count():
+        # ...and we updated since the last question was inserted/updated
+        if dbLec.lastUpdate > toUTCDateTime(max(l['modified'] for l in listing)):
+            # ...don't do anything
+            return
+
     # Sort questions into a dict by path
     ploneQns = _ploneQuestionDict(listing)
 
@@ -116,6 +123,7 @@ def syncPloneQuestions(dbLec, lectureObj):
                 lectures=[dbLec],
             ))
 
+    dbLec.lastUpdate = datetime.datetime.utcnow()
     Session.flush()
 
 

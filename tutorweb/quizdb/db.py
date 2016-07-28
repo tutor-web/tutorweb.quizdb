@@ -297,6 +297,11 @@ class Lecture(ORMBase):
         nullable=False,
         index=True,
     )
+    lastUpdate = sqlalchemy.schema.Column(
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime(1970,1,1),
+    )
     questions = relationship("Question",
         secondary=lectureQuestionTable,
         backref="lectures")

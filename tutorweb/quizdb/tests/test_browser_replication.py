@@ -91,7 +91,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
         ])
         self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
+            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
             (1, 3, 1271050000),
@@ -112,8 +112,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ])
         # We only get the lecture that we just answered, none of the default ones
         self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath())),
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
+            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
+            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][1]['lastUpdate']),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
             (1, 1, 1271010000),
@@ -163,9 +163,9 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (3, 4, 1273010000),
         ])
         self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath())),
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
-            dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath())),
+            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
+            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][1]['lastUpdate']),
+            dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][2]['lastUpdate']),
         ])
         self.assertEqual([x for x in dump['lecture_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
             dict(studentId=1, lectureId=1, key=u'cap_template_qn_reviews', value=u'10'),
@@ -276,12 +276,12 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ])
         # There's no gap between new lectures, since we don't know about them
         self.assertEqual(dumpPostIngest['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath())),
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
-            dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath())),
-            dict(hostId=2, lectureId=5, plonePath='/'.join(lecObjs[0].getPhysicalPath())),
-            dict(hostId=2, lectureId=6, plonePath='/'.join(lecObjs[2].getPhysicalPath())),
-            dict(hostId=2, lectureId=7, plonePath='/'.join(ugLecObjs[0].getPhysicalPath())),
+            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][0]['lastUpdate']),
+            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][1]['lastUpdate']),
+            dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][2]['lastUpdate']),
+            dict(hostId=2, lectureId=5, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][3]['lastUpdate']),
+            dict(hostId=2, lectureId=6, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][4]['lastUpdate']),
+            dict(hostId=2, lectureId=7, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][5]['lastUpdate']),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dumpPostIngest['answer']], [
             (1, 1, 1271010000),
