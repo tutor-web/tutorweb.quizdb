@@ -23,17 +23,8 @@ def toUTCDateTime(t):
     # NB: MySQL cannae store less than second resolution
     return t.asdatetime().astimezone(pytz.utc).replace(microsecond=0, tzinfo=None)
 
-
-def syncPloneQuestions(dbLec, lectureObj):
-    """Ensure database has same questions as Plone"""
-    # Get all plone questions, turn it into a dict by path
+def _ploneQuestionDict(listing):
     ploneQns = {}
-    if getattr(lectureObj, 'isAlias', False):
-        lectureObj = lectureObj._target
-    listing = lectureObj.portal_catalog.unrestrictedSearchResults(
-        path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
-        object_provides=IQuestion.__identifier__
-    )
     for l in listing:
         obj = l.getObject()
         data = obj.unrestrictedTraverse('@@data')
@@ -67,6 +58,20 @@ def syncPloneQuestions(dbLec, lectureObj):
                 timesAnswered=getattr(obj, 'timesanswered', 0),
                 timesCorrect=getattr(obj, 'timescorrect', 0),
             )
+    return ploneQns
+
+def syncPloneQuestions(dbLec, lectureObj):
+    """Ensure database has same questions as Plone"""
+    # Get all plone questions, turn it into a dict by path
+    if getattr(lectureObj, 'isAlias', False):
+        lectureObj = lectureObj._target
+    listing = lectureObj.portal_catalog.unrestrictedSearchResults(
+        path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
+        object_provides=IQuestion.__identifier__
+    )
+
+    # Sort questions into a dict by path
+    ploneQns = _ploneQuestionDict(listing)
 
     # Get all questions currently in the database
     for dbQn in (Session.query(db.Question).filter(db.Question.lectures.contains(dbLec))):
@@ -78,11 +83,12 @@ def syncPloneQuestions(dbLec, lectureObj):
             dbQn.lastUpdate = qn['lastUpdate']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
-        elif dbQn.active and getattr(obj, 'isAlias', False):
-            # Remove symlink question from lecture
-            dbQn.lectures = [l for l in dbQn.lectures if l != dbLec]
-            dbQn.active = len(dbQn.lectures) > 0
-            dbQn.lastUpdate = datetime.datetime.utcnow()
+# TODO: This is gibberish, obj/qn isn't there to test to see if it's an alias
+#        elif dbQn.active and getattr(obj, 'isAlias', False):
+#            # Remove symlink question from lecture
+#            dbQn.lectures = [l for l in dbQn.lectures if l != dbLec]
+#            dbQn.active = len(dbQn.lectures) > 0
+#            dbQn.lastUpdate = datetime.datetime.utcnow()
         elif dbQn.active:
             # Remove question from all lectures and mark as inactive
             dbQn.lectures = []
