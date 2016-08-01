@@ -62,7 +62,7 @@ def getAnswerSummary(lectureId, student):
     return (dbAnsSummary, maxTimeEnd)
 
 
-def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
+def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
     """How many coins does this earn a student?"""
     def crossedGradeBoundary(boundary):
         """True iff student has crossed grade boundary for the first time"""
@@ -91,22 +91,20 @@ def getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings):
     if crossedGradeBoundary(9.750):
         out += round(float(settings.get('award_lecture_aced', "10000")))
 
-        # Fetch all sibling lectures
-        siblingPaths = [
-            b.getPath()
-            for b
-            in lectureObj.aq_parent.restrictedTraverse('@@folderListing')(portal_type='tw_lecture')
-            if b.getPath() != '/'.join(lectureObj.getPhysicalPath())
-        ]
-
         # Is every other lecture aced?
+        # TODO: Bit ugly relying on plonePath structure here
+        siblingLectures = [x[0] for x in Session.query(db.Lecture.lectureId)
+            .filter(db.Lecture.hostId == dbLec.hostId)
+            .filter(db.Lecture.lectureId != dbLec.lectureId)
+            .filter(db.Lecture.plonePath.startswith(re.sub(r'/.*?$', '', dbLec.plonePath)))
+            .all()]
+
         if (Session.query(db.AnswerSummary)
                 .join(db.Lecture)
+                .filter(db.Lecture.lectureId.in_(siblingLectures))
                 .filter(db.AnswerSummary.studentId == student.studentId)
-                .filter(db.Lecture.hostId == dbLec.hostId)
-                .filter(db.Lecture.plonePath.in_(siblingPaths))
                 .filter(db.AnswerSummary.gradeHighWaterMark >= 9.750)
-                .count() >= len(siblingPaths)):
+                .count() >= len(siblingLectures)):
             out += round(float(settings.get('award_tutorial_aced', "100000")))
 
     # Is this a review of a template question?
@@ -306,7 +304,7 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
                 dbAnsSummary.practiceCorrect += 1
 
         # Does this earn the student any coins?
-        coinsAwarded = getCoinAward(dbLec, lectureObj, student, dbAnsSummary, dbQn, a, settings)
+        coinsAwarded = getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings)
 
         # Post-awards, update grade
         if a.get('grade_after', None) is not None:

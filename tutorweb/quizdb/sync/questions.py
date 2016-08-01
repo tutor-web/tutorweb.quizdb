@@ -75,7 +75,7 @@ def syncPloneQuestions(dbLec, lectureObj):
         # ...and we updated since the last question was inserted/updated
         if dbLec.lastUpdate > toUTCDateTime(max(l['modified'] for l in listing)):
             # ...don't do anything
-            return
+            return False
 
     # Sort questions into a dict by path
     ploneQns = _ploneQuestionDict(listing)
@@ -125,6 +125,7 @@ def syncPloneQuestions(dbLec, lectureObj):
 
     dbLec.lastUpdate = datetime.datetime.utcnow()
     Session.flush()
+    return True
 
 
 def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficulty=None, reAllocQuestions=False):

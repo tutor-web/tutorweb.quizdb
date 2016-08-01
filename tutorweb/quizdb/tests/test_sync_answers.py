@@ -137,6 +137,12 @@ class GetCoinAwardTest(FunctionalTestCase):
         dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
         syncPloneQuestions(dbLec, lectureObj)
 
+        # Also sync lec2, so coins knows about it below
+        syncPloneQuestions(
+            portal['dept1']['tut1']['lec2'].restrictedTraverse('@@quizdb-sync').getDbLecture(),
+            portal['dept1']['tut1']['lec2'],
+        )
+
         # Student isn't a tutor yet
         login(portal, USER_A_ID)
         dbStudent = lectureObj.restrictedTraverse('@@quizdb-sync').getCurrentStudent()

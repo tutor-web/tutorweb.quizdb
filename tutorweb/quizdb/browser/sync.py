@@ -135,10 +135,10 @@ class SyncLectureView(JSONBrowserView):
         )
 
         # Make sure DB is in sync with Plone
-        syncPloneQuestions(
-            dbLec,
-            self.context,
-        )
+        if syncPloneQuestions(dbLec, self.context):
+            # Make sure all siblings are synced too, so historical questions, coins do the right thing
+            for b in self.context.aq_parent.restrictedTraverse('@@folderListing')(portal_type='tw_lecture'):
+                syncPloneQuestions(self.getDbLecture(b.getPath()), b.getObject())
 
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(
