@@ -36,7 +36,7 @@ class GetCoinAwardTest(FunctionalTestCase):
             for qnCount in range(7):
                 # user 1 generates a question (assign, answer), don't get any coin for that
                 login(portal, creator.userName)
-                creatorAllocs = getQuestionAllocation(dbLec, creator, portal.absolute_url(), {})
+                creatorAllocs = list(getQuestionAllocation(dbLec, creator, portal.absolute_url(), {}))
 
                 creatorAq = parseAnswerQueue(dbLec, lectureObj, creator, [
                     dict(
@@ -71,7 +71,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                 # Start reviewing question
                 for (i, reviewer) in enumerate(reviewers):
                     login(portal, reviewer.userName)
-                    reviewerAllocs = getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {})
+                    reviewerAllocs = list(getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {}))
                     # Don't know which of reviewerAllocs matches creatorAq[-1], so guess
                     try:
                         parseAnswerQueue(dbLec, lectureObj, reviewer, [
@@ -143,7 +143,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.assertEqual(dbStudent.chatTutor, [])
 
         # Student aces lecture1, but this doesn't make them a tutor
-        aAllocs = getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {})
+        aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
         import transaction ; transaction.commit()
         aAq = parseAnswerQueue(dbLec, lectureObj, dbStudent, [
             aqEntry(aAllocs, 0, True, 0.5),
@@ -163,7 +163,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         lectureObj = portal['dept1']['tut1']['lec2']
         dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
         syncPloneQuestions(dbLec, lectureObj)
-        aAllocs = getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {})
+        aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
         import transaction ; transaction.commit()
         aAq = parseAnswerQueue(dbLec, lectureObj, dbStudent, [
             aqEntry(aAllocs, 0, True, 0.5),

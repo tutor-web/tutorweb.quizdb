@@ -44,9 +44,10 @@ class OriginalAllocation(BaseAllocation):
             .filter(db.Question.active == True) \
             .filter(db.Allocation.active == True) \
             .filter(db.Allocation.lectureId == self.dbLec.lectureId) \
+            .filter(db.Question.onlineOnly == False) \
             .filter(db.Question.qnType != 'tw_questiontemplate') \
             .filter(db.Allocation.studentId == self.student.studentId) \
-            .all() # NB: qnType != '...' ~== online_only = false
+            .all()
 
         # Render each question into a dict
         for (dbQn, dbAlloc) in dbAllocs:
@@ -66,7 +67,7 @@ class OriginalAllocation(BaseAllocation):
             # TODO: Use this instead of getAllQuestions
             query = query.filter(db.Question.lectures.contains(self.dbLec)) \
                 .filter(db.Allocation.lectureId == self.dbLec.lectureId)
-            query = query.filter(db.Question.qnType != 'tw_questiontemplate') # NB: qnType != '...' ~== online_only = false
+            query = query.filter(db.Question.onlineOnly == False)
             query = query.filter(db.Question.active == True)
 
         if active is not None:

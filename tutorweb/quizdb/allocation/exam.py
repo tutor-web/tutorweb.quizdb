@@ -36,7 +36,7 @@ class ExamAllocation(BaseAllocation):
                 self.dbLec.plonePath + '/' + self._decomposeUrl(u)['questionId'] for u in uris
             ))
         else:
-            query = query.filter(db.Question.qnType != 'tw_questiontemplate') # NB: qnType != '...' ~== online_only = false
+            query = query.filter(db.Question.onlineOnly == False)
 
         if lockForUpdate:
             query = query.with_lockmode('update')

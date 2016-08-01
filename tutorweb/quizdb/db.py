@@ -4,6 +4,7 @@ from hashlib import md5
 from datetime import datetime
 
 from sqlalchemy import Table, UniqueConstraint
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 import sqlalchemy.event
 import sqlalchemy.schema
@@ -324,6 +325,7 @@ class Question(ORMBase):
         primary_key=True,
     )
     qnType = sqlalchemy.schema.Column(
+        # "internal" Plone content types.
         sqlalchemy.types.String(64),
         nullable=False,
         unique=False,
@@ -360,6 +362,10 @@ class Question(ORMBase):
         nullable=False,
         default=True,
     )
+
+    @hybrid_property
+    def onlineOnly(self):
+        return self.qnType == 'tw_questiontemplate'
 
 
 class Student(ORMBase):

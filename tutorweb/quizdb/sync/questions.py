@@ -134,10 +134,11 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
         urlBase=questionRoot,
     )
     # Return all active questions
-    return [dict(
-        _type="template" if dbQn.qnType == 'tw_questiontemplate' else None,
-        uri=questionUri,
-        chosen=dbQn.timesAnswered,
-        correct=dbQn.timesCorrect,
-        online_only = (dbQn.qnType == 'tw_questiontemplate'),
-    ) for questionUri, dbQn in alloc.updateAllocation(settings, targetDifficulty=targetDifficulty, reAllocQuestions=reAllocQuestions)]
+    for questionUri, dbQn in alloc.updateAllocation(settings, targetDifficulty=targetDifficulty, reAllocQuestions=reAllocQuestions):
+        yield dict(
+            _type="template" if dbQn.qnType == 'tw_questiontemplate' else None,
+            uri=questionUri,
+            chosen=dbQn.timesAnswered,
+            correct=dbQn.timesCorrect,
+            online_only=dbQn.onlineOnly,
+        )

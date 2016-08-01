@@ -169,5 +169,5 @@ class SyncLectureView(JSONBrowserView):
             title=self.context.title,
             settings=dict((k, v) for k, v in settings.items() if k not in SERVERSIDE_SETTINGS),
             answerQueue=answerQueue,
-            questions=questions,
+            questions=list(questions),
         )

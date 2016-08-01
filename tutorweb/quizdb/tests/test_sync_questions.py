@@ -75,7 +75,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         # Allocate to user A, should get all questions seperately
         login(portal, USER_A_ID)
         self.studentA = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
-        allocs = getQuestionAllocation(dbLec, self.studentA, 'http://nohost/plone', dict(question_cap=10))
+        allocs = list(getQuestionAllocation(dbLec, self.studentA, 'http://nohost/plone', dict(question_cap=10)))
         self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
@@ -108,7 +108,7 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         login(portal, MANAGER_ID)
 
         def getAllocStats(dbLec, student, targetDifficulty, settings = dict(question_cap=10)):
-            allocs = getQuestionAllocation(dbLec, student, 'http://nohost/plone', settings, targetDifficulty=targetDifficulty)
+            allocs = list(getQuestionAllocation(dbLec, student, 'http://nohost/plone', settings, targetDifficulty=targetDifficulty))
             difficulty = [float(qn['correct']) / qn['chosen'] for qn in allocs if qn['chosen'] > 10]
             mean = sum(difficulty) / len(difficulty)
             variance = sum((x - mean) **2 for x in difficulty) / len(difficulty)
@@ -161,14 +161,14 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         syncPloneQuestions(dbLec, lectureObj)
 
         def gqa(targetDifficulty, reAllocQuestions, student=self.studentA):
-            allocs = getQuestionAllocation(
+            allocs = list(getQuestionAllocation(
                 dbLec,
                 student,
                 'http://nohost/plone',
                 dict(question_cap=10),
                 targetDifficulty=targetDifficulty,
                 reAllocQuestions=reAllocQuestions,
-            )
+            ))
             return allocs
         aAllocs = []
 
@@ -229,12 +229,12 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         dbLec = syncView.getDbLecture()
         student = syncView.getCurrentStudent()
         syncPloneQuestions(dbLec, linkLec)
-        allocs = getQuestionAllocation(
+        allocs = list(getQuestionAllocation(
             dbLec,
             student,
             'http://nohost/plone',
             dict(question_cap=10),
-        )
+        ))
         self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
             u'Unittest D1 T1 L1 Q1',
             u'Unittest D1 T1 L1 Q2',
@@ -254,12 +254,12 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         # User A will see it when taking the link lecture
         login(portal, USER_A_ID)
         syncPloneQuestions(dbLec, linkLec)
-        allocs = getQuestionAllocation(
+        allocs = list(getQuestionAllocation(
             dbLec,
             student,
             'http://nohost/plone',
             dict(question_cap=10),
-        )
+        ))
         self.assertEqual(sorted(getAllocation(portal, qn['uri'], USER_A_ID)['title'] for qn in allocs), [
             u'Unittest D1 T1 L1 Q1',
             u'Unittest D1 T1 L1 Q2',
@@ -332,12 +332,12 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         dbLec = syncView.getDbLecture()
         student = syncView.getCurrentStudent()
         syncPloneQuestions(dbLec, testLec)
-        allocByTitleTestLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
+        allocByTitleTestLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in list(getQuestionAllocation(
             dbLec,
             student,
             'http://nohost/plone',
             dict(question_cap=10),
-        ))
+        )))
         self.assertEqual(sorted(allocByTitleTestLec.keys()), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
@@ -347,12 +347,12 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         ])
 
         # Allocate original lecture too, should have same questions, but different allocations
-        allocByTitleOrigLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in getQuestionAllocation(
+        allocByTitleOrigLec = dict((getAllocation(portal, qn['uri'], USER_A_ID)['title'], qn) for qn in list(getQuestionAllocation(
             origLec.restrictedTraverse('@@quizdb-sync').getDbLecture(),
             student,
             'http://nohost/plone',
             dict(question_cap=10),
-        ))
+        )))
         self.assertEqual(sorted(allocByTitleOrigLec.keys()), [
             u'Einf\xf6ld Umr\xf6\xf0un',
             u'T\xe1knm\xe1l mengjafr\xe6\xf0innar - mengi',
