@@ -223,14 +223,17 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         )]
         transaction.commit()
 
+        dbOrigLec = origLec.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncView = linkLec.restrictedTraverse('@@quizdb-sync')
+        dbLinkLec = syncView.getDbLecture()
+        self.assertNotEqual(dbOrigLec.lectureId, dbLinkLec.lectureId)
+
         # Allocate questions from here to user A, will get lecture 1 questions
         login(portal, USER_A_ID)
-        syncView = linkLec.restrictedTraverse('@@quizdb-sync')
-        dbLec = syncView.getDbLecture()
         student = syncView.getCurrentStudent()
-        syncPloneQuestions(dbLec, linkLec)
+        syncPloneQuestions(dbLinkLec, linkLec)
         allocs = list(getQuestionAllocation(
-            dbLec,
+            dbLinkLec,
             student,
             'http://nohost/plone',
             dict(question_cap=10),
@@ -253,9 +256,9 @@ class GetQuestionAllocationTest(FunctionalTestCase):
 
         # User A will see it when taking the link lecture
         login(portal, USER_A_ID)
-        syncPloneQuestions(dbLec, linkLec)
+        syncPloneQuestions(dbLinkLec, linkLec)
         allocs = list(getQuestionAllocation(
-            dbLec,
+            dbLinkLec,
             student,
             'http://nohost/plone',
             dict(question_cap=10),

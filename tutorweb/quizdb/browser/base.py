@@ -87,12 +87,7 @@ class BrowserViewHelpers(object):
             context = self.context
             while context.portal_type != 'tw_lecture':
                 context = context.aq_parent
-
-            # Resolve any lecture symlink
-            if getattr(context, 'isAlias', False):
-                plonePath = '/'.join(context._target.getPhysicalPath())
-            else:
-                plonePath = '/'.join(context.getPhysicalPath())
+            plonePath = '/'.join(context.getPhysicalPath())
 
         try:
             dbLec = Session.query(db.Lecture) \
