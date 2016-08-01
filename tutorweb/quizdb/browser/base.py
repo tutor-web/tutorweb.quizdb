@@ -69,7 +69,7 @@ class BrowserViewHelpers(object):
 
     def lectureUrlToPlonePath(self, lecPath):
         """Given a public URL, get the internal plonePath"""
-        lecPath = re.sub(r'/quizdb-[^/]*$', '', lecPath)
+        lecPath = re.sub(r'/@*quizdb-[^/]*$', '', lecPath)
         return '/'.join(self.request.physicalPathFromURL(str(lecPath)))
 
     def lectureObjToUrl(self, lectureObj, view='quizdb-sync'):
@@ -81,15 +81,7 @@ class BrowserViewHelpers(object):
     def getDbLecture(self, plonePath=None):
         """Return database ID for the current lecture"""
         if plonePath:
-            # Using string, not context, turn possible URI back into plone path
-            plonePath = str(plonePath)
-            plonePath = re.sub(r'^https?://[^/]+', '', plonePath)
-            plonePath = re.sub(r'^/*', '/', plonePath)
-            plonePath = re.sub(r'/@*quizdb-[^/]+$', '', plonePath)
-
-            siteId = '/' + getSite().id
-            if not plonePath.startswith(siteId):
-                plonePath = siteId + plonePath
+            plonePath = self.lectureUrlToPlonePath(plonePath)
         else:
             # Go up until we find a lecture
             context = self.context

@@ -106,27 +106,24 @@ class JSONBrowserViewTest(IntegrationTestCase):
         self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec1')
 
         # Can use a string too
-        dbLec = self.getView().getDbLecture("http://some:host/dept1/tut1/lec2")
+        lec1Url = self.layer['portal']['dept1']['tut1']['lec1'].absolute_url()
+        lec2Url = self.layer['portal']['dept1']['tut1']['lec2'].absolute_url()
+
+        dbLec = self.getView().getDbLecture(lec2Url)
         self.assertEqual(dbLec.hostId, dbHost.hostId)
         self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec2')
 
         # Variations work, and get the same object
-        dbLec = self.getView().getDbLecture("http://some:host/dept1/tut1/lec1/@@quizdb-sync")
+        dbLec = self.getView().getDbLecture(lec1Url + "/@@quizdb-sync")
         self.assertEqual(dbLec.hostId, dbHost.hostId)
         self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec1')
-        dbLec = self.getView().getDbLecture("http://host/plone/dept1/tut1/lec2/@@quizdb-sync")
+        dbLec = self.getView().getDbLecture(lec2Url + "/@@quizdb-sync")
         self.assertEqual(dbLec.hostId, dbHost.hostId)
         self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec2')
-        dbLec = self.getView().getDbLecture("https://host/plone/dept1/tut1/lec2/@@quizdb-sync")
-        self.assertEqual(dbLec.hostId, dbHost.hostId)
-        self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec2')
-        dbLec = self.getView().getDbLecture("//plone/dept1/tut1/lec1/@@quizdb-sync")
-        self.assertEqual(dbLec.hostId, dbHost.hostId)
-        self.assertEqual(dbLec.plonePath, '/plone/dept1/tut1/lec1')
 
         # We don't allow nonsense to be added
         with self.assertRaisesRegexp(ValueError, r'not-a-real-lec'):
-            dbLec = self.getView().getDbLecture("http://some:host/dept1/super-tut/not-a-real-lec/@@quizdb-sync")
+            dbLec = self.getView().getDbLecture("http://nohost/plone/dept1/super-tut/not-a-real-lec/@@quizdb-sync")
 
         # Unicode strings are fine
         dbLec = self.getView().getDbLecture(u"//plone/dept1/tut1/lec1/@@quizdb-sync")
