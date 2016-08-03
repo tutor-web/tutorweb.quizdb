@@ -69,3 +69,10 @@ class Allocation(object):
 
     def getAllQuestions(self, **kwargs):
         return self.getQuestions(uris=None, **kwargs)
+
+    def publicQnType(self, qn):
+        if qn.qnType == 'tw_questiontemplate':
+            return 'template'
+        else:
+            # "regular" question
+            return None

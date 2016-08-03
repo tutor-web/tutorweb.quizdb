@@ -65,6 +65,12 @@ class Allocation(ORMBase):
         nullable=False,
         default=True,
     )
+    pubType = sqlalchemy.schema.Column(
+        # pubType if we should override the question's pubType, e.g. 'historical'
+        sqlalchemy.types.String(64),
+        nullable=True,
+        default=None,
+    )
 
 
 @sqlalchemy.event.listens_for(Allocation, "before_insert")
@@ -374,6 +380,10 @@ class Question(ORMBase):
     @hybrid_property
     def onlineOnly(self):
         return self.qnType == 'tw_questiontemplate'
+
+    @hybrid_property
+    def pubType(self):
+        return 'template' if self.qnType == 'tw_questiontemplate' else 'regular'
 
 
 class Student(ORMBase):

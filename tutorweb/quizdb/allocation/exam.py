@@ -49,4 +49,5 @@ class ExamAllocation(BaseAllocation):
 
     def updateAllocation(self, settings, question_cap=0, targetDifficulty=None, reAllocQuestions=False):
         # There isn't an allocation, just return all the questions
-        return self.getQuestions()
+        for qnUrl, qn in self.getQuestions():
+            yield (qnUrl, self.publicQnType(qn), qn)

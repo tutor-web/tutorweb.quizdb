@@ -433,3 +433,51 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
             {'id': 'qn-0', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 0', 'url': testLec.absolute_url() + '/qn-0'},
             {'id': 'qn-1', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest tw_latexquestion 1', 'url': testLec.absolute_url() + '/qn-1'},
         ])
+
+    def test_historicalSelection(self):
+        def getAlloc(dbLec, settings):
+            out = []
+            for a in getQuestionAllocation(
+                    dbLec,
+                    self.studentA,
+                    'http://nohost/plone',
+                    settings):
+                out.append([
+                    a['_type'],
+                    getAllocation(self.layer['portal'], a['uri'], USER_A_ID)['title'],
+                ])
+            return sorted(out, key=lambda(x): x[0] + x[1])
+
+        portal = self.layer['portal']
+        dbLec1 = portal['dept1']['tut1']['lec1'].restrictedTraverse('@@quizdb-sync').getDbLecture()
+        dbLec2 = portal['dept1']['tut1']['lec2'].restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec1, portal['dept1']['tut1']['lec1'])
+        syncPloneQuestions(dbLec2, portal['dept1']['tut1']['lec2'])
+
+        # By default, no historical questions
+        self.assertEqual(getAlloc(dbLec1, dict()), [
+            ['regular', u'Unittest D1 T1 L1 Q1'],
+            ['regular', u'Unittest D1 T1 L1 Q2'],
+        ])
+        self.assertEqual(getAlloc(dbLec2, dict()), [
+            ['regular', u'Unittest D1 T1 L2 Q1'],
+            ['regular', u'Unittest D1 T1 L2 Q2'],
+        ])
+
+        # Historical allocations only work if there's a history
+        self.assertEqual(getAlloc(dbLec1, dict(hist_sel='0.5')), [
+            ['regular', u'Unittest D1 T1 L1 Q1'],
+            ['regular', u'Unittest D1 T1 L1 Q2'],
+        ])
+        self.assertEqual(getAlloc(dbLec2, dict(hist_sel='0.5')), [
+            ['historical', u'Unittest D1 T1 L1 Q1'],
+            ['historical', u'Unittest D1 T1 L1 Q2'],
+            ['regular', u'Unittest D1 T1 L2 Q1'],
+            ['regular', u'Unittest D1 T1 L2 Q2'],
+        ])
+
+        # All historical means there's no need to return regular questions
+        self.assertEqual(getAlloc(dbLec2, dict(hist_sel='1')), [
+            ['historical', u'Unittest D1 T1 L1 Q1'],
+            ['historical', u'Unittest D1 T1 L1 Q2'],
+        ])

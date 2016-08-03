@@ -1,5 +1,6 @@
 import datetime
 import random
+import re
 
 from sqlalchemy.sql import func
 from z3c.saconfig import Session
@@ -80,11 +81,16 @@ class OriginalAllocation(BaseAllocation):
 
     def updateAllocation(self, settings, question_cap=DEFAULT_QUESTION_CAP, targetDifficulty=None, reAllocQuestions=False):
         # Get all existing allocations from the DB and their questions
-        allocsByType = dict(
-            tw_latexquestion=[],
-            tw_questiontemplate=[],
+        allocsByType = dict()
+        hist_sel = float(settings.get('hist_sel', '0'))
+        if hist_sel > 0.001:
+            allocsByType['historical'] = []
+        if hist_sel < 0.999:
             # NB: Need to add rows for each distinct question type, otherwise won't try and assign them
-        )
+            allocsByType['regular'] = []
+            allocsByType['template'] = []
+
+        # Fetch all existing allocations, divide by pubType
         for (dbAlloc, dbQn) in (Session.query(db.Allocation, db.Question)
                 .join(db.Question)
                 .filter(db.Allocation.studentId == self.student.studentId)
@@ -95,10 +101,12 @@ class OriginalAllocation(BaseAllocation):
                 dbAlloc.active = False
             else:
                 # Still around, so save it
-                allocsByType[dbQn.qnType].append(dict(alloc=dbAlloc, question=dbQn))
+                if (dbAlloc.pubType or dbQn.pubType) in allocsByType:
+                    # NB: If hist_sel has changed, we might not want some types any more
+                    allocsByType[dbAlloc.pubType or dbQn.pubType].append(dict(alloc=dbAlloc, question=dbQn))
 
         # Each question type should have at most question_cap questions
-        for (qnType, allocs) in allocsByType.items():
+        for (pubType, allocs) in allocsByType.items():
             questionCap = int(settings.get('question_cap', DEFAULT_QUESTION_CAP))
 
             # If there's too many allocs, throw some away
@@ -128,28 +136,44 @@ class OriginalAllocation(BaseAllocation):
 
             # Assign required questions randomly
             if len(allocs) < questionCap:
-                if targetDifficulty is None:
-                    targetExp = None
+                query = Session.query(db.Question).filter_by(qnType='tw_questiontemplate' if pubType == 'template' else 'tw_latexquestion').filter_by(active=True)
+                if pubType == 'historical':
+                    # Get questions from lectures "before" the current one
+                    targetQuestions = (Session.query(db.LectureQuestion.questionId)
+                        .join(db.Lecture)
+                        .filter(db.Lecture.plonePath.startswith(re.sub(r'/.*?$', '', self.dbLec.plonePath)))
+                        .filter(db.Lecture.plonePath < self.dbLec.plonePath)
+                        .subquery())
+                    query = query.filter(db.Question.questionId.in_(targetQuestions))
                 else:
-                    targetExp = func.abs(round(targetDifficulty * 50) - func.round((50.0 * db.Question.timesCorrect) / db.Question.timesAnswered))
-                for dbQn in (Session.query(db.Question)
-                        .filter(db.Question.lectures.contains(self.dbLec))
-                        .filter(~db.Question.questionId.in_([a['alloc'].questionId for a in allocs]))
-                        .filter(db.Question.qnType == qnType)
-                        .filter(db.Question.active == True)
-                        .order_by(targetExp)
-                        .order_by(func.random())
-                        .limit(max(questionCap - len(allocs), 0))):
+                    # Git questions from current lecture
+                    query = query.filter(db.Question.lectures.contains(self.dbLec))
+
+                # Filter out anything already allocated
+                allocIds = [a['alloc'].questionId for a in allocs]
+                if len(allocIds) > 0:
+                    query = query.filter(~db.Question.questionId.in_(allocIds))
+
+                # Give a target difficulty
+                if targetDifficulty is not None:
+                    query = query.order_by(func.abs(round(targetDifficulty * 50) - func.round((50.0 * db.Question.timesCorrect) / db.Question.timesAnswered)))
+
+                for dbQn in query.order_by(func.random()).limit(max(questionCap - len(allocs), 0)):
                     dbAlloc = db.Allocation(
                         studentId=self.student.studentId,
                         questionId=dbQn.questionId,
                         lectureId=self.dbLec.lectureId,
                         allocationTime=datetime.datetime.utcnow(),
+                        pubType='historical' if pubType == 'historical' else None,
                     )
                     Session.add(dbAlloc)
-                    allocs.append(dict(alloc=dbAlloc, question=dbQn))
+                    allocs.append(dict(alloc=dbAlloc, question=dbQn, new=True))
 
         Session.flush()
-        for allocs in allocsByType.values():
+        for pubType, allocs in allocsByType.items():
             for a in allocs:
-                yield (self._questionUrl(a['alloc'].publicId), a['question'])
+                yield (
+                    self._questionUrl(a['alloc'].publicId),
+                    pubType,
+                    a['question'],
+                )
