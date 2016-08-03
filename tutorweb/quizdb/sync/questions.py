@@ -90,7 +90,7 @@ def syncPloneQuestions(dbLec, lectureObj):
             dbQn.lastUpdate = qn['lastUpdate']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
-# TODO: This is gibberish, obj/qn isn't there to test to see if it's an alias
+# TODO: This is gibberish, qn isn't there to test to see if it's an alias, obj isn't even valid
 #        elif dbQn.active and getattr(obj, 'isAlias', False):
 #            # Remove symlink question from lecture
 #            dbQn.lectures = [l for l in dbQn.lectures if l != dbLec]

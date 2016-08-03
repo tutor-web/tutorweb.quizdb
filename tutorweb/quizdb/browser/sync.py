@@ -156,6 +156,7 @@ class SyncLectureView(JSONBrowserView):
             portalObj.absolute_url(),
             settings,
             targetDifficulty=(answerQueue[-1].get('grade_after', None) if len(answerQueue) > 8 else None),
+            # TODO: If just syncing then this will cause lots of churn
             reAllocQuestions=(len(answerQueue) > 10 and len(answerQueue) % 10 == 0),
         )
 
