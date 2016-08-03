@@ -45,7 +45,6 @@ class OriginalAllocation(BaseAllocation):
             .filter(db.Allocation.active == True) \
             .filter(db.Allocation.lectureId == self.dbLec.lectureId) \
             .filter(db.Question.onlineOnly == False) \
-            .filter(db.Question.qnType != 'tw_questiontemplate') \
             .filter(db.Allocation.studentId == self.student.studentId) \
             .all()
 
