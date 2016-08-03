@@ -105,23 +105,26 @@ class Host(ORMBase):
         backref="host")
 
 
-lectureQuestionTable = Table('lectureQuestions', ORMBase.metadata,
-    sqlalchemy.schema.Column(
-        'lectureId',
+class LectureQuestion(ORMBase):
+    """Many<->many link between lectures and questions"""
+    __tablename__ = 'lectureQuestions'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    lectureId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('lecture.lectureId'),
         nullable=False,
-    ),
-    sqlalchemy.schema.Column(
-        'questionId',
+        primary_key=True,
+    )
+    questionId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('question.questionId'),
         nullable=False,
-    ),
-
-    mysql_engine='InnoDB',
-    mysql_charset='utf8',
-)
+        primary_key=True,
+    )
 
 
 class Tutor(ORMBase):
@@ -309,7 +312,7 @@ class Lecture(ORMBase):
         default=datetime(1970,1,1),
     )
     questions = relationship("Question",
-        secondary=lectureQuestionTable,
+        secondary=LectureQuestion.__table__,
         backref="lectures")
     competentTutors = relationship("Tutor",
         secondary=tutorCompetenciesTable,
