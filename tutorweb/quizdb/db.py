@@ -13,6 +13,11 @@ from sqlalchemy.sql import func
 
 from tutorweb.quizdb import ORMBase, customtypes
 
+def toSql(query):
+    """Debug helper: Generate SQL for the session dialect"""
+    return str(query.statement.compile())
+
+
 class Allocation(ORMBase):
     """Allocation table: Which students are working on which questions"""
     __tablename__ = 'allocation'
