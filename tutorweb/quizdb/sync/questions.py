@@ -137,9 +137,9 @@ def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficul
         urlBase=questionRoot,
     )
     # Return all active questions
-    for questionUri, pubType, dbQn in alloc.updateAllocation(settings, targetDifficulty=targetDifficulty, reAllocQuestions=reAllocQuestions):
+    for questionUri, allocType, dbQn in alloc.updateAllocation(settings, targetDifficulty=targetDifficulty, reAllocQuestions=reAllocQuestions):
         yield dict(
-            _type=pubType,
+            _type=allocType,
             uri=questionUri,
             chosen=dbQn.timesAnswered,
             correct=dbQn.timesCorrect,

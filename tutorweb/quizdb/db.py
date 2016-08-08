@@ -65,8 +65,8 @@ class Allocation(ORMBase):
         nullable=False,
         default=True,
     )
-    pubType = sqlalchemy.schema.Column(
-        # pubType if we should override the question's pubType, e.g. 'historical'
+    allocType = sqlalchemy.schema.Column(
+        # The type of allocation, i.e. historical/template/regular
         sqlalchemy.types.String(64),
         nullable=True,
         default=None,
@@ -382,7 +382,8 @@ class Question(ORMBase):
         return self.qnType == 'tw_questiontemplate'
 
     @hybrid_property
-    def pubType(self):
+    def defAllocType(self):
+        """The default allocation type (i.e. if Allocation doesn't have one)"""
         return 'template' if self.qnType == 'tw_questiontemplate' else 'regular'
 
 

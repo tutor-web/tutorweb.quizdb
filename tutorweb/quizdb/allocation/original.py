@@ -89,7 +89,7 @@ class OriginalAllocation(BaseAllocation):
             allocsByType['regular'] = []
             allocsByType['template'] = []
 
-        # Fetch all existing allocations, divide by pubType
+        # Fetch all existing allocations, divide by allocType
         for (dbAlloc, dbQn) in (Session.query(db.Allocation, db.Question)
                 .join(db.Question)
                 .filter(db.Allocation.studentId == self.student.studentId)
@@ -100,12 +100,12 @@ class OriginalAllocation(BaseAllocation):
                 dbAlloc.active = False
             else:
                 # Still around, so save it
-                if (dbAlloc.pubType or dbQn.pubType) in allocsByType:
+                if (dbAlloc.allocType or dbQn.defAllocType) in allocsByType:
                     # NB: If hist_sel has changed, we might not want some types any more
-                    allocsByType[dbAlloc.pubType or dbQn.pubType].append(dict(alloc=dbAlloc, question=dbQn))
+                    allocsByType[dbAlloc.allocType or dbQn.defAllocType].append(dict(alloc=dbAlloc, question=dbQn))
 
         # Each question type should have at most question_cap questions
-        for (pubType, allocs) in allocsByType.items():
+        for (allocType, allocs) in allocsByType.items():
             questionCap = int(settings.get('question_cap', DEFAULT_QUESTION_CAP))
 
             # If there's too many allocs, throw some away
@@ -135,8 +135,8 @@ class OriginalAllocation(BaseAllocation):
 
             # Assign required questions randomly
             if len(allocs) < questionCap:
-                query = Session.query(db.Question).filter_by(qnType='tw_questiontemplate' if pubType == 'template' else 'tw_latexquestion').filter_by(active=True)
-                if pubType == 'historical':
+                query = Session.query(db.Question).filter_by(qnType='tw_questiontemplate' if allocType == 'template' else 'tw_latexquestion').filter_by(active=True)
+                if allocType == 'historical':
                     # Get questions from lectures "before" the current one
                     targetQuestions = (Session.query(db.LectureQuestion.questionId)
                         .join(db.Lecture)
@@ -163,16 +163,16 @@ class OriginalAllocation(BaseAllocation):
                         questionId=dbQn.questionId,
                         lectureId=self.dbLec.lectureId,
                         allocationTime=datetime.datetime.utcnow(),
-                        pubType='historical' if pubType == 'historical' else None,
+                        allocType='historical' if allocType == 'historical' else None,
                     )
                     Session.add(dbAlloc)
                     allocs.append(dict(alloc=dbAlloc, question=dbQn, new=True))
 
         Session.flush()
-        for pubType, allocs in allocsByType.items():
+        for allocType, allocs in allocsByType.items():
             for a in allocs:
                 yield (
                     self._questionUrl(a['alloc'].publicId),
-                    pubType,
+                    allocType,
                     a['question'],
                 )
