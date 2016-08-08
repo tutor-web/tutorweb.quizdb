@@ -26,6 +26,13 @@ def getAllocation(portal, alloc, user):
 class SyncPloneQuestionsTest(IntegrationTestCase):
     maxDiff = None
 
+    def test_emptyLecture(self):
+        """Empty lectures shouldn't do much, but still work"""
+        lectureObj = self.createTestLecture(qnCount=0)
+        dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec, lectureObj)
+        self.assertEqual(dbLec.questions, [])
+
     def test_questionPacks(self):
         """A question pack should be stored as a bunch of separate questions"""
         portal = self.layer['portal']

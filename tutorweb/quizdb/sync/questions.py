@@ -72,6 +72,8 @@ def syncPloneQuestions(dbLec, lectureObj):
 
     # If the lecture has same number of questions as before...
     if len(listing) == Session.query(db.Question).filter(db.Question.lectures.contains(dbLec)).count():
+        if len(listing) == 0:
+            return False
         # ...and we updated since the last question was inserted/updated
         if dbLec.lastUpdate > toUTCDateTime(max(l['modified'] for l in listing)):
             # ...don't do anything
