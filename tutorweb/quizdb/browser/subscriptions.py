@@ -26,19 +26,23 @@ class SubscriptionView(JSONBrowserView):
                 ))
             Session.flush()
 
-        # Fish out all subscribed lectures, organised by tutorial
+        # Fish out all subscribed tutorials/classes, organised by tutorial
         subs = dict(children=[])
-        for dbSub in Session.query(db.Subscription).filter_by(student=student):
-            ploneTut = self.portalObject().restrictedTraverse(str(dbSub.plonePath))
+        for (plonePath,) in Session.query(db.Subscription.plonePath).filter_by(student=student):
+            obj = self.portalObject().restrictedTraverse(str(plonePath))
+
+            if obj.portal_type == 'tw_tutorial':
+                lectures = [l.getObject() for l in obj.restrictedTraverse('@@folderListing')(portal_type='tw_lecture')]
+            elif obj.portal_type == 'tw_class':
+                lectures = [l.to_object for l in obj.lectures]
+
             subs['children'].append(dict(
-                title=ploneTut.Title(),
-                children=[
-                    dict(
-                        uri=self.lectureObjToUrl(l.getObject()),
-                        title=l.Title(),
-                    )
-                    for l in ploneTut.restrictedTraverse('@@folderListing')(portal_type='tw_lecture')
-                ],
+                id=plonePath,
+                title=obj.Title(),
+                children=[dict(
+                    uri=self.lectureObjToUrl(l),
+                    title=l.Title(),
+                ) for l in lectures],
             ))
 
         return subs
