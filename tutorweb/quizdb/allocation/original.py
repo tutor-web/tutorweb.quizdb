@@ -41,7 +41,6 @@ class OriginalAllocation(BaseAllocation):
         # Get all questions from DB and their allocations
         dbAllocs = Session.query(db.Question, db.Allocation) \
             .join(db.Allocation) \
-            .filter(db.Question.lectures.contains(self.dbLec)) \
             .filter(db.Question.active == True) \
             .filter(db.Allocation.active == True) \
             .filter(db.Allocation.lectureId == self.dbLec.lectureId) \
