@@ -76,110 +76,7 @@ TUTORWEB_QUIZDB_FUNCTIONAL_TESTING = FunctionalTesting(
     )
 
 
-class IntegrationTestCase(TestCase):
-    layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING
-
-    def tearDown(self):
-        """Drop all DB tables and recreate"""
-        Session().execute("DROP TABLE allocation")
-        Session().execute("DROP TABLE lecture")
-        Session().execute("DROP TABLE lectureSetting")
-        Session().execute("DROP TABLE lectureQuestions")
-        Session().execute("DROP TABLE question")
-        Session().execute("DROP TABLE student")
-        Session().execute("DROP TABLE answer")
-        Session().execute("DROP TABLE answerSummary")
-        Session().execute("DROP TABLE userGeneratedQuestions")
-        Session().execute("DROP TABLE userGeneratedAnswer")
-        Session().execute("DROP TABLE coinAward")
-        ORMBase.metadata.create_all(Session().bind)
-
-    def assertTrue(self, expr, thing=None, msg=None):
-        if thing is not None:
-            raise ValueError("Did you really mean to use assertTrue?")
-        return TestCase.assertTrue(self, expr, msg=msg)
-
-    def createTestStudent(self, id):
-        portal = self.layer['portal']
-        login(portal, MANAGER_ID)
-
-        acl_users = getToolByName(portal, 'acl_users')
-        mtool = getToolByName(portal, 'portal_membership')
-        acl_users.userFolderAddUser(
-            id, 'secret'+id[0],
-            ['Member'],[]
-        )
-        mtool.getMemberById(id).setMemberProperties(dict(
-            email=id.split('@', 1)[0] + '@example.com',
-            accept=True,
-        ))
-
-        login(portal, id)
-        student = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
-        transaction.commit()
-
-        return student
-
-class FunctionalTestCase(ContentFunctionalTestCase):
-    layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
-
-    def setUp(self):
-        super(FunctionalTestCase, self).setUp()
-        self.loghandlers = dict(
-            sqlalchemy=InstalledHandler('sqlalchemy.engine'),
-            sync=InstalledHandler('tutorweb.quizdb.browser.sync'),
-            syncm=InstalledHandler('tutorweb.quizdb.sync'),
-        )
-
-    def tearDown(self):
-        portal = self.layer['portal']
-        login(portal, MANAGER_ID)
-
-        # Remove any temporary Plone objects
-        for l in reversed(getattr(self, 'tempObjects', [])):
-            del aq_parent(l)[l.id]
-
-        # Drop all DB tables & recreate
-        Session().execute("DROP TABLE allocation")
-        Session().execute("DROP TABLE lecture")
-        Session().execute("DROP TABLE lectureSetting")
-        Session().execute("DROP TABLE lectureQuestions")
-        Session().execute("DROP TABLE question")
-        Session().execute("DROP TABLE student")
-        Session().execute("DROP TABLE answer")
-        Session().execute("DROP TABLE answerSummary")
-        Session().execute("DROP TABLE userGeneratedQuestions")
-        Session().execute("DROP TABLE userGeneratedAnswer")
-        Session().execute("DROP TABLE coinAward")
-        ORMBase.metadata.create_all(Session().bind)
-
-        transaction.commit()
-        super(FunctionalTestCase, self).tearDown()
-
-    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
-        """Call view, decode JSON results"""
-        browser = self.getBrowser(None, user=user)
-        browser.handleErrors = False
-        browser.raiseHttpErrors = False
-        if isinstance(expectedStatus, list):
-            expectedStatuses = [str(x) for x in expectedStatus]
-        else:
-            expectedStatuses = [str(expectedStatus)]
-        if body:
-            browser.post(path, json.dumps(body))
-        else:
-            browser.open(path)
-        self.assertEqual(browser.headers['content-type'], 'application/json')
-        self.assertTrue(
-            browser.headers['Status'][0:3] in expectedStatuses,
-            msg="Status %s didn't match %s: %s" % (
-                browser.headers['Status'][0:3],
-                "/".join(expectedStatuses),
-                json.loads(browser.contents),
-            )
-        )
-        return json.loads(browser.contents)
-
+class TestHelpers(object):
     def findAnswer(self, qnData, correct=True):
         """Return the first correct/incorrect answer for given question"""
         corrAns = json.loads(base64.b64decode(qnData['answer']))['correct']
@@ -189,14 +86,6 @@ class FunctionalTestCase(ContentFunctionalTestCase):
             if i not in corrAns:
                 return i
         raise ValueError("No incorrect answer");
-
-    def assertTrue(self, expr, thing=None, msg=None):
-        if thing is not None:
-            raise ValueError("Did you really mean to use assertTrue?")
-        return TestCase.assertTrue(self, expr, msg=msg)
-
-    def logs(self, name='sqlalchemy'):
-        return [x.getMessage() for x in self.loghandlers[name].records]
 
     def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}, lecOpts=lambda i: {}):
         portal = self.layer['portal']
@@ -262,3 +151,95 @@ class FunctionalTestCase(ContentFunctionalTestCase):
         transaction.commit()
 
         return student
+
+
+class IntegrationTestCase(TestCase, TestHelpers):
+    layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING
+
+    def tearDown(self):
+        """Drop all DB tables and recreate"""
+        Session().execute("DROP TABLE allocation")
+        Session().execute("DROP TABLE lecture")
+        Session().execute("DROP TABLE lectureSetting")
+        Session().execute("DROP TABLE lectureQuestions")
+        Session().execute("DROP TABLE question")
+        Session().execute("DROP TABLE student")
+        Session().execute("DROP TABLE answer")
+        Session().execute("DROP TABLE answerSummary")
+        Session().execute("DROP TABLE userGeneratedQuestions")
+        Session().execute("DROP TABLE userGeneratedAnswer")
+        Session().execute("DROP TABLE coinAward")
+        ORMBase.metadata.create_all(Session().bind)
+
+    def assertTrue(self, expr, thing=None, msg=None):
+        if thing is not None:
+            raise ValueError("Did you really mean to use assertTrue?")
+        return TestCase.assertTrue(self, expr, msg=msg)
+
+class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
+    layer = TUTORWEB_QUIZDB_FUNCTIONAL_TESTING
+
+    def setUp(self):
+        super(FunctionalTestCase, self).setUp()
+        self.loghandlers = dict(
+            sqlalchemy=InstalledHandler('sqlalchemy.engine'),
+            sync=InstalledHandler('tutorweb.quizdb.browser.sync'),
+            syncm=InstalledHandler('tutorweb.quizdb.sync'),
+        )
+
+    def tearDown(self):
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        # Remove any temporary Plone objects
+        for l in reversed(getattr(self, 'tempObjects', [])):
+            del aq_parent(l)[l.id]
+
+        # Drop all DB tables & recreate
+        Session().execute("DROP TABLE allocation")
+        Session().execute("DROP TABLE lecture")
+        Session().execute("DROP TABLE lectureSetting")
+        Session().execute("DROP TABLE lectureQuestions")
+        Session().execute("DROP TABLE question")
+        Session().execute("DROP TABLE student")
+        Session().execute("DROP TABLE answer")
+        Session().execute("DROP TABLE answerSummary")
+        Session().execute("DROP TABLE userGeneratedQuestions")
+        Session().execute("DROP TABLE userGeneratedAnswer")
+        Session().execute("DROP TABLE coinAward")
+        ORMBase.metadata.create_all(Session().bind)
+
+        transaction.commit()
+        super(FunctionalTestCase, self).tearDown()
+
+    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
+        """Call view, decode JSON results"""
+        browser = self.getBrowser(None, user=user)
+        browser.handleErrors = False
+        browser.raiseHttpErrors = False
+        if isinstance(expectedStatus, list):
+            expectedStatuses = [str(x) for x in expectedStatus]
+        else:
+            expectedStatuses = [str(expectedStatus)]
+        if body:
+            browser.post(path, json.dumps(body))
+        else:
+            browser.open(path)
+        self.assertEqual(browser.headers['content-type'], 'application/json')
+        self.assertTrue(
+            browser.headers['Status'][0:3] in expectedStatuses,
+            msg="Status %s didn't match %s: %s" % (
+                browser.headers['Status'][0:3],
+                "/".join(expectedStatuses),
+                json.loads(browser.contents),
+            )
+        )
+        return json.loads(browser.contents)
+
+    def assertTrue(self, expr, thing=None, msg=None):
+        if thing is not None:
+            raise ValueError("Did you really mean to use assertTrue?")
+        return TestCase.assertTrue(self, expr, msg=msg)
+
+    def logs(self, name='sqlalchemy'):
+        return [x.getMessage() for x in self.loghandlers[name].records]
