@@ -50,7 +50,7 @@ class SubscriptionView(JSONBrowserView):
             ) for l in lectures]
 
             if next((l for l in lectures if l['uri'] == del_lec), False):
-                dbSub.active = False
+                dbSub.hidden = True
                 Session.flush()
             else:
                 subs['children'].append(dict(

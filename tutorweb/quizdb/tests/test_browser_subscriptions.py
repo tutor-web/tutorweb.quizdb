@@ -93,6 +93,16 @@ class StudentResultsViewTest(IntegrationTestCase):
             ])
         )
 
+        # Stays removed
+        self.assertEqual(
+            getSubscriptions(dict()),
+            dict(children=[
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
+            ])
+        )
+
         # Can put it back again (NB: Not using the same lecture)
         self.assertEqual(
             getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec1/quizdb-sync')),
