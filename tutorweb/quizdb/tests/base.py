@@ -90,7 +90,6 @@ class TestHelpers(object):
     def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}, lecOpts=lambda i: {}):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
-        tutorial = portal.restrictedTraverse('dept1/tut1')
 
         # Create some content, merging in specified options
         def createContent(parent, defaults, i=random.randint(1000000, 9999999), optsFn=lambda i: {}):
