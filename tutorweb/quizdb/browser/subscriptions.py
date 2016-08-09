@@ -1,5 +1,7 @@
 import collections
 
+from sqlalchemy.orm.exc import NoResultFound
+
 from z3c.saconfig import Session
 from tutorweb.quizdb import db
 
@@ -16,10 +18,14 @@ class SubscriptionView(JSONBrowserView):
         if data.get('add_lec', False):
             ploneLec = self.portalObject().restrictedTraverse(self.lectureUrlToPlonePath(data['add_lec']))
             ploneTutPath = '/'.join(ploneLec.aq_parent.getPhysicalPath())
-            if (Session.query(db.Subscription)
+            try:
+                dbSub = (Session.query(db.Subscription)
                     .filter_by(student=student)
                     .filter_by(plonePath=ploneTutPath)
-                    .count()) == 0:
+                    .one())
+                # Already there, so make sure it's available
+                dbSub.hidden = False
+            except NoResultFound:
                 Session.add(db.Subscription(
                     student=student,
                     plonePath=ploneTutPath,
@@ -27,22 +33,29 @@ class SubscriptionView(JSONBrowserView):
             Session.flush()
 
         # Fish out all subscribed tutorials/classes, organised by tutorial
+        del_lec = data['del_lec'] if 'del_lec' in data else None
         subs = dict(children=[])
-        for (plonePath,) in Session.query(db.Subscription.plonePath).filter_by(student=student):
-            obj = self.portalObject().restrictedTraverse(str(plonePath))
-
+        for dbSub in Session.query(db.Subscription).filter_by(student=student).filter_by(hidden=False):
+            obj = self.portalObject().restrictedTraverse(str(dbSub.plonePath))
             if obj.portal_type == 'tw_tutorial':
-                lectures = [l.getObject() for l in obj.restrictedTraverse('@@folderListing')(portal_type='tw_lecture')]
+                lectures = (l.getObject() for l in obj.restrictedTraverse('@@folderListing')(portal_type='tw_lecture'))
             elif obj.portal_type == 'tw_class':
-                lectures = [l.to_object for l in obj.lectures]
+                lectures = (l.to_object for l in obj.lectures)
+            else:
+                raise ValueError("Unknown portal type!")
 
-            subs['children'].append(dict(
-                id=plonePath,
-                title=obj.Title(),
-                children=[dict(
+            lectures = [dict(
                     uri=self.lectureObjToUrl(l),
                     title=l.Title(),
-                ) for l in lectures],
-            ))
+            ) for l in lectures]
+
+            if next((l for l in lectures if l['uri'] == del_lec), False):
+                dbSub.active = False
+                Session.flush()
+            else:
+                subs['children'].append(dict(
+                    title=obj.Title(),
+                    children=lectures,
+                ))
 
         return subs

@@ -284,6 +284,11 @@ class Subscription(ORMBase):
         nullable=False,
         index=True,
     )
+    hidden = sqlalchemy.schema.Column(
+        sqlalchemy.types.Boolean(),
+        nullable=False,
+        default=False,
+    )
 
 
 class Lecture(ORMBase):

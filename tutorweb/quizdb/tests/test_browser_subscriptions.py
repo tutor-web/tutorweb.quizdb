@@ -20,6 +20,14 @@ class StudentResultsViewTest(IntegrationTestCase):
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
         )
 
+        # Create an extra test tutorial
+        portal['dept1'].invokeFactory(
+            type_name="tw_tutorial",
+            id="tut_extra",
+            title="Unittest D1 tutExtra",
+        )
+        self.extra_lec = self.createTestLecture(qnCount=1)
+
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
 
@@ -36,7 +44,7 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # Can add a subscription
         self.assertEqual(
-            getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec2')),
+            getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec2/quizdb-sync')),
             dict(children=[dict(title='Unittest D1 T1', children=[
                 dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
                 dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
@@ -54,9 +62,47 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # Adding again doesn't change anything
         self.assertEqual(
-            getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec2')),
+            getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec2/quizdb-sync')),
             dict(children=[dict(title='Unittest D1 T1', children=[
                 dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
                 dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
             ])])
+        )
+
+        # Can add a second
+        self.assertEqual(
+            getSubscriptions(dict(add_lec=self.extra_lec.absolute_url())),
+            dict(children=[
+                dict(title='Unittest D1 T1', children=[
+                    dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
+                    dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
+                ]),
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
+            ])
+        )
+
+        # Can remove lec1
+        self.assertEqual(
+            getSubscriptions(dict(del_lec='http://nohost/plone/dept1/tut1/lec2/quizdb-sync')),
+            dict(children=[
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
+            ])
+        )
+
+        # Can put it back again (NB: Not using the same lecture)
+        self.assertEqual(
+            getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec1/quizdb-sync')),
+            dict(children=[
+                dict(title='Unittest D1 T1', children=[
+                    dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
+                    dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
+                ]),
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
+            ])
         )
