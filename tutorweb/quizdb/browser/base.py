@@ -1,8 +1,6 @@
 import json
 import logging
 import re
-import socket
-import uuid
 
 from AccessControl import Unauthorized
 from Globals import DevelopmentMode
@@ -19,25 +17,13 @@ from Products.CMFCore.utils import getToolByName
 from Products.Five.browser import BrowserView
 
 from tutorweb.quizdb import db
+from tutorweb.quizdb.utils import getDbHost, getDbStudent
 
 
 class BrowserViewHelpers(object):
     @view.memoize
     def getDbHost(self):
-        try:
-            dbHost = (Session.query(db.Host)
-                .filter(db.Host.hostId == 1)
-                .one())
-        except NoResultFound:
-            dbHost = db.Host(fqdn=socket.getfqdn())
-            Session.add(dbHost)
-
-        # Make sure we have a key associated with this host
-        if not dbHost.hostKey:
-            dbHost.hostKey = str(uuid.uuid4().get_hex())
-
-        Session.flush()
-        return dbHost
+        return getDbHost()
 
     def getCurrentStudent(self):
         """Try fetching the current student, create if they don't exist"""
@@ -48,24 +34,10 @@ class BrowserViewHelpers(object):
         if not mb.getProperty('accept', False):
             raise Redirect, getToolByName(self.context, "portal_url")() + \
                             "/@@personal-information"
-        if hasattr(self, 'dbStudent') and self.dbStudent.userName == mb.getUserName():
-            return self.dbStudent
 
-        dbHost = self.getDbHost()
-        try:
-            dbStudent = Session.query(db.Student) \
-                .filter(db.Student.hostId == dbHost.hostId) \
-                .filter(db.Student.userName == mb.getUserName()).one()
-        except NoResultFound:
-            dbStudent = db.Student(
-                userName=mb.getUserName(),
-                hostId=dbHost.hostId,
-            )
-            Session.add(dbStudent)
-        dbStudent.eMail = mb.getProperty('email')
-        Session.flush()
-        self.dbStudent = dbStudent
-        return dbStudent
+        if not(hasattr(self, 'dbStudent') and self.dbStudent.userName == mb.getUserName()):
+            self.dbStudent = getDbStudent(mb.getUserName(), mb.getProperty('email'))
+        return self.dbStudent
 
     def lectureUrlToPlonePath(self, lecPath):
         """Given a public URL, get the internal plonePath"""
