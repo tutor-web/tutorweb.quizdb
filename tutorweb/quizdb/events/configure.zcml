@@ -7,4 +7,14 @@
         for="z3c.saconfig.interfaces.IEngineCreatedEvent"
         handler=".startup.createdHandler"
         />
+
+    <subscriber
+        for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectAddedEvent"
+        handler=".tw_class.classAdded"
+        />
+
+    <subscriber
+        for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".tw_class.classModified"
+        />
 </configure>
