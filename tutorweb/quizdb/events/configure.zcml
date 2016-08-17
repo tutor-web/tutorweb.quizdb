@@ -3,7 +3,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="tutorweb.quizdb">
 
-    <include package=".browser" file="configure.zcml" />
-    <include package=".events" file="configure.zcml" />
-
+    <subscriber
+        for="z3c.saconfig.interfaces.IEngineCreatedEvent"
+        handler=".startup.createdHandler"
+        />
 </configure>
