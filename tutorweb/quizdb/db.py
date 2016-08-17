@@ -266,23 +266,16 @@ class Subscription(ORMBase):
             mysql_charset='utf8',
         )
     )
-    subscriptionId = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        autoincrement=True,
-        primary_key=True,
-    )
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('student.studentId'),
-        nullable=False,
-        index=True,
+        primary_key=True,
     )
     student = relationship("Student")
     plonePath = sqlalchemy.schema.Column(
         # i.e. the path of the tutorial / class
         sqlalchemy.types.String(128),
-        nullable=False,
-        index=True,
+        primary_key=True,
     )
     hidden = sqlalchemy.schema.Column(
         sqlalchemy.types.Boolean(),

@@ -73,12 +73,12 @@ class StudentResultsViewTest(IntegrationTestCase):
         self.assertEqual(
             getSubscriptions(dict(add_lec=self.extra_lec.absolute_url())),
             dict(children=[
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
                 dict(title='Unittest D1 T1', children=[
                     dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
                     dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
-                ]),
-                dict(title=self.extra_lec.aq_parent.Title(), children=[
-                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
                 ]),
             ])
         )
@@ -107,12 +107,12 @@ class StudentResultsViewTest(IntegrationTestCase):
         self.assertEqual(
             getSubscriptions(dict(add_lec='http://nohost/plone/dept1/tut1/lec1/quizdb-sync')),
             dict(children=[
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
                 dict(title='Unittest D1 T1', children=[
                     dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
                     dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
-                ]),
-                dict(title=self.extra_lec.aq_parent.Title(), children=[
-                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
                 ]),
             ])
         )

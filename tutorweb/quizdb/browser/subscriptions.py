@@ -35,7 +35,7 @@ class SubscriptionView(JSONBrowserView):
         # Fish out all subscribed tutorials/classes, organised by tutorial
         del_lec = data['del_lec'] if 'del_lec' in data else None
         subs = dict(children=[])
-        for dbSub in Session.query(db.Subscription).filter_by(student=student).filter_by(hidden=False):
+        for dbSub in Session.query(db.Subscription).filter_by(student=student).filter_by(hidden=False).order_by(db.Subscription.plonePath):
             obj = self.portalObject().restrictedTraverse(str(dbSub.plonePath))
             if obj.portal_type == 'tw_tutorial':
                 lectures = (l.getObject() for l in obj.restrictedTraverse('@@folderListing')(portal_type='tw_lecture'))
