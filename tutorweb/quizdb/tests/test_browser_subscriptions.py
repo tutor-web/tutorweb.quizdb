@@ -116,3 +116,39 @@ class StudentResultsViewTest(IntegrationTestCase):
                 ]),
             ])
         )
+
+        # Can remove everything in one go
+        self.assertEqual(
+            getSubscriptions(dict(del_lec=[
+                self.extra_lec.absolute_url() + '/quizdb-sync',
+                'http://nohost/plone/dept1/tut1/lec1/quizdb-sync',
+                'http://nohost/plone/dept1/tut1/lec2/quizdb-sync',
+            ])),
+            dict(children=[
+            ])
+        )
+
+        # Stays removed
+        self.assertEqual(
+            getSubscriptions(dict()),
+            dict(children=[
+            ])
+        )
+
+        # Can put it all back in one go (NB: Multiple references to the same tutorial)
+        self.assertEqual(
+            getSubscriptions(dict(add_lec=[
+                self.extra_lec.absolute_url() + '/quizdb-sync',
+                'http://nohost/plone/dept1/tut1/lec1/quizdb-sync',
+                'http://nohost/plone/dept1/tut1/lec2/quizdb-sync',
+            ])),
+            dict(children=[
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
+                dict(title='Unittest D1 T1', children=[
+                    dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
+                    dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
+                ]),
+            ])
+        )

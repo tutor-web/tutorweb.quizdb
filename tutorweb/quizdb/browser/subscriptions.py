@@ -7,6 +7,11 @@ from tutorweb.quizdb import db
 
 from .base import JSONBrowserView
 
+
+def toArray(o):
+    return o if isinstance(o, list) else [o]
+
+
 class SubscriptionView(JSONBrowserView):
     """Get the student's current subscriptions"""
 
@@ -15,8 +20,8 @@ class SubscriptionView(JSONBrowserView):
         student = self.getCurrentStudent()
 
         # Add any additional subscriptions
-        if data.get('add_lec', False):
-            ploneLec = self.portalObject().restrictedTraverse(self.lectureUrlToPlonePath(data['add_lec']))
+        for lec in toArray(data.get('add_lec', [])):
+            ploneLec = self.portalObject().restrictedTraverse(self.lectureUrlToPlonePath(lec))
             ploneTutPath = '/'.join(ploneLec.aq_parent.getPhysicalPath())
             try:
                 dbSub = (Session.query(db.Subscription)
@@ -33,7 +38,7 @@ class SubscriptionView(JSONBrowserView):
             Session.flush()
 
         # Fish out all subscribed tutorials/classes, organised by tutorial
-        del_lec = data['del_lec'] if 'del_lec' in data else None
+        del_lec = toArray(data.get('del_lec', []))
         subs = dict(children=[])
         for dbSub in Session.query(db.Subscription).filter_by(student=student).filter_by(hidden=False).order_by(db.Subscription.plonePath):
             obj = self.portalObject().restrictedTraverse(str(dbSub.plonePath))
@@ -49,7 +54,7 @@ class SubscriptionView(JSONBrowserView):
                     title=l.Title(),
             ) for l in lectures]
 
-            if next((l for l in lectures if l['uri'] == del_lec), False):
+            if next((l for l in lectures if l['uri'] in del_lec), False):
                 dbSub.hidden = True
                 Session.flush()
             else:
