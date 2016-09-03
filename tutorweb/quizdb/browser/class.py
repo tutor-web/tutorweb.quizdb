@@ -44,7 +44,7 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
         return [dict(
             url=lec.absolute_url(),
             id='/'.join(lec.getPhysicalPath()[2:]),
-        ) for lec in lectures]
+        ) if hasattr(lec, 'absolute_url') else dict(url='unknown', id='unknown') for lec in lectures]
 
     def allStudentGrades(self, summaryValue = None):
         """
@@ -60,7 +60,7 @@ class StudentResultsView(BrowserView, BrowserViewHelpers):
             if '@' in s and s.split('@', 1)[0] not in classStudents:
                 aliasStudents[s.split('@', 1)[0]] = s
 
-        lecturePaths = [r.to_path for r in self.context.lectures]
+        lecturePaths = [r.to_path or 'unknown' for r in self.context.lectures]
         dbTotals = (
             Session.query(getattr(db.AnswerSummary, summaryValue))
             .add_columns(func.lower(db.Student.userName), db.Lecture.plonePath)
