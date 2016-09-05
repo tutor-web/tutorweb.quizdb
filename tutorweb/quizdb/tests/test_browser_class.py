@@ -13,6 +13,7 @@ from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
+from ..sync.tw_class import removeClassSubscriptions
 
 
 class StudentResultsViewTest(IntegrationTestCase):
@@ -38,6 +39,18 @@ class StudentResultsViewTest(IntegrationTestCase):
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
         )
+
+    def tearDown(self):
+        """Remove class so we don't pollute other tests"""
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        if 'classa' in portal:
+            del portal['classa']
+            removeClassSubscriptions('/'.join(portal.getPhysicalPath() + ('classa',)))
+            transaction.commit()
+
+        super(StudentResultsViewTest, self).tearDown()
 
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
@@ -266,6 +279,18 @@ class StudentTableViewTest(IntegrationTestCase):
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
         )
+
+    def tearDown(self):
+        """Remove class so we don't pollute other tests"""
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+
+        if 'classa' in portal:
+            del portal['classa']
+            removeClassSubscriptions('/'.join(portal.getPhysicalPath() + ('classa',)))
+            transaction.commit()
+
+        super(StudentTableViewTest, self).tearDown()
 
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]

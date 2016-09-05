@@ -24,3 +24,13 @@ def syncClassSubscriptions(classObj):
                 plonePath=ploneClassPath,
             ))
         Session.flush()
+
+
+def removeClassSubscriptions(ploneClassPath):
+    """
+    Remove any subscriptions for the class we're removing
+    """
+    dbSub = (Session.query(db.Subscription)
+        .filter_by(plonePath=ploneClassPath)
+        .delete())
+    Session.flush()

@@ -17,4 +17,9 @@
         for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler=".tw_class.classModified"
         />
+
+    <subscriber
+        for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectRemovedEvent"
+        handler=".tw_class.classRemoved"
+        />
 </configure>

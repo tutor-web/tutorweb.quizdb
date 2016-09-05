@@ -152,3 +152,14 @@ class StudentResultsViewTest(IntegrationTestCase):
                 ]),
             ])
         )
+
+        # Can remove everything in one go
+        self.assertEqual(
+            getSubscriptions(dict(del_lec=[
+                self.extra_lec.absolute_url() + '/quizdb-sync',
+                'http://nohost/plone/dept1/tut1/lec1/quizdb-sync',
+                'http://nohost/plone/dept1/tut1/lec2/quizdb-sync',
+            ])),
+            dict(children=[
+            ])
+        )
