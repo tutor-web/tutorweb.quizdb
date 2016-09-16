@@ -175,7 +175,6 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
     for questionId, timeEnd in (Session.query(db.Answer.questionId, db.Answer.timeEnd)
             .filter(db.Answer.studentId == student.studentId)
             .filter(db.Answer.lectureId == dbLec.lectureId)
-            .filter(db.Answer.answerId > 0)  # Purely to create a gap lock to block on creates # TODO: Still work when it's 0?
             .with_lockmode('update')):  # NB: FOR UPDATE gets us a fresh view of the data, SELECT doesn't necessarily? Who knows.
         answerRows['%d:%d' % (questionId, calendar.timegm(timeEnd.timetuple()))] = True
 
