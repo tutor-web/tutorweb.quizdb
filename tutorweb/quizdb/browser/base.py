@@ -68,6 +68,8 @@ class BrowserViewHelpers(object):
                 .filter(db.Lecture.plonePath == plonePath).one()
             return dbLec
         except NoResultFound:
+            # Hack around an upgrade bug
+            plonePath = re.sub('/tutor-web/tutor-web/', '/tutor-web/', plonePath)
             # Make sure the lecture exists in Plone first, to avoid DB spam
             try:
                 ploneLec = getSite().restrictedTraverse(plonePath)
