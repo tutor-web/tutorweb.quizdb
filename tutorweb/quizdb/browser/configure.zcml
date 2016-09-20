@@ -132,4 +132,11 @@
       class=".subscriptions.SubscriptionView"
       permission="zope2.View"
       />
+
+    <!-- errorlog.py -->
+    <browser:page name="quizdb-logerror"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".errorlog.LogErrorView"
+      permission="zope2.View"
+      />
 </configure>
