@@ -140,7 +140,7 @@ class OriginalAllocation(BaseAllocation):
                     # Get questions from lectures "before" the current one
                     targetQuestions = (Session.query(db.LectureQuestion.questionId)
                         .join(db.Lecture)
-                        .filter(db.Lecture.plonePath.startswith(re.sub(r'/.*?$', '', self.dbLec.plonePath)))
+                        .filter(db.Lecture.plonePath.startswith(re.sub(r'/[^/]+/?$', '/', self.dbLec.plonePath)))
                         .filter(db.Lecture.plonePath < self.dbLec.plonePath)
                         .subquery())
                     query = query.filter(db.Question.questionId.in_(targetQuestions))
