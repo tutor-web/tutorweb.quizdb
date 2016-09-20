@@ -60,6 +60,8 @@ class BrowserViewHelpers(object):
             while context.portal_type != 'tw_lecture':
                 context = context.aq_parent
             plonePath = '/'.join(context.getPhysicalPath())
+        # Hack around an upgrade bug
+        plonePath = re.sub('/tutor-web/tutor-web/', '/tutor-web/', plonePath)
 
         try:
             # TODO: Is this racy, if we fire off 4 updates?
@@ -68,8 +70,6 @@ class BrowserViewHelpers(object):
                 .filter(db.Lecture.plonePath == plonePath).one()
             return dbLec
         except NoResultFound:
-            # Hack around an upgrade bug
-            plonePath = re.sub('/tutor-web/tutor-web/', '/tutor-web/', plonePath)
             # Make sure the lecture exists in Plone first, to avoid DB spam
             try:
                 ploneLec = getSite().restrictedTraverse(plonePath)
