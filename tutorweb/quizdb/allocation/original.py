@@ -84,6 +84,9 @@ class OriginalAllocation(BaseAllocation):
         hist_sel = float(settings.get('hist_sel', '0'))
         if hist_sel > 0.001:
             allocsByType['historical'] = []
+            # Only get half the question cap if there's not much chance of the questions being used
+            if hist_sel < 0.5 and 'question_cap_historical' not in settings:
+                settings['question_cap_historical'] = int(settings.get('question_cap', DEFAULT_QUESTION_CAP)) / 2
         if hist_sel < 0.999:
             # NB: Need to add rows for each distinct question type, otherwise won't try and assign them
             allocsByType['regular'] = []
@@ -106,7 +109,7 @@ class OriginalAllocation(BaseAllocation):
 
         # Each question type should have at most question_cap questions
         for (allocType, allocs) in allocsByType.items():
-            questionCap = int(settings.get('question_cap', DEFAULT_QUESTION_CAP))
+            questionCap = int(settings.get('question_cap_' + allocType, settings.get('question_cap', DEFAULT_QUESTION_CAP)))
 
             # If there's too many allocs, throw some away
             for i in sorted(random.sample(xrange(len(allocs)), max(len(allocs) - questionCap, 0)), reverse=True):

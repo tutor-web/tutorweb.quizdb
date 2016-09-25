@@ -488,3 +488,10 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
             ['historical', u'Unittest D1 T1 L1 Q1'],
             ['historical', u'Unittest D1 T1 L1 Q2'],
         ])
+
+        # Create lecture before with loads of questions
+        lec0 = self.createTestLecture(qnCount=120, lecOpts=lambda i: dict(id='lec0'), tutorialObj=portal['dept1']['tut1'])
+        dbLec0 = lec0.restrictedTraverse('@@quizdb-sync').getDbLecture()
+        syncPloneQuestions(dbLec0, lec0)
+        self.assertEqual(len(getAlloc(dbLec2, dict(hist_sel='0.7'))), 102)
+        self.assertEqual(len(getAlloc(dbLec2, dict(hist_sel='0.2'))), 52)

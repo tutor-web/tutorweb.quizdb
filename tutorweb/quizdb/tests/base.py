@@ -87,7 +87,7 @@ class TestHelpers(object):
                 return i
         raise ValueError("No incorrect answer");
 
-    def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}, lecOpts=lambda i: {}):
+    def createTestLecture(self, qnCount=10, qnOpts=lambda i: {}, lecOpts=lambda i: {}, tutorialObj=None):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
 
@@ -115,8 +115,9 @@ class TestHelpers(object):
             return obj
 
         # Create dept/tutorial/lecture
-        deptObj = createContent(portal, dict(type_name="tw_department"))
-        tutorialObj = createContent(deptObj, dict(type_name="tw_tutorial"))
+        if not tutorialObj:
+            deptObj = createContent(portal, dict(type_name="tw_department"))
+            tutorialObj = createContent(deptObj, dict(type_name="tw_tutorial"))
         lectureObj = createContent(tutorialObj, dict(type_name="tw_lecture"), optsFn=lecOpts)
 
         # Create required questions inside
