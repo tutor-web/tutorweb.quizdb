@@ -20,5 +20,5 @@ class LogErrorViewTest(IntegrationTestCase):
             logged=True,
         ))
         self.assertEqual(self.logs('errorlog'), [
-            "Clientside error (user-agent: unknown):\n{ 'parp': 'yes', 'peep': 'no'}"
+            'Clientside error (user: "test-user") (user-agent: "unknown"):\n{ \'parp\': \'yes\', \'peep\': \'no\'}'
         ])
