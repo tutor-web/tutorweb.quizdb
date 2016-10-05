@@ -1,7 +1,7 @@
 import transaction
 import zope.event
 from zope.testing.loggingsupport import InstalledHandler
-from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+from zope.lifecycleevent import ObjectModifiedEvent
 
 from plone.app.testing import login
 
@@ -38,20 +38,31 @@ class SyncClassSubscriptionsTest(IntegrationTestCase):
             dict(children=[])
         )
 
-        # Add class with A in it
+        # Add class with A in it, but no students
         login(portal, MANAGER_ID)
-        portal.invokeFactory(
+        classObj = portal[portal.invokeFactory(
             type_name="tw_class",
             id="hard_knocks",
             title="Unittest Hard Knocks class",
             lectures=[portal['dept1']['tut1']['lec2']],
-            students=[USER_A_ID],
-        )
+            students=None,
+        )]
         setRelations(portal['hard_knocks'], 'lectures', [
             portal['dept1']['tut1']['lec2'],
         ]),
+        # Don't get subscribed
+        self.assertEqual(
+            getSubscriptions(user=USER_A_ID),
+            dict(children=[])
+        )
+        self.assertEqual(
+            getSubscriptions(user=USER_B_ID),
+            dict(children=[])
+        )
 
-        # Was auto subscribed
+        # Add student A, they get auto-subscribed
+        classObj.students = [USER_A_ID]
+        zope.event.notify(ObjectModifiedEvent(classObj))
         self.assertEqual(
             getSubscriptions(user=USER_A_ID),
             dict(children=[dict(title='Unittest Hard Knocks class', children=[

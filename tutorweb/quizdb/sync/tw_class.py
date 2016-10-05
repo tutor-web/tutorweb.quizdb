@@ -10,7 +10,7 @@ def syncClassSubscriptions(classObj):
     """
     ploneClassPath = '/'.join(classObj.getPhysicalPath())
 
-    for s in classObj.students:
+    for s in (classObj.students or []):
         dbStudent = getDbStudent(s)
 
         try:
