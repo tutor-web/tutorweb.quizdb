@@ -171,3 +171,60 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
                 dict(amount=11000, claimed=False, lecture='/plone/dept1/tut1/lec1', time=toTimestamp('2013-08-20T12:23:40')),
             ])
         )
+
+    def test_studentAward_overflow(self):
+        """Make sure we take into account DB overflow"""
+        # Shortcut for making answerQueue entries
+        aqTime = [1377000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc['questions'][qnIndex]['uri'], user=user)
+            aqTime[0] += 120
+            return dict(
+                uri=qnData.get('uri', alloc['questions'][qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 50,
+                answer_time=aqTime[0] - 20,
+                grade_after=grade_after,
+            )
+
+        # i.e. a bit more than the MySQL limit
+        BIG_AWARD = 2**31 * 10
+
+        # Create lecture with a stonking award
+        lec = self.createTestLecture(qnCount=2, lecOpts=lambda i: dict(settings=[
+            dict(key='award_lecture_answered', value=BIG_AWARD),
+        ]))
+        lecPath = '/'.join(lec.getPhysicalPath())
+        lecSyncUri = 'http://nohost%s/@@quizdb-sync' % lecPath
+
+        # Get an allocation to start things off
+        aAlloc = self.getJson(lecSyncUri, user=USER_A_ID)
+
+        # Get the award
+        aAlloc = self.getJson(lecSyncUri, user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(aAlloc, 0, True, 1.0),
+                aqEntry(aAlloc, 0, True, 2.0),
+                aqEntry(aAlloc, 0, True, 5.0),
+            ],
+        ))
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID),
+            uDict(coin_available=BIG_AWARD, walletId='', tx_id=None, history=[
+                uDict(amount=BIG_AWARD,  claimed=False, lecture=lecPath, time=toTimestamp('2013-08-20T12:05:40')),
+            ])
+        )
+
+        # Claim the award
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID, body=dict(
+                walletId='$$UNITTEST:01',
+            )),
+            uDict(coin_available=0, walletId='$$UNITTEST:01', tx_id=u'UNITTESTTX:$$UNITTEST:01:21474836480', history=[
+                uDict(amount=BIG_AWARD,  claimed=True, lecture=lecPath, time=toTimestamp('2013-08-20T12:05:40')),
+            ])
+        )
