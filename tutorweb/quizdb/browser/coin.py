@@ -11,6 +11,8 @@ from tutorweb.quizdb import db
 from .base import JSONBrowserView
 from ...quizdb import coin
 
+MAX_AWARD = 70 * 10**6 * 1000  # 70 million milliSMLY
+
 class TotalCoinView(BrowserView):
     """Show approximate number of coins"""
     def __call__(self):
@@ -61,7 +63,7 @@ class StudentAwardView(JSONBrowserView):
         txId = None
         if data is not None and data.get('walletId', None):
             walletId = data['walletId']
-            coinOwed = (coinAwarded - coinClaimed)
+            coinOwed = min(coinAwarded - coinClaimed, MAX_AWARD)
 
             # Perform transaction
             txId = coin.sendTransaction(walletId, coinOwed)

@@ -14,7 +14,7 @@ def getBlockCount():
 
 
 def sendTransaction(walletId, coinOwed):
-    """Send coinOwed to walletId, return tx id if worked"""
+    """Send coinOwed in milli-SMLY to walletId, return tx id if worked"""
     if walletId.startswith('$$UNITTEST'):
         # Unit test wallets don't do anything
         return 'UNITTESTTX:%s:%d' % (walletId, coinOwed)
