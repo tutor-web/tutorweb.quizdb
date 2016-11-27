@@ -14,6 +14,103 @@ from ..sync.answers import parseAnswerQueue
 class GetCoinAwardTest(FunctionalTestCase):
     maxDiff = None
 
+    def test_tutorial_ace(self):
+        """If turned on, should"""
+        # Shortcut for making answerQueue entries
+        aqTime = [1400000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc[qnIndex]['uri'], user=user)
+            aqTime[0] += 10
+            return dict(
+                uri=qnData.get('uri', alloc[qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 5,
+                answer_time=aqTime[0] - 9,
+                grade_after=grade_after,
+            )
+
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+        tutorial = portal['dept1'][portal['dept1'].invokeFactory(
+            type_name='tw_tutorial',
+            id='tut_awards',
+            title='Unittest awards test',
+            settings=[
+                dict(key='award_lecture_answered', value=1 * 1000),
+                dict(key='award_lecture_aced',     value=10 * 1000),
+                dict(key='award_tutorial_aced',    value=100 * 1000),
+            ],
+        )]
+        lectureObjs = [
+            self.createTestLecture(qnCount=2, tutorialObj=tutorial),
+            self.createTestLecture(qnCount=2, tutorialObj=tutorial),
+        ]
+        dbLecs = [
+            lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
+            for lectureObj in lectureObjs
+        ]
+        for i in xrange(len(dbLecs)):
+            syncPloneQuestions(dbLecs[i], lectureObjs[i])
+
+        # Sync other lectures, to make sure these don't figure in our calculations
+        for l in [portal['dept1']['tut1']['lec1'], portal['dept1']['tut1']['lec2']]:
+            syncPloneQuestions(
+                l.restrictedTraverse('@@quizdb-sync').getDbLecture(),
+                l
+            )
+
+        # Log in, get allocations
+        login(portal, USER_A_ID)
+        dbStudent = lectureObjs[0].restrictedTraverse('@@quizdb-sync').getCurrentStudent()
+        aAllocs = [
+            list(getQuestionAllocation(dbLecs[0], dbStudent, portal.absolute_url(), {})),
+            list(getQuestionAllocation(dbLecs[1], dbStudent, portal.absolute_url(), {})),
+        ]
+        import transaction ; transaction.commit()
+
+        # Student answers lecture1
+        aAq = parseAnswerQueue(dbLecs[0], lectureObjs[0], dbStudent, [
+            aqEntry(aAllocs[0], 0, True, 5.5),
+        ], {})
+        import transaction ; transaction.commit()
+        self.assertEqual(
+            portal.unrestrictedTraverse('@@quizdb-student-award').asDict()['coin_available'],
+            1 * 1000
+        )
+
+        # Student aces lecture1
+        aAq = parseAnswerQueue(dbLecs[0], lectureObjs[0], dbStudent, [
+            aqEntry(aAllocs[0], 0, True, 9.9),
+        ], {})
+        import transaction ; transaction.commit()
+        self.assertEqual(
+            portal.unrestrictedTraverse('@@quizdb-student-award').asDict()['coin_available'],
+            11 * 1000,
+        )
+
+        # Student answers lecture2
+        aAq = parseAnswerQueue(dbLecs[1], lectureObjs[1], dbStudent, [
+            aqEntry(aAllocs[1], 0, True, 5.5),
+        ], {})
+        import transaction ; transaction.commit()
+        self.assertEqual(
+            portal.unrestrictedTraverse('@@quizdb-student-award').asDict()['coin_available'],
+            12 * 1000
+        )
+
+        # Student aces lecture2, gets tutorial award
+        aAq = parseAnswerQueue(dbLecs[1], lectureObjs[1], dbStudent, [
+            aqEntry(aAllocs[1], 0, True, 9.9),
+        ], {})
+        import transaction ; transaction.commit()
+        self.assertEqual(
+            portal.unrestrictedTraverse('@@quizdb-student-award').asDict()['coin_available'],
+            122 * 1000
+        )
+
     def test_award_templateqn_aced(self):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)

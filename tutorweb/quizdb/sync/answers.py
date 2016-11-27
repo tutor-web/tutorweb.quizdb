@@ -96,7 +96,7 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
         siblingLectures = [x[0] for x in Session.query(db.Lecture.lectureId)
             .filter(db.Lecture.hostId == dbLec.hostId)
             .filter(db.Lecture.lectureId != dbLec.lectureId)
-            .filter(db.Lecture.plonePath.startswith(re.sub(r'/.*?$', '', dbLec.plonePath)))
+            .filter(db.Lecture.plonePath.startswith(re.sub(r'/[^/]+/?$', '/', dbLec.plonePath)))
             .all()]
 
         if (Session.query(db.AnswerSummary)
