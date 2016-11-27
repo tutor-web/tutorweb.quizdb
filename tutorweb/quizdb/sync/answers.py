@@ -306,7 +306,9 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
         coinsAwarded = getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings)
 
         # Post-awards, update grade
-        if a.get('grade_after', None) is not None:
+        # NB: We're ignoring practice grades because a bug elsewhere is causing students to have 0
+        # grades after returning to tutorweb after ~24hours and taking a practice question.
+        if not(a.get('practice', False)) and a.get('grade_after', None) is not None:
             if datetime.datetime.utcfromtimestamp(a['answer_time']) > maxTimeEnd:
                 dbAnsSummary.grade = a['grade_after']
             if a['grade_after'] > dbAnsSummary.gradeHighWaterMark:
