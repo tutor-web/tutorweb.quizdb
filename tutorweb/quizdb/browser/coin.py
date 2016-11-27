@@ -25,7 +25,7 @@ class TotalCoinView(BrowserView):
 class StudentAwardView(JSONBrowserView):
     """Show coins awarded to student"""
 
-    def asDict(self, data):
+    def asDict(self, data=None):
         """Show coins given to student"""
         student = self.getCurrentStudent()
 
