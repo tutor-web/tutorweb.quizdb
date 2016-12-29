@@ -1,5 +1,5 @@
-RPC_HOST = "127.0.0.1"
-RPC_PORT = 14242
-RPC_USER = "smileycoinrpc"
+# RPC_HOST = "127.0.0.1"
+# RPC_PORT = 14242
+# RPC_USER = "smileycoinrpc"
 RPC_PASS = "MOOMOOMOOMOOMOOMOOOOOO"
 RPC_WALLETPASS = "moo"

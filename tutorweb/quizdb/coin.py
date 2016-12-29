@@ -19,7 +19,7 @@ def sendTransaction(walletId, coinOwed):
         # Unit test wallets don't do anything
         return 'UNITTESTTX:%s:%d' % (walletId, coinOwed)
 
-    if coin_config.RPC_WALLETPASS:
+    if getattr(coin_config, 'RPC_WALLETPASS', False):
         callMethod('walletpassphrase', coin_config.RPC_WALLETPASS, 2)
     return callMethod(
         'sendtoaddress',
@@ -34,8 +34,8 @@ def callMethod(method, *params):
     callId = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
 
     request = urllib2.Request('http://%s:%d' % (
-        coin_config.RPC_HOST,
-        coin_config.RPC_PORT,
+        getattr(coin_config, 'RPC_HOST', '127.0.0.1'),
+        getattr(coin_config, 'RPC_PORT', 14242),
     ), json.dumps(dict(
         jsonrpc="1.0",
         id=callId,
@@ -43,7 +43,7 @@ def callMethod(method, *params):
         params=params,
     )), {
         "Authorization": "Basic " + base64.encodestring('%s:%s' % (
-            coin_config.RPC_USER,
+            getattr(coin_config, 'RPC_USER', 'smileycoinrpc'),
             coin_config.RPC_PASS,
         )).replace('\n', ''),
         "Content-Type": "application/json",
