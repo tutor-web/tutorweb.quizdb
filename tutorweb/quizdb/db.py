@@ -493,19 +493,16 @@ class AnswerSummary(ORMBase):
         mysql_charset='utf8',
     )
 
-    answerSummaryId = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        primary_key=True,
-        autoincrement=True,
-    )
     lectureId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        primary_key=True,
         nullable=False,
     )
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('student.studentId'),
+        primary_key=True,
         nullable=False,
     )
     grade = sqlalchemy.schema.Column(
@@ -764,6 +761,7 @@ class CoinAward(ORMBase):
         index=True,
     )
     amount = sqlalchemy.schema.Column(
+        # TODO BIGINT(unsigned=True),
         sqlalchemy.types.Integer(),
         nullable=False,
     )
