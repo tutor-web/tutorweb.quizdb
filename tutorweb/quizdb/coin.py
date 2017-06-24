@@ -4,8 +4,6 @@ import random
 import string
 import urllib2
 
-from zExceptions import BadRequest
-
 from .config import coin_config
 
 
@@ -71,6 +69,6 @@ def callMethod(method, *params):
         return out['result']
 
     if out['error']['message'] == "Invalid Smileycoin address":
-        raise BadRequest(out['error']['message'])
+        raise ValueError(out['error']['message'])
 
-    raise ValueError("%s (%d)" % (out['error']['message'], out['error']['code']))
+    raise RuntimeError("%s (%d)" % (out['error']['message'], out['error']['code']))

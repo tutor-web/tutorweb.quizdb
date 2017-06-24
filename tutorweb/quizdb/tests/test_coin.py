@@ -89,7 +89,7 @@ class TestCoin(unittest.TestCase):
         
         # General failure
         nextResponse = dict(error=dict(message="oh noes", code=-42))
-        with self.assertRaisesRegexp(ValueError, "oh noes \(\-42\)"):
+        with self.assertRaisesRegexp(RuntimeError, "oh noes \(\-42\)"):
             coin.sendTransaction('WALL-E', 84)
 
         # Mismatching response ID
@@ -99,7 +99,7 @@ class TestCoin(unittest.TestCase):
 
         # Invalid address
         nextResponse = dict(error=dict(message="Invalid Smileycoin address", code=-5))
-        with self.assertRaisesRegexp(BadRequest, "Smileycoin"):
+        with self.assertRaisesRegexp(ValueError, "Smileycoin"):
             coin.sendTransaction('WALL-E', 84)
 
     def test_httpErrors(self):
@@ -109,7 +109,7 @@ class TestCoin(unittest.TestCase):
 
         # General failure
         nextResponse = dict(_code=401, _msg='ERROR', _data="<html><body>401 Unauthorized, innit</body></html>")
-        with self.assertRaisesRegexp(ValueError, "ERROR\s+\(401\)"):
+        with self.assertRaisesRegexp(RuntimeError, "ERROR\s+\(401\)"):
             coin.sendTransaction('WALL-E', 84)
 
     def test_walletOpening(self):
