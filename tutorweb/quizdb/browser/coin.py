@@ -1,4 +1,5 @@
 import calendar
+import datetime
 # import logging
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
@@ -11,7 +12,8 @@ from tutorweb.quizdb import db
 from .base import JSONBrowserView
 from ...quizdb import coin
 
-MAX_AWARD = 70 * 10**6 * 1000  # 70 million milliSMLY
+MAX_STUDENT_HOURLY_AWARD = 7 * 10**6 * 1000  # 7 million milliSMLY
+MAX_DAILY_AWARD = 15 * 10**6 * 1000  # 15 million milliSMLY
 
 class TotalCoinView(BrowserView):
     """Show approximate number of coins"""
@@ -20,6 +22,10 @@ class TotalCoinView(BrowserView):
         self.request.response.setStatus(200)
         self.request.response.setHeader("Content-type", "text/plain")
         return str(out)
+
+
+def utcnow():
+    return datetime.datetime.utcnow()
 
 
 class StudentAwardView(JSONBrowserView):
@@ -63,7 +69,25 @@ class StudentAwardView(JSONBrowserView):
         txId = None
         if data is not None and data.get('walletId', None):
             walletId = data['walletId']
-            coinOwed = min(coinAwarded - coinClaimed, MAX_AWARD)
+
+            # Have we already given out our maximum for today?
+            dailyTotalAward = (Session.query(func.sum(db.CoinAward.amount))
+                .filter(db.CoinAward.awardTime > (utcnow() - datetime.timedelta(days=1)))
+                .one())[0] or 0
+            if dailyTotalAward > MAX_DAILY_AWARD:
+                raise ValueError("We have distributed all awards available for today")
+
+            # Has this student already got their coins for the hour?
+            hourlyStudentTotal = (Session.query(func.sum(db.CoinAward.amount))
+                .filter(db.CoinAward.studentId == student.studentId)
+                .filter(db.CoinAward.awardTime > (utcnow() - datetime.timedelta(hours=1)))
+                .one())[0] or 0
+            coinOwed = min(
+                coinAwarded - coinClaimed,
+                MAX_STUDENT_HOURLY_AWARD - hourlyStudentTotal,
+            )
+            if coinOwed == 0 and (coinAwarded - coinClaimed) > 0:
+                raise ValueError("You cannot redeem any more awards just yet")
 
             # Perform transaction
             txId = coin.sendTransaction(walletId, coinOwed)
@@ -74,6 +98,7 @@ class StudentAwardView(JSONBrowserView):
                 amount=int(coinOwed),
                 walletId=walletId,
                 txId=txId,
+                awardTime=utcnow(),  # NB: So it gets mocked in the tests
             ))
             Session.flush()
 

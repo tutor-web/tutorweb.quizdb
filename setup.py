@@ -35,6 +35,7 @@ setup(
         'test': [
             'plone.app.testing',
             'tutorweb.content',
+            'testfixtures',
         ],
     },
     entry_points="""
