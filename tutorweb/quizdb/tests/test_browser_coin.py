@@ -10,6 +10,8 @@ from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 import tutorweb.quizdb.tests.test_coin
 from .test_coin import chooseOpener, MockHTTPHandler, nextResponse
 
+from .. import coin
+
 from tutorweb.quizdb.browser.coin import MAX_STUDENT_HOURLY_AWARD, MAX_DAILY_AWARD
 
 
@@ -437,4 +439,68 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
             uDict(coin_available=0, walletId='$$UNITTEST:02', tx_id=u'UNITTESTTX:$$UNITTEST:02:%d' % BIG_AWARD, history=[
                 uDict(amount=BIG_AWARD, claimed=True, lecture=lecPath, time=toTimestamp('2013-08-20T12:11:40')),
             ])
+        )
+
+    def test_studentAward_captchafail(self):
+        """Make sure captchas can fail"""
+        coin.coin_config.CAPTCHA_KEY = 'keykeykey'
+
+        # Shortcut for making answerQueue entries
+        aqTime = [1377000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc['questions'][qnIndex]['uri'], user=user)
+            aqTime[0] += 120
+            return dict(
+                uri=qnData.get('uri', alloc['questions'][qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 50,
+                answer_time=aqTime[0] - 20,
+                grade_after=grade_after,
+            )
+
+        # Create lecture with award
+        lec = self.createTestLecture(qnCount=2, lecOpts=lambda i: dict(settings=[
+            dict(key='award_lecture_answered', value=1000),
+        ]))
+        lecPath = '/'.join(lec.getPhysicalPath())
+        lecSyncUri = 'http://nohost%s/@@quizdb-sync' % lecPath
+
+        # Get an allocation to start things off
+        aAlloc = self.getJson(lecSyncUri, user=USER_A_ID)
+
+        # Get the award
+        aAlloc = self.getJson(lecSyncUri, user=USER_A_ID, body=dict(
+            user='Arnold',
+            answerQueue=[
+                aqEntry(aAlloc, 0, True, 1.0),
+                aqEntry(aAlloc, 0, True, 2.0),
+                aqEntry(aAlloc, 0, True, 5.0),
+            ],
+        ))
+
+        def fakeCaptcha(resp, key, remote_addr):
+            class FakeResponse:
+                pass
+
+            self.assertEqual(resp, 'resprespresp')
+            self.assertEqual(key, 'keykeykey')
+            self.assertEqual(remote_addr, '')
+
+            out = FakeResponse()
+            out.error_code = 0
+            out.is_valid = False
+            return out
+
+        self.replace('norecaptcha.captcha.submit', fakeCaptcha)
+
+        # Try to claim the award, can't without a captcha value
+        self.assertEqual(
+            self.getJson('http://nohost/plone/@@quizdb-student-award', user=USER_A_ID, body=dict(
+                walletId='123456789101112',
+                captchaResponse="resprespresp",
+            ), expectedStatus=500)['message'],
+            u'Invalid CAPTCHA',
         )
