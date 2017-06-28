@@ -27,6 +27,42 @@ def sendTransaction(walletId, coinOwed):
     )
 
 
+def getAddress(account=getattr(coin_config, 'RPC_DEFAULT_ACCOUNT', '')):
+    """
+    Fetch a new valid address for the given account, or ''.
+    Example return value: u'BFg2HT3r3t9Qf3x931y3EX3Z9333i3TC3m'
+    """
+    return callMethod(
+        'getnewaddress',
+        account,
+    )
+
+
+def getTransaction(txid):
+    """
+    Return JSON structure describing given transaction
+    Example return value: {
+        u'amount': 10000000.0,
+        u'blockhash': u'8f2726234290803298409280965a8ff7139789f1ff12f6dd803da08608fc56ea',
+        u'blockindex': 1,
+        u'blocktime': 1482342386,
+        u'confirmations': 15,
+        u'details': [{u'account': u'klsdfjlkscount',
+                      u'address': u'BL5234902834093284092834098xPk19sb',
+                      u'amount': 10000000.0,
+                      u'category': u'receive'}],
+        u'normtxid': u'eb6cb5019023840982309820398409238409238409328498ccfbbec3c05ca58b',
+        u'time': 1482342346,
+        u'timereceived': 1234234336,
+        u'txid': u'e590093856092348092387092384092830948230948209384092384f888f887c'
+    }
+    """
+    return callMethod(
+        'gettransaction',
+        txid,
+    )
+
+
 def callMethod(method, *params):
     """Call any JSON-RPC method"""
     callId = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
