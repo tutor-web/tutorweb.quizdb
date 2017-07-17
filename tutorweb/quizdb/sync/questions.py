@@ -39,6 +39,7 @@ def _ploneQuestionDict(listing):
                     qnType='tw_latexquestion',
                     lastUpdate=toUTCDateTime(l['modified']),
                     correctChoices=[i for (i, x) in enumerate(qn['choices']) if x['correct']],
+                    incorrectChoices=[i for (i, x) in enumerate(qn['choices']) if not x['correct']],
                     timesAnswered=qn.get('timesanswered', 0),
                     timesCorrect=qn.get('timescorrect', 0),
                 )
@@ -49,12 +50,12 @@ def _ploneQuestionDict(listing):
             except AttributeError:
                 # Template questions don't have correct answers
                 allChoices = []
-            correctChoices = [i for i, a in enumerate(allChoices) if a['correct']]
 
             ploneQns[objPath] = dict(
                 qnType=l['portal_type'],
                 lastUpdate=toUTCDateTime(l['modified']),
-                correctChoices=correctChoices,
+                correctChoices=[i for i, a in enumerate(allChoices) if a['correct']],
+                incorrectChoices=[i for i, a in enumerate(allChoices) if not a['correct']],
                 timesAnswered=getattr(obj, 'timesanswered', 0),
                 timesCorrect=getattr(obj, 'timescorrect', 0),
             )
@@ -89,6 +90,7 @@ def syncPloneQuestions(dbLec, lectureObj):
             # Question still there (or returned), update
             dbQn.active = True
             dbQn.correctChoices = json.dumps(qn['correctChoices'])
+            dbQn.incorrectChoices = json.dumps(qn['incorrectChoices'])
             dbQn.lastUpdate = qn['lastUpdate']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
@@ -120,6 +122,7 @@ def syncPloneQuestions(dbLec, lectureObj):
                 qnType=qn['qnType'],
                 lastUpdate=qn['lastUpdate'],
                 correctChoices=json.dumps(qn['correctChoices']),
+                incorrectChoices=json.dumps(qn['incorrectChoices']),
                 timesAnswered=qn['timesAnswered'],
                 timesCorrect=qn['timesCorrect'],
                 lectures=[dbLec],

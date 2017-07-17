@@ -354,6 +354,12 @@ class Question(ORMBase):
         nullable=False,
         default="[]",
     )
+    incorrectChoices = sqlalchemy.schema.Column(
+        # JSON Array of incorrect answers
+        sqlalchemy.types.String(128),
+        nullable=False,
+        default="[]",
+    )
     timesAnswered = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         nullable=False,
