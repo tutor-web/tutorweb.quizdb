@@ -184,10 +184,15 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
         active=None,  # NB: Might be writing historical answers
     ))
 
-    # Fetch summary
-    (dbAnsSummary, maxTimeEnd) = getAnswerSummary(dbLec.lectureId, student)
-
     for (questionUri, queryString, a) in answerQueue:
+        # We have work to do, so get/create the summary
+        # NB: On intial sync we do lots of lectures at once, creating the entry at this
+        # point is wasted effort, and a cause of deadlocks as we try to sync whole tutorial
+        try:
+            dbAnsSummary
+        except NameError:
+            (dbAnsSummary, maxTimeEnd) = getAnswerSummary(dbLec.lectureId, student)
+
         # Fetch question for allocation
         dbQn = dbQns.get(questionUri, None)
         if dbQn is None:
