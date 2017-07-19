@@ -10,16 +10,14 @@
 
     <subscriber
         for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectAddedEvent"
-        handler=".tw_class.classAdded"
+        handler=".sync.classAdded"
         />
-
     <subscriber
         for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler=".tw_class.classModified"
+        handler=".sync.classModified"
         />
-
     <subscriber
         for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectRemovedEvent"
-        handler=".tw_class.classRemoved"
+        handler=".sync.classRemoved"
         />
 </configure>
