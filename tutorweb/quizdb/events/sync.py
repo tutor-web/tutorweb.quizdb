@@ -1,6 +1,6 @@
 import logging
 
-from tutorweb.quizdb.sync.tw_class import syncClassSubscriptions, removeClassSubscriptions
+from tutorweb.quizdb.sync.plone import syncClassSubscriptions, removeClassSubscriptions
 
 logger = logging.getLogger(__package__)
 

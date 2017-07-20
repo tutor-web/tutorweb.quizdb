@@ -1,3 +1,6 @@
+"""
+Manage syncing between Plone<->QuizDB
+"""
 from sqlalchemy.orm.exc import NoResultFound
 from z3c.saconfig import Session
 

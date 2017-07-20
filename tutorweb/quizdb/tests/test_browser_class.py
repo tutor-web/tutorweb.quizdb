@@ -13,7 +13,7 @@ from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 from ..sync.questions import syncPloneQuestions, getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
-from ..sync.tw_class import removeClassSubscriptions
+from ..sync.plone import removeClassSubscriptions
 
 
 class StudentResultsViewTest(IntegrationTestCase):
