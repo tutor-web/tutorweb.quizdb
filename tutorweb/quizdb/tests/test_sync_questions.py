@@ -12,7 +12,8 @@ from plone.namedfile.file import NamedBlobFile
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
-from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+from ..sync.plone import syncPloneQuestions
+from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 
 def getAllocation(portal, alloc, user):

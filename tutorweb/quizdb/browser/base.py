@@ -70,19 +70,7 @@ class BrowserViewHelpers(object):
                 .filter(db.Lecture.plonePath == plonePath).one()
             return dbLec
         except NoResultFound:
-            # Make sure the lecture exists in Plone first, to avoid DB spam
-            try:
-                ploneLec = getSite().restrictedTraverse(plonePath)
-            except KeyError:
-                raise ValueError("lecture %s does not exist" % plonePath)
-
-            dbLec = db.Lecture(
-                plonePath=plonePath,
-                hostId=self.getDbHost().hostId,
-            )
-            Session.add(dbLec)
-            Session.flush()
-            return dbLec
+            raise ValueError("lecture %s does not exist" % plonePath)
 
     def texToHTML(self, f):
         """Encode TeX in f into HTML"""

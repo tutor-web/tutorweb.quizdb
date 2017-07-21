@@ -322,6 +322,7 @@ def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings):
         # Update database with this answer
         Session.add(db.Answer(
             lectureId=dbLec.lectureId,
+            lectureVersion=int(settings['lecture_version']) if 'lecture_version' in settings else None, # TODO: We need settings back from the browser, this won't be the answer
             studentId=student.studentId,
             questionId=dbQn.questionId,
             chosenAnswer=-1 if isinstance(a['student_answer'], dict) else a['student_answer'],

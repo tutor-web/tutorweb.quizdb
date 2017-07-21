@@ -3,7 +3,7 @@ from uuid import uuid4
 from hashlib import md5
 from datetime import datetime
 
-from sqlalchemy import Table, UniqueConstraint
+from sqlalchemy import Table, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 import sqlalchemy.event
@@ -310,17 +310,105 @@ class Lecture(ORMBase):
         nullable=False,
         index=True,
     )
-    lastUpdate = sqlalchemy.schema.Column(
-        sqlalchemy.types.DateTime(),
-        nullable=False,
-        default=datetime(1970,1,1),
-    )
+    currentVersion = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        default=0,  # NB: Should ~always jump to 1 when populated
+        nullable=False),
     questions = relationship("Question",
         secondary=LectureQuestion.__table__,
         backref="lectures")
     competentTutors = relationship("Tutor",
         secondary=tutorCompetenciesTable,
         backref="competentLectures")
+
+
+class LectureGlobalSetting(ORMBase):
+    """All settings set for a lecture over time, for every student"""
+    __tablename__ = 'lectureGlobalSetting'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        primary_key=True,
+    )
+    lectureVersion = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        primary_key=True,
+    )
+    key = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
+        nullable=False,
+        primary_key=True,
+    )
+    creationDate = sqlalchemy.schema.Column(
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+    value = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
+    shape = sqlalchemy.schema.Column(
+        # Shape of gamma curve, if set will choose value for each student from gamma curve
+        sqlalchemy.types.Float(),
+        nullable=True,
+    )
+    max = sqlalchemy.schema.Column(
+        # Maximum value, if set will choose value between [0, value_max)
+        sqlalchemy.types.Float(),
+        nullable=True,
+    )
+    min = sqlalchemy.schema.Column(
+        # Minimum value, applies a lower bound to anything chosen by max
+        sqlalchemy.types.Float(),
+        nullable=True,
+    )
+
+
+class LectureStudentSetting(ORMBase):
+    """All settings assigned to a student"""
+    __tablename__ = 'lectureStudentSetting'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        primary_key=True,
+    )
+    lectureVersion = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lectureGlobalSetting.lectureVersion'),
+        primary_key=True,
+    )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            [lectureId, lectureVersion],
+            [LectureGlobalSetting.lectureId, LectureGlobalSetting.lectureVersion]),
+        __table_args__,
+    )
+
+    key = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
+        nullable=False,
+        primary_key=True,
+    )
+    creationDate = sqlalchemy.schema.Column(
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime.utcnow,
+    )
+    value = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
 
 
 class Question(ORMBase):
@@ -441,7 +529,18 @@ class Answer(ORMBase):
     lectureId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('lecture.lectureId'),
-        nullable=False,
+        primary_key=True,
+    )
+    lectureVersion = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(), # TODO: Should be unsigned
+        sqlalchemy.schema.ForeignKey('lectureGlobalSetting.lectureVersion'),
+        primary_key=True,
+    )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            [lectureId, lectureVersion],
+            [LectureGlobalSetting.lectureId, LectureGlobalSetting.lectureVersion]),
+        __table_args__,
     )
     studentId = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
@@ -540,35 +639,6 @@ class AnswerSummary(ORMBase):
         sqlalchemy.types.Integer(),
         nullable=False,
         default=0,
-    )
-
-
-class LectureSetting(ORMBase):
-    """Settings given to a student when answering questions"""
-    __tablename__ = 'lectureSetting'
-    __table_args__ = dict(
-        mysql_engine='InnoDB',
-        mysql_charset='utf8',
-    )
-
-    lectureId = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
-        primary_key=True,
-    )
-    studentId = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(),
-        sqlalchemy.schema.ForeignKey('student.studentId'),
-        primary_key=True,
-    )
-    key = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
-        nullable=False,
-        primary_key=True,
-    )
-    value = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100),
-        nullable=False,
     )
 
 

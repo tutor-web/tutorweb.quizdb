@@ -20,4 +20,30 @@
         for="tutorweb.content.schema.IClass zope.lifecycleevent.interfaces.IObjectRemovedEvent"
         handler=".sync.classRemoved"
         />
+
+    <!-- tw_lecture -->
+    <!-- NB: We don't subscribe to added since it's not going to be public and full of questions at that point -->
+    <subscriber
+        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".sync.lectureModified"
+        />
+    <subscriber
+        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectRemovedEvent"
+        handler=".sync.lectureRemoved"
+        />
+
+    <!-- tw_tutorial -->
+    <subscriber
+        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".sync.tutorialModified"
+        />
+    <subscriber
+        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectRemovedEvent"
+        handler=".sync.tutorialRemoved"
+        />
+
+    <subscriber
+        for="plone.registry.interfaces.IRecordRemovedEvent"
+        handler=".sync.registryUpdated"
+        />
 </configure>

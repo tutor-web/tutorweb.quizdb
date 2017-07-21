@@ -1,13 +1,10 @@
-import random
-
 from AccessControl import Unauthorized
-from z3c.saconfig import Session
 
-from tutorweb.quizdb import db
 from .base import JSONBrowserView
 
-from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
+from ..sync.student import getStudentSettings
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
@@ -54,69 +51,6 @@ class SyncTutorialView(JSONBrowserView):
 
 
 class SyncLectureView(JSONBrowserView):
-    def updateStudentSettings(self, dbLec, settings, student):
-        """Return a dict of lecture / tutorial settings, choosing a random value if required"""
-
-        # Get all current settings as a dict, removing old ones
-        allSettings = {}
-        for dbS in (Session.query(db.LectureSetting)
-                .filter(db.LectureSetting.lectureId == dbLec.lectureId)
-                .filter(db.LectureSetting.studentId == student.studentId)
-                .all()):
-            if dbS.key not in settings.keys() and dbS.key + ':max' not in settings.keys():
-                # No longer in Plone, remove it here too
-                Session.delete(dbS)
-            else:
-                allSettings[dbS.key] = dbS.value
-
-        ignoreKey = {}
-        for k in settings.keys():
-            # Only update settings that have changed
-            if k in allSettings and allSettings[k] == settings[k]:
-                continue
-
-            # If a variable setting has changed, assign a value and write this also
-            if not(ignoreKey.get(k, False)) and (k.endswith(':max') or k.endswith(':min')):
-                base_key = k.replace(":max", "").replace(":min", "")
-                if base_key + ":max" not in settings:
-                    raise ValueError(base_key + ":max not set in lecture")
-
-                # Don't assign another value if/when other half shows up
-                ignoreKey[base_key + ":min"] = True
-                ignoreKey[base_key + ":max"] = True
-
-                # Assign new value, rounding if appropriate
-                new_value = random.uniform(
-                    float(settings.get(base_key + ":min", 0)),
-                    float(settings.get(base_key + ":max", None)),
-                )
-                if base_key in INTEGER_SETTINGS:
-                    new_value = str(int(round(new_value)))
-                else:
-                    new_value = str(round(new_value, 3))
-
-                Session.merge(db.LectureSetting(
-                    lectureId=dbLec.lectureId,
-                    studentId=student.studentId,
-                    key=base_key,
-                    value=new_value,
-                ))
-                allSettings[base_key] = new_value
-
-            # Add / update DB
-            Session.merge(db.LectureSetting(
-                lectureId=dbLec.lectureId,
-                studentId=student.studentId,
-                key=k,
-                value=settings[k],
-            ))
-            allSettings[k] = settings[k]
-
-        Session.flush()
-
-        # Remove :min and :max, not useful downstream
-        return dict((k, allSettings[k]) for k in allSettings.keys() if ':' not in k)
-
     def asDict(self, data):
         student = self.getCurrentStudent()
         portalObj = self.portalObject()
@@ -127,18 +61,8 @@ class SyncLectureView(JSONBrowserView):
         if lecture.get('user', None) and lecture['user'] != student.userName:
             raise Unauthorized('This drill is for user ' + lecture['user'] + ', not ' + student.userName)
 
-        # Fetch lecture settings for current student
-        settings = self.updateStudentSettings(
-            dbLec,
-            self.context.unrestrictedTraverse('@@drill-settings').asDict(),
-            student,
-        )
-
-        # Make sure DB is in sync with Plone
-        if syncPloneQuestions(dbLec, self.context):
-            # Make sure all siblings are synced too, so historical questions, coins do the right thing
-            for b in self.context.aq_parent.restrictedTraverse('@@folderListing')(portal_type='tw_lecture'):
-                syncPloneQuestions(self.getDbLecture(b.getPath()), b.getObject())
+        # Get settings for student
+        settings = getStudentSettings(dbLec, student)
 
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(
@@ -157,6 +81,7 @@ class SyncLectureView(JSONBrowserView):
             settings,
             targetDifficulty=(answerQueue[-1].get('grade_after', None) if len(answerQueue) > 8 else None),
             # TODO: If just syncing then this will cause lots of churn
+            # TODO: This also will only reallocate at precisely a 10 boundary, unlikely.
             reAllocQuestions=(len(answerQueue) > 10 and len(answerQueue) % 10 == 0),
         )
 
