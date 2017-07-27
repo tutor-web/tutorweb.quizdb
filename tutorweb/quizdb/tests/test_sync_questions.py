@@ -336,11 +336,12 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
             id=origLec['qn1'].id,
             _aliasTarget=RelationValue(getUtility(IIntIds).getId(origLec['qn1']))
         )
+        self.objectPublish(origLec)
+        self.objectPublish(testLec)
         transaction.commit()
 
         # Assign questions, get combination of linked and original questions
         login(portal, USER_A_ID)
-        syncPloneQuestions(origLec.restrictedTraverse('@@quizdb-sync').getDbLecture(), origLec)
         syncView = testLec.restrictedTraverse('@@quizdb-sync')
         dbLec = syncView.getDbLecture()
         student = syncView.getCurrentStudent()
