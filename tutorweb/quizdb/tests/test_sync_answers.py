@@ -7,7 +7,7 @@ from plone.app.testing import login
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID
 
-from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 
 
@@ -53,14 +53,13 @@ class GetCoinAwardTest(FunctionalTestCase):
             for lectureObj in lectureObjs
         ]
         for i in xrange(len(dbLecs)):
-            syncPloneQuestions(dbLecs[i], lectureObjs[i])
+            self.objectPublish(lectureObjs[i])
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
 
         # Sync other lectures, to make sure these don't figure in our calculations
         for l in [portal['dept1']['tut1']['lec1'], portal['dept1']['tut1']['lec2']]:
-            syncPloneQuestions(
-                l.restrictedTraverse('@@quizdb-sync').getDbLecture(),
-                l
-            )
+            self.objectPublish(portal['dept1']['tut1']['lec1'])
+            self.objectPublish(portal['dept1']['tut1']['lec2'])
 
         # Log in, get allocations
         login(portal, USER_A_ID)
@@ -125,7 +124,6 @@ class GetCoinAwardTest(FunctionalTestCase):
         ))
         login(portal, creators[0].userName)
         dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
-        syncPloneQuestions(dbLec, lectureObj)
 
         # Try each creator
         for (creatorIndex, creator) in enumerate(creators):
@@ -231,14 +229,11 @@ class GetCoinAwardTest(FunctionalTestCase):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
         lectureObj = portal['dept1']['tut1']['lec1']
+        self.objectPublish(lectureObj)
         dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
-        syncPloneQuestions(dbLec, lectureObj)
 
         # Also sync lec2, so coins knows about it below
-        syncPloneQuestions(
-            portal['dept1']['tut1']['lec2'].restrictedTraverse('@@quizdb-sync').getDbLecture(),
-            portal['dept1']['tut1']['lec2'],
-        )
+        self.objectPublish(portal['dept1']['tut1']['lec2'])
 
         # Student isn't a tutor yet
         login(portal, USER_A_ID)
@@ -265,7 +260,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         # Student stays below threshold for lecture2, isn't competent
         lectureObj = portal['dept1']['tut1']['lec2']
         dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
-        syncPloneQuestions(dbLec, lectureObj)
+        self.notifyModify(lectureObj)
         aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
         import transaction ; transaction.commit()
         aAq = parseAnswerQueue(dbLec, lectureObj, dbStudent, [
