@@ -10,7 +10,7 @@ from z3c.saconfig import Session
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
-from tutorweb.quizdb.utils import getDbStudent
+from tutorweb.quizdb.utils import getDbHost, getDbStudent
 
 def syncClassSubscriptions(classObj):
     """
@@ -44,14 +44,14 @@ def removeClassSubscriptions(ploneClassPath):
     Session.flush()
 
 
-def syncPloneLecture(dbHost, lectureObj):
+def syncPloneLecture(lectureObj):
     """A lecture was updated in Plone, sync our representation"""
     def compareLgs(dbLec, globalSettings):
         """Compare stored settings to what plone returned"""
         dbKeys = []
         for dbLgs in (Session.query(db.LectureGlobalSetting)
                       .filter_by(lectureId=dbLec.lectureId)
-                      .filter_by(lectureVersion=dbLec.lectureVersion)
+                      .filter_by(lectureVersion=dbLec.currentVersion)
                      ):
             dbKeys.append(dbLgs.key)
 
@@ -72,6 +72,7 @@ def syncPloneLecture(dbHost, lectureObj):
 
     #TODO: Lock lecture / entire table?
     # Create Lecture object if not available in DB
+    dbHost = getDbHost()
     plonePath = '/'.join(lectureObj.getPhysicalPath())
     try:
         dbLec = Session.query(db.Lecture) \
@@ -101,8 +102,12 @@ def syncPloneLecture(dbHost, lectureObj):
             Session.add(dbLgs)
         Session.flush()
 
-    return True
+    return dbLec
 
+
+def removePloneLecture(lectureObj):
+    """Mark this lecture as inactive"""
+    pass # TODO:
 
 def _toUTCDateTime(t):
     """Convert Zope DateTime into UTC datetime object"""

@@ -8,7 +8,7 @@ from Products.Five.browser import BrowserView
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
-from tutorweb.quizdb.sync.questions import syncPloneQuestions
+from tutorweb.quizdb.sync.plone import syncPloneQuestions
 from .base import BrowserViewHelpers
 
 class QuestionStatsView(BrowserView, BrowserViewHelpers):

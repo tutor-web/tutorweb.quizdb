@@ -229,6 +229,8 @@ class GetQuestionAllocationTest(FunctionalTestCase):
             id="linkLec",
             _aliasTarget=RelationValue(getUtility(IIntIds).getId(origLec))
         )]
+        self.objectPublish(origLec)
+        self.objectPublish(linkLec)
         transaction.commit()
 
         dbOrigLec = origLec.restrictedTraverse('@@quizdb-sync').getDbLecture()

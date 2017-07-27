@@ -177,7 +177,8 @@ class IntegrationTestCase(TestCase, TestHelpers):
         """Drop all DB tables and recreate"""
         Session().execute("DROP TABLE allocation")
         Session().execute("DROP TABLE lecture")
-        Session().execute("DROP TABLE lectureSetting")
+        Session().execute("DROP TABLE lectureGlobalSetting")
+        Session().execute("DROP TABLE lectureStudentSetting")
         Session().execute("DROP TABLE lectureQuestions")
         Session().execute("DROP TABLE question")
         Session().execute("DROP TABLE student")
@@ -215,7 +216,8 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
         # Drop all DB tables & recreate
         Session().execute("DROP TABLE allocation")
         Session().execute("DROP TABLE lecture")
-        Session().execute("DROP TABLE lectureSetting")
+        Session().execute("DROP TABLE lectureGlobalSetting")
+        Session().execute("DROP TABLE lectureStudentSetting")
         Session().execute("DROP TABLE lectureQuestions")
         Session().execute("DROP TABLE question")
         Session().execute("DROP TABLE student")

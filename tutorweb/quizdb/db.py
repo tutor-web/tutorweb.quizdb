@@ -310,10 +310,16 @@ class Lecture(ORMBase):
         nullable=False,
         index=True,
     )
+    lastUpdate = sqlalchemy.schema.Column(
+        sqlalchemy.types.DateTime(),
+        nullable=False,
+        default=datetime(1970,1,1),
+    )
     currentVersion = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
         default=0,  # NB: Should ~always jump to 1 when populated
-        nullable=False),
+        nullable=False,
+    )
     questions = relationship("Question",
         secondary=LectureQuestion.__table__,
         backref="lectures")
@@ -388,6 +394,12 @@ class LectureStudentSetting(ORMBase):
         sqlalchemy.schema.ForeignKey('lectureGlobalSetting.lectureVersion'),
         primary_key=True,
     )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        primary_key=True,
+    )
+    student = relationship("Student")
     __table_args__ = (
         ForeignKeyConstraint(
             [lectureId, lectureVersion],
