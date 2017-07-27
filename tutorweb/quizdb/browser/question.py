@@ -56,7 +56,7 @@ class QuestionView(JSONBrowserView):
                 out['answer']['correct'].append(i)
         return out
 
-    def getQuestionData(self, dbQn, lectureId):
+    def getQuestionData(self, dbQn, dbLec):
         """Fetch dict for question, obsfucating the answer"""
         out = None
 
@@ -94,27 +94,23 @@ class QuestionView(JSONBrowserView):
             student = self.getCurrentStudent()
 
             # Fetch value of required settings
-            settings = dict(
-                prob_template_eval=0.8,
-                cap_template_qns=5,
-                cap_template_qn_reviews=10,
+            settings = getStudentSettings(dbLec, student)
+            setting_values = dict(
+                prob_template_eval=settings.get('prob_template_eval', 0.8),
+                cap_template_qns=settings.get('cap_template_qns', 5),
+                cap_template_qn_reviews=settings.get('cap_template_qn_reviews', 10),
             )
-            for row in (Session.query(db.LectureSetting)
-                    .filter(db.LectureSetting.lectureId == lectureId)
-                    .filter(db.LectureSetting.studentId == student.studentId)
-                    .filter(db.LectureSetting.key.in_(settings.keys()))):
-                settings[row.key] = float(row.value)
 
             # Should the user be reviewing a question?
             if self.request.form.get('author_qn', False):
                 reviewQuestion = False
-            elif (random.random() <= settings['prob_template_eval']):
+            elif (random.random() <= setting_values['prob_template_eval']):
                 reviewQuestion = True
-            elif settings['cap_template_qns'] > 0:
+            elif setting_values['cap_template_qns'] > 0:
                 reviewQuestion = (Session.query(db.UserGeneratedQuestion)
                     .filter(db.UserGeneratedQuestion.questionId == dbQn.questionId)
                     .filter(db.UserGeneratedQuestion.studentId == student.studentId)
-                    .count()) >= settings['cap_template_qns']
+                    .count()) >= setting_values['cap_template_qns']
             else:
                 reviewQuestion = False
 
@@ -124,7 +120,7 @@ class QuestionView(JSONBrowserView):
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
                 ).union(Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
                     .group_by(db.UserGeneratedAnswer.ugQuestionGuid)
-                    .having(func.count(db.UserGeneratedAnswer.ugAnswerId) >= settings['cap_template_qn_reviews'])).subquery())
+                    .having(func.count(db.UserGeneratedAnswer.ugAnswerId) >= setting_values['cap_template_qn_reviews'])).subquery())
 
                 ugQn = (Session.query(db.UserGeneratedQuestion)
                     .outerjoin(ugAnswerQuery)
@@ -216,7 +212,7 @@ class GetQuestionView(QuestionView):
             dbQn = alloc.getQuestion(questionUri, isAdmin=isAdmin)
             if not dbQn:
                 raise NotFound(self, self.questionId, self.request)
-            qnData = self.getQuestionData(dbQn, alloc.dbLec.lectureId)
+            qnData = self.getQuestionData(dbQn, alloc.dbLec)
         except (NoResultFound, MultipleResultsFound) as e:
             # Mask question plonePath
             raise NotFound(self, self.questionId, self.request)
@@ -238,7 +234,7 @@ class GetLectureQuestionsView(QuestionView):
         out = {}
         for questionUri, dbQn in alloc.getAllQuestions():
             try:
-                out[questionUri] = self.getQuestionData(dbQn, dbLec.lectureId)
+                out[questionUri] = self.getQuestionData(dbQn, dbLec)
             except NotFound:
                 pass
         return out

@@ -5,6 +5,7 @@ import importlib
 from z3c.saconfig import Session
 
 from tutorweb.quizdb import db
+from ..sync.student import getStudentSettings
 
 DEFAULT_QUESTION_CAP = 100  # Maximum number of questions to assign to user
 
@@ -22,13 +23,8 @@ class Allocation(object):
     @classmethod
     def allocFor(cls, student, dbLec, urlBase="/"):
         """Return the correct Allocation Method instance for this lecture"""
-        alloc_method = (Session.query(db.LectureSetting.value)
-            .filter(db.LectureSetting.lectureId == dbLec.lectureId)
-            .filter(db.LectureSetting.studentId == student.studentId)
-            .filter(db.LectureSetting.key == 'allocation_method')
-            .first())
-        if not alloc_method:
-            alloc_method = ['original']
+        settings = getStudentSettings(dbLec, student)
+        alloc_method = settings.get('allocation_method', dict(value=['original']))['value']
 
         return allocation_module(alloc_method[0])(
             student=student,
