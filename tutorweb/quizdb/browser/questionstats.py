@@ -8,7 +8,6 @@ from Products.Five.browser import BrowserView
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
-from tutorweb.quizdb.sync.plone import syncPloneQuestions
 from .base import BrowserViewHelpers
 
 class QuestionStatsView(BrowserView, BrowserViewHelpers):
@@ -18,18 +17,12 @@ class QuestionStatsView(BrowserView, BrowserViewHelpers):
         """Get statistics for all questions in the lecture"""
 
         if IQuestion.providedBy(self.context):
-            # Sync DB first, in case any questions had been created
-            syncPloneQuestions(self.getDbLecture(), self.context.aq_parent)
-
             # Return just the current question and it's DB object
             dbQns = (Session.query(db.Question)
                 .filter(db.Question.plonePath == '/'.join(self.context.getPhysicalPath()))
                 .filter(db.Question.active == True)
                 .order_by(db.Question.plonePath))
         else:
-            # Sync DB first, in case any questions had been created
-            syncPloneQuestions(self.getDbLecture(), self.context)
-
             # TODO: Batching, optimise query
             dbQns = (Session.query(db.Question)
                 .filter(db.Question.lectures.contains(self.getDbLecture()))

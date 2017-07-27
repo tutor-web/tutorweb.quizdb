@@ -2,8 +2,6 @@ import transaction
 
 from plone.app.testing import login, logout
 
-from tutorweb.quizdb.sync.questions import syncPloneQuestions
-
 from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 
@@ -20,6 +18,7 @@ class QuestionStatsViewTest(IntegrationTestCase):
         portal['dept1']['tut1']['lec1']['qn1'].timescorrect = 2
         portal['dept1']['tut1']['lec1']['qn2'].timesanswered = 6
         portal['dept1']['tut1']['lec1']['qn2'].timescorrect = 3
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
         transaction.commit()
 
         # Get whole-lecture stats...
@@ -44,6 +43,7 @@ class QuestionStatsViewTest(IntegrationTestCase):
         portal['dept1']['tut1']['lec1']['qn1'].timescorrect = 4
         portal['dept1']['tut1']['lec1']['qn2'].timesanswered = 9
         portal['dept1']['tut1']['lec1']['qn2'].timescorrect = 5
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
         transaction.commit()
         stats = portal.restrictedTraverse('dept1/tut1/lec1/@@question-stats').getStats()
         self.assertEqual(stats, [
