@@ -11,7 +11,7 @@ from plone.app.testing import login
 from tutorweb.content.tests.base import setRelations
 from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
-from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 from ..sync.plone import removeClassSubscriptions
 
@@ -39,6 +39,9 @@ class StudentResultsViewTest(IntegrationTestCase):
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
         )
+
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
+        self.objectPublish(portal['dept1']['tut1']['lec2'])
 
     def tearDown(self):
         """Remove class so we don't pollute other tests"""
@@ -229,7 +232,6 @@ class StudentResultsViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        syncPloneQuestions(syncView.getDbLecture(), lecture)
         qns = list(getQuestionAllocation(syncView.getDbLecture(), student, self.layer['portal'].absolute_url(), {}))
         out = parseAnswerQueue(syncView.getDbLecture(), lecture, student, [dict(
             synced=False,
@@ -279,6 +281,9 @@ class StudentTableViewTest(IntegrationTestCase):
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
         )
+
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
+        self.objectPublish(portal['dept1']['tut1']['lec2'])
 
     def tearDown(self):
         """Remove class so we don't pollute other tests"""
@@ -354,7 +359,6 @@ class StudentTableViewTest(IntegrationTestCase):
             self.timestamp += 100
 
         # Get an allocation, write back an answer, updating the grade
-        syncPloneQuestions(syncView.getDbLecture(), lecture)
         qns = list(getQuestionAllocation(syncView.getDbLecture(), student, self.layer['portal'].absolute_url(), {}))
         out = parseAnswerQueue(syncView.getDbLecture(), lecture, student, [dict(
             synced=False,
