@@ -154,6 +154,7 @@ def _ploneQuestionDict(listing):
     return ploneQns
 
 
+#TODO: Should this get merged with the above, and all tests use events?
 def syncPloneQuestions(dbLec, lectureObj):
     """Ensure database has same questions as Plone"""
     # Get all plone questions, turn it into a dict by path
@@ -163,15 +164,6 @@ def syncPloneQuestions(dbLec, lectureObj):
         path={'query': '/'.join(lectureObj.getPhysicalPath()), 'depth': 1},
         object_provides=IQuestion.__identifier__
     )
-
-    # If the lecture has same number of questions as before...
-    if len(listing) == Session.query(db.Question).filter(db.Question.lectures.contains(dbLec)).count():
-        if len(listing) == 0:
-            return False
-        # ...and we updated since the last question was inserted/updated
-        if dbLec.lastUpdate > _toUTCDateTime(max(l['modified'] for l in listing)):
-            # ...don't do anything
-            return False
 
     # Sort questions into a dict by path
     ploneQns = _ploneQuestionDict(listing)
