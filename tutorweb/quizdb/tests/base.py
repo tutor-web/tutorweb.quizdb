@@ -8,6 +8,8 @@ import json
 import transaction
 from App.config import getConfiguration
 from Acquisition import aq_parent
+from zope.lifecycleevent import ObjectModifiedEvent, ObjectCreatedEvent
+import zope.event
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import IntegrationTesting, FunctionalTesting, login
@@ -128,6 +130,7 @@ class TestHelpers(object):
                 finalchoices=[],
             ), i, optsFn=qnOpts)
 
+        self.objectPublish(lectureObj)
         transaction.commit()
         return lectureObj
 
@@ -151,6 +154,20 @@ class TestHelpers(object):
         transaction.commit()
 
         return student
+
+    def notifyCreate(self, obj):
+        obj.reindexObject()
+        zope.event.notify(ObjectCreatedEvent(obj))
+
+    def notifyModify(self, obj):
+        obj.reindexObject()
+        zope.event.notify(ObjectModifiedEvent(obj))
+
+    def objectPublish(self, obj):
+        workflowTool = getToolByName(self.layer['portal'], 'portal_workflow')
+        workflowTool.setDefaultChain('plone_workflow')
+        workflowTool.doActionFor(obj, 'publish')
+        self.notifyModify(obj)
 
 
 class IntegrationTestCase(TestCase, TestHelpers):

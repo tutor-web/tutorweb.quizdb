@@ -1,7 +1,5 @@
 import transaction
-import zope.event
 from zope.testing.loggingsupport import InstalledHandler
-from zope.lifecycleevent import ObjectModifiedEvent
 
 from plone.app.testing import login
 
@@ -62,7 +60,7 @@ class SyncClassSubscriptionsTest(IntegrationTestCase):
 
         # Add student A, they get auto-subscribed
         classObj.students = [USER_A_ID]
-        zope.event.notify(ObjectModifiedEvent(classObj))
+        self.notifyCreate(classObj)
         self.assertEqual(
             getSubscriptions(user=USER_A_ID),
             dict(children=[dict(title='Unittest Hard Knocks class', children=[
