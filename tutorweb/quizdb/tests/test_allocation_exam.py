@@ -26,25 +26,32 @@ class ExamAllocationTest(FunctionalTestCase):
             dict(key="allocation_method", value="exam"),
         ]))
         lecPath = 'http://nohost/' + '/'.join(lecObj.getPhysicalPath())
+        dbLec = lecObj.unrestrictedTraverse('@@quizdb-sync').getDbLecture()
+
+        def getQuestionPath(dbLec, qnId):
+            return u'http://nohost/plone/quizdb-get-question/%d:qn-%d' % (
+                dbLec.lectureId,
+                qnId,
+            )
 
         # Syncing returns a list of questions
         aAlloc = self.getJson(lecPath + '/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual([a['uri'] for a in aAlloc['questions']], [
-            u'http://nohost/plone/quizdb-get-question/1:qn-0',
-            u'http://nohost/plone/quizdb-get-question/1:qn-1',
-            u'http://nohost/plone/quizdb-get-question/1:qn-2',
-            u'http://nohost/plone/quizdb-get-question/1:qn-3',
-            u'http://nohost/plone/quizdb-get-question/1:qn-4',
+            getQuestionPath(dbLec, 0),
+            getQuestionPath(dbLec, 1),
+            getQuestionPath(dbLec, 2),
+            getQuestionPath(dbLec, 3),
+            getQuestionPath(dbLec, 4),
         ])
 
         # Can get questions, they're in order
         allQns = self.getJson(aAlloc['question_uri'], user=USER_A_ID)
         self.assertEqual(dict((k, qn['title']) for k, qn in allQns.iteritems()), {
-            u'http://nohost/plone/quizdb-get-question/1:qn-0': u'Unittest tw_latexquestion 0',
-            u'http://nohost/plone/quizdb-get-question/1:qn-1': u'Unittest tw_latexquestion 1',
-            u'http://nohost/plone/quizdb-get-question/1:qn-2': u'Unittest tw_latexquestion 2',
-            u'http://nohost/plone/quizdb-get-question/1:qn-3': u'Unittest tw_latexquestion 3',
-            u'http://nohost/plone/quizdb-get-question/1:qn-4': u'Unittest tw_latexquestion 4',
+            getQuestionPath(dbLec, 0): u'Unittest tw_latexquestion 0',
+            getQuestionPath(dbLec, 1): u'Unittest tw_latexquestion 1',
+            getQuestionPath(dbLec, 2): u'Unittest tw_latexquestion 2',
+            getQuestionPath(dbLec, 3): u'Unittest tw_latexquestion 3',
+            getQuestionPath(dbLec, 4): u'Unittest tw_latexquestion 4',
         })
         # And just the one
         self.assertEqual(
@@ -57,7 +64,7 @@ class ExamAllocationTest(FunctionalTestCase):
         )
 
         # Can't fall off the end
-        self.getJson(u'http://nohost/plone/quizdb-get-question/1:qn-99', user=USER_A_ID, expectedStatus=404)
+        self.getJson(getQuestionPath(dbLec, 99), user=USER_A_ID, expectedStatus=404)
         self.getJson(u'http://nohost/plone/quizdb-get-question/8:qn-0', user=USER_A_ID, expectedStatus=404)
 
         # Can write questions back
