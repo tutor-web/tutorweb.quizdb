@@ -98,6 +98,8 @@ class JSONBrowserViewTest(IntegrationTestCase):
         """Should get current lecture object"""
         import socket
         portal = self.layer['portal']
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
 
         # By default uses traversal to find lecture
         dbLec = self.getView().getDbLecture()
