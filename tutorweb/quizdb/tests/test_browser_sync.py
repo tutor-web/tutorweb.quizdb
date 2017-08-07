@@ -126,10 +126,10 @@ class SyncViewFunctional(FunctionalTestCase):
     maxDiff = None
 
     def setUp(self):
-        self.loghandlers = dict(
-            sqlalchemy=InstalledHandler('sqlalchemy.engine'),
-            sync=InstalledHandler('tutorweb.quizdb.sync')
-        )
+        super(SyncViewFunctional, self).setUp()
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
+        import transaction ; transaction.commit()
 
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
@@ -256,6 +256,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(text="Ugly?", correct=False),
             ],
         )
+        self.notifyModify(portal['dept1']['tut1']['lec1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
@@ -272,6 +273,7 @@ class SyncViewFunctional(FunctionalTestCase):
         time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
         portal['dept1']['tut1']['lec1']['qn3'].title = u'Unittest D1 T1 L1 Q3b'
         portal['dept1']['tut1']['lec1']['qn3'].reindexObject()
+        self.notifyModify(portal['dept1']['tut1']['lec1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
