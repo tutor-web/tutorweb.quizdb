@@ -24,9 +24,9 @@ class Allocation(object):
     def allocFor(cls, student, dbLec, urlBase="/"):
         """Return the correct Allocation Method instance for this lecture"""
         settings = getStudentSettings(dbLec, student)
-        alloc_method = settings.get('allocation_method', dict(value=['original']))['value']
+        alloc_method = settings.get('allocation_method', 'original')
 
-        return allocation_module(alloc_method[0])(
+        return allocation_module(alloc_method)(
             student=student,
             dbLec=dbLec,
             urlBase=urlBase,
