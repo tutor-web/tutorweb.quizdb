@@ -214,6 +214,9 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
             syncm=InstalledHandler('tutorweb.quizdb.sync'),
         )
 
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
+
     def tearDown(self):
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
