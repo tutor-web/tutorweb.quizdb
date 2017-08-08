@@ -27,6 +27,11 @@ def getAllocation(portal, alloc, user):
 class SyncPloneQuestionsTest(IntegrationTestCase):
     maxDiff = None
 
+    def setUp(self):
+        super(SyncPloneQuestionsTest, self).setUp()
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
+
     def test_emptyLecture(self):
         """Empty lectures shouldn't do much, but still work"""
         lectureObj = self.createTestLecture(qnCount=0)
@@ -95,6 +100,12 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
 class GetQuestionAllocationTest(FunctionalTestCase):
     maxDiff = None
 
+    def removeQn(self, parent, id):
+        oldObj = parent[id]
+        parent.manage_delObjects([id])
+        parent.reindexObject()
+        self.notifyDelete(oldObj)
+
     def setUp(self):
         """Fetch student record for all users"""
         super(GetQuestionAllocationTest, self).setUp()
@@ -107,6 +118,9 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         self.studentB = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
         login(portal, USER_C_ID)
         self.studentC = portal.restrictedTraverse('dept1/tut1/lec1/@@quizdb-sync').getCurrentStudent()
+
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
 
         transaction.commit()
 
@@ -423,7 +437,9 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         ])
 
         # Remove symlinked question, should dissapear from both
-        del origLec[qnPack.id]
+        login(portal, MANAGER_ID)
+        self.removeQn(origLec, qnPack.id)
+        login(portal, USER_A_ID)
         self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
             {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
             {'id': 'qn2', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q2', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn2'},
@@ -435,7 +451,9 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         ])
 
         # Remove qn1 from our linked lecture, still in the original lecture
-        del testLec['qn1']
+        login(portal, MANAGER_ID)
+        self.removeQn(testLec, 'qn1')
+        login(portal, USER_A_ID)
         self.assertEqual(origLec.unrestrictedTraverse('@@question-stats').getStats(), [
             {'id': 'qn1', 'timesAnswered': 1, 'timesCorrect': 1, 'title': 'Unittest D1 T1 L1 Q1', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn1'},
             {'id': 'qn2', 'timesAnswered': 0, 'timesCorrect': 0, 'title': 'Unittest D1 T1 L1 Q2', 'url': 'http://nohost/plone/dept1/tut1/lec1/qn2'},

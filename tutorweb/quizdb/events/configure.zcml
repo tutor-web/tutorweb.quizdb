@@ -46,4 +46,19 @@
         for="plone.registry.interfaces.IRecordRemovedEvent"
         handler=".sync.registryUpdated"
         />
+
+    <!-- Question-like things -->
+    <subscriber
+        for="tutorweb.content.schema.IQuestion zope.lifecycleevent.interfaces.IObjectAddedEvent"
+        handler=".sync.questionAdded"
+        />
+    <subscriber
+        for="tutorweb.content.schema.IQuestion zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler=".sync.questionModified"
+        />
+    <subscriber
+        for="tutorweb.content.schema.IQuestion zope.lifecycleevent.interfaces.IObjectRemovedEvent"
+        handler=".sync.questionRemoved"
+        />
+
 </configure>

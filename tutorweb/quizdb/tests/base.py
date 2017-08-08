@@ -8,7 +8,7 @@ import json
 import transaction
 from App.config import getConfiguration
 from Acquisition import aq_parent
-from zope.lifecycleevent import ObjectModifiedEvent, ObjectCreatedEvent
+from zope.lifecycleevent import ObjectModifiedEvent, ObjectCreatedEvent, ObjectRemovedEvent
 import zope.event
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -163,7 +163,13 @@ class TestHelpers(object):
         obj.reindexObject()
         zope.event.notify(ObjectModifiedEvent(obj))
 
+    def notifyDelete(self, obj):
+        obj.reindexObject()
+        obj.aq_parent.reindexObject()
+        zope.event.notify(ObjectRemovedEvent(obj))
+
     def objectPublish(self, obj):
+        login(self.layer['portal'], MANAGER_ID)
         workflowTool = getToolByName(self.layer['portal'], 'portal_workflow')
         workflowTool.setDefaultChain('plone_workflow')
 

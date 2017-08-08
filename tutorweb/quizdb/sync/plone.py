@@ -118,7 +118,11 @@ def _toUTCDateTime(t):
 def _ploneQuestionDict(listing):
     ploneQns = {}
     for l in listing:
-        obj = l.getObject()
+        try:
+            obj = l.getObject()
+        except KeyError:
+            # NB: Deletion in unit tests isn't working, this bodges around it
+            continue
         data = obj.unrestrictedTraverse('@@data')
         # objPath is the canonical location of the question
         objPath = '/'.join(obj._target.getPhysicalPath()) \
@@ -179,12 +183,11 @@ def syncPloneQuestions(dbLec, lectureObj):
             dbQn.lastUpdate = qn['lastUpdate']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
-# TODO: This is gibberish, qn isn't there to test to see if it's an alias, obj isn't even valid
-#        elif dbQn.active and getattr(obj, 'isAlias', False):
-#            # Remove symlink question from lecture
-#            dbQn.lectures = [l for l in dbQn.lectures if l != dbLec]
-#            dbQn.active = len(dbQn.lectures) > 0
-#            dbQn.lastUpdate = datetime.datetime.utcnow()
+        elif dbQn.active and not(dbQn.plonePath.startswith(dbLec.plonePath)):
+            # Remove slave symlink question from lecture
+            dbQn.lectures = [l for l in dbQn.lectures if l != dbLec]
+            dbQn.active = len(dbQn.lectures) > 0
+            dbQn.lastUpdate = datetime.datetime.utcnow()
         elif dbQn.active:
             # Remove question from all lectures and mark as inactive
             dbQn.lectures = []
