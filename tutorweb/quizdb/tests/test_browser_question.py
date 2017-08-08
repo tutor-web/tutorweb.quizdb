@@ -17,6 +17,12 @@ class GetQuestionViewTest(FunctionalTestCase):
 
     # NB: Getting questions with querystrings tested in test_sync_questions.test_questionPacks
 
+    def setUp(self):
+        super(GetQuestionViewTest, self).setUp()
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
+        import transaction ; transaction.commit()
+
     def test_invalidUrl(self):
         """Test some definitely broken cases"""
         # Not supplying a question id is bad
@@ -79,6 +85,7 @@ class GetQuestionViewTest(FunctionalTestCase):
             id="qntmp",
             title="Unittest D1 T1 L1 QTmp",
         )
+        self.notifyModify(self.layer['portal']['dept1']['tut1']['lec1'])
         transaction.commit()
 
         # Get qb1, q2, qntmp
@@ -170,6 +177,7 @@ class GetQuestionViewTest(FunctionalTestCase):
             id="tmplqn0",
             title="Unittest tmpllec tmplQ0",
         )
+        self.objectPublish(self.layer['portal']['dept1']['tmpltut']['tmpllec'])
         transaction.commit()
 
         # User A should get assigned the template question
@@ -409,6 +417,12 @@ class GetQuestionViewTest(FunctionalTestCase):
 class GetLectureQuestionsViewTest(FunctionalTestCase):
     maxDiff = None
 
+    def setUp(self):
+        super(GetLectureQuestionsViewTest, self).setUp()
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
+        import transaction ; transaction.commit()
+
     def test_questionDeletion(self):
         """Don't return questions after they have been deleted"""
         # Create a temporary question
@@ -418,6 +432,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
             id="qntmp",
             title="Unittest D1 T1 L1 QTmp",
         )
+        self.notifyModify(self.layer['portal']['dept1']['tut1']['lec1'])
         transaction.commit()
 
         # Allocate to user A, should get questions
@@ -454,6 +469,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
             id="qntmp",
             title="Unittest D1 T1 L1 QTmp",
         )
+        self.notifyModify(self.layer['portal']['dept1']['tut1']['lec1'])
         transaction.commit()
 
         # Allocate to user A, should get questions
@@ -469,6 +485,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
         time.sleep(1)
         self.layer['portal']['dept1']['tut1']['lec1']['qntmp'].title="Unittest D1 T1 L1 QTmpA"
         self.layer['portal']['dept1']['tut1']['lec1']['qntmp'].reindexObject()
+        self.notifyModify(self.layer['portal']['dept1']['tut1']['lec1'])  # TODO: This wouldn't happen in reality
         transaction.commit()
 
         # Sync, should see new copy (and only one copy) of first question
