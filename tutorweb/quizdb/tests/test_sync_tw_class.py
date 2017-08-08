@@ -13,6 +13,7 @@ class SyncClassSubscriptionsTest(IntegrationTestCase):
 
     def setUp(self):
         """Set up a class ready for testing"""
+        super(SyncClassSubscriptionsTest, self).setUp()
         portal = self.layer['portal']
 
         self.loghandlers = dict(
@@ -60,7 +61,7 @@ class SyncClassSubscriptionsTest(IntegrationTestCase):
 
         # Add student A, they get auto-subscribed
         classObj.students = [USER_A_ID]
-        self.notifyCreate(classObj)
+        self.notifyModify(classObj)
         self.assertEqual(
             getSubscriptions(user=USER_A_ID),
             dict(children=[dict(title='Unittest Hard Knocks class', children=[
