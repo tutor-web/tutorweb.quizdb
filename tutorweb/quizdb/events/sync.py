@@ -45,14 +45,14 @@ def tutorialModified(obj, event=None):
 
     for l in _childrenOfType(obj, "tw_lecture"):
         # Make sure lectures inheriting settings are up-to-date
-        syncPloneLecture(obj)
+        syncPloneLecture(l)
 
 
 def tutorialRemoved(obj, event=None):
     logger.debug("tutorial %s removed" % obj.id)
 
     for l in _childrenOfType(obj, "tw_lecture"):
-        removePloneLecture(obj)
+        removePloneLecture(l)
 
 
 def questionAdded(obj, event=None):
@@ -73,7 +73,8 @@ def questionRemoved(obj, event):
     logger.debug("question %s removed" % obj.id)
 
     # NB: Ideally we just sync the questions, but need the dbLec anyway
-    syncPloneQuestions(syncPloneLecture(event.oldParent), event.oldParent)
+    if event.oldParent.portal_type == 'tw_lecture':
+        syncPloneQuestions(syncPloneLecture(event.oldParent), event.oldParent)
 
 
 def registryUpdated(obj, event=None):

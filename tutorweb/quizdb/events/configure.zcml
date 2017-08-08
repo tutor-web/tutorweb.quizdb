@@ -34,11 +34,11 @@
 
     <!-- tw_tutorial -->
     <subscriber
-        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="tutorweb.content.schema.ITutorial zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler=".sync.tutorialModified"
         />
     <subscriber
-        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectRemovedEvent"
+        for="tutorweb.content.schema.ITutorial zope.lifecycleevent.interfaces.IObjectRemovedEvent"
         handler=".sync.tutorialRemoved"
         />
 
