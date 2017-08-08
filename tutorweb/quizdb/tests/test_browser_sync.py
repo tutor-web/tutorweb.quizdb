@@ -127,6 +127,10 @@ class SyncViewFunctional(FunctionalTestCase):
 
     def setUp(self):
         super(SyncViewFunctional, self).setUp()
+        self.loghandlers = dict(
+            sqlalchemy=InstalledHandler('sqlalchemy.engine'),
+            sync=InstalledHandler('tutorweb.quizdb.sync')
+        )
         self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
         self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
         import transaction ; transaction.commit()
@@ -256,7 +260,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 dict(text="Ugly?", correct=False),
             ],
         )
-        self.notifyModify(portal['dept1']['tut1']['lec1'])
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
@@ -273,7 +277,7 @@ class SyncViewFunctional(FunctionalTestCase):
         time.sleep(1) # NB: Catalog timing is to the second, so can't detect faster changes
         portal['dept1']['tut1']['lec1']['qn3'].title = u'Unittest D1 T1 L1 Q3b'
         portal['dept1']['tut1']['lec1']['qn3'].reindexObject()
-        self.notifyModify(portal['dept1']['tut1']['lec1'])
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         aQuestions = dict((self.getJson(qn['uri'])['title'], qn['uri']) for qn in aAlloc['questions'])
@@ -342,6 +346,7 @@ class SyncViewFunctional(FunctionalTestCase):
             value_b='y',
             value_c='y',
         ))
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['settings']['hist_sel'], '0.8')
@@ -356,6 +361,7 @@ class SyncViewFunctional(FunctionalTestCase):
             value_b='x',
         ))
         portal['dept1']['tut1']['lec1'].settings = None
+        self.notifyModify(portal['dept1']['tut1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['settings']['hist_sel'], '0.8')
@@ -368,6 +374,7 @@ class SyncViewFunctional(FunctionalTestCase):
             value_b='y',
             value_c='y',
         ))
+        self.notifyModify(portal['dept1']['tut1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['settings']['value_b'], 'y')
@@ -380,6 +387,7 @@ class SyncViewFunctional(FunctionalTestCase):
             value_c='666',
             question_cap=99
         ))
+        self.notifyModify(portal['dept1']['tut1'])
         transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual(aAlloc['settings']['value_b'], '555')
@@ -798,6 +806,7 @@ class SyncViewFunctional(FunctionalTestCase):
             title=u"Lecture with no question cap (but uses default of 5)",
         )
         createQuestionTemplates(portal['dept1']['tmpltut']['tmpllec'], 5)
+        self.objectPublish(portal['dept1']['tmpltut']['tmpllec'])
 
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
@@ -967,6 +976,7 @@ class SyncViewFunctional(FunctionalTestCase):
             choices=[dict(text="orange", correct=False), dict(text="green", correct=True)],
             finalchoices=[],
         )
+        self.objectPublish(portal['dept1']['tut1']['tmplec3'])
         transaction.commit()
 
         # Get an allocation to start things off
@@ -1172,7 +1182,10 @@ class SyncViewFunctional(FunctionalTestCase):
         )
 
         # Remove extra lecture
-        del portal['dept1']['tut1']['tmplec3']
+        oldLec =  portal['dept1']['tut1']['tmplec3']
+        portal['dept1']['tut1'].manage_delObjects(['tmplec3'])
+        portal['dept1']['tut1'].reindexObject()
+        self.notifyDelete(oldLec)
         transaction.commit()
 
     def test_answerQueueSummary(self):
@@ -1328,6 +1341,7 @@ class SyncViewFunctional(FunctionalTestCase):
             title="Lecture with a bazillion question",
         )
         createQuestions(portal['dept1']['tut1']['megalec'], 20)
+        self.objectPublish(portal['dept1']['tut1']['megalec'])
 
         # Allocate to user A, get 20
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/megalec/@@quizdb-sync', user=USER_A_ID)
@@ -1402,6 +1416,8 @@ class SyncViewFunctional(FunctionalTestCase):
         )
         createQuestions(portal['dept1']['mediumtut']['mediumlec'], 20)
         createQuestions(portal['dept1']['mediumtut']['largelec'], 20)
+        self.objectPublish(portal['dept1']['mediumtut']['mediumlec'])
+        self.objectPublish(portal['dept1']['mediumtut']['largelec'])
 
         # Should get 15 for large, 10 for medium
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
@@ -1411,6 +1427,7 @@ class SyncViewFunctional(FunctionalTestCase):
 
         # Tune lecture down to 5, questions should be tossed away.
         portal['dept1']['mediumtut']['largelec'].settings = [dict(key='question_cap', value='5')]
+        self.objectPublish(portal['dept1']['mediumtut']['largelec'])
         import transaction ; transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 5)
@@ -1422,6 +1439,7 @@ class SyncViewFunctional(FunctionalTestCase):
 
         # Bump cap back up a bit, should get more questions
         portal['dept1']['mediumtut']['largelec'].settings = [dict(key='question_cap', value='7')]
+        self.notifyModify(portal['dept1']['mediumtut']['largelec'])
         import transaction ; transaction.commit()
         aAlloc = self.getJson('http://nohost/plone/dept1/mediumtut/largelec/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(len(aAlloc['questions']), 7)
