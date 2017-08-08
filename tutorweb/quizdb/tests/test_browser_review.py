@@ -15,6 +15,7 @@ class ReviewUgQnViewTest(FunctionalTestCase):
 
     def setUp(self):
         """Set up a class ready for testing"""
+        super(ReviewUgQnViewTest, self).setUp()
         self.loghandlers = dict(
             sqlalchemy=InstalledHandler('sqlalchemy.engine'),
             sync=InstalledHandler('tutorweb.quizdb.browser.sync')
