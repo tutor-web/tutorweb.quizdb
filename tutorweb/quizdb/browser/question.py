@@ -20,6 +20,8 @@ from tutorweb.quizdb import db
 from tutorweb.quizdb.allocation.base import Allocation
 from .base import JSONBrowserView
 
+from ..sync.student import getStudentSettings
+
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 
