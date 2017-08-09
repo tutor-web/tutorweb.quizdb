@@ -182,6 +182,12 @@ class TestHelpers(object):
 class IntegrationTestCase(TestCase, TestHelpers):
     layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING
 
+    def setUp(self):
+        super(IntegrationTestCase, self).setUp()
+
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec2'])
+
     def tearDown(self):
         """Drop all DB tables and recreate"""
         Session().execute("DROP TABLE allocation")

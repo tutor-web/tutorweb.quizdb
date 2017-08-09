@@ -26,6 +26,9 @@ class ReviewUgQnViewTest(FunctionalTestCase):
 
     def test_empty(self):
         """Works when there isn't anything to report"""
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        transaction.commit()
+
         out = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-review-ugqn', user=USER_A_ID)
         self.assertEqual(out, [])
 

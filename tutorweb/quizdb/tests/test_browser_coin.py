@@ -3,6 +3,7 @@ import datetime
 import dateutil.parser
 
 from testfixtures import Replacer, test_time
+import transaction
 
 from .base import IntegrationTestCase, FunctionalTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
@@ -89,6 +90,9 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
                 answer_time=aqTime[0] - 20,
                 grade_after=grade_after,
             )
+
+        self.objectPublish(self.layer['portal']['dept1']['tut1']['lec1'])
+        transaction.commit()
 
         # Get an allocation to start things off
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
