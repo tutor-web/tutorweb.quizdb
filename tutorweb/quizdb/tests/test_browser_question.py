@@ -485,7 +485,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
         time.sleep(1)
         self.layer['portal']['dept1']['tut1']['lec1']['qntmp'].title="Unittest D1 T1 L1 QTmpA"
         self.layer['portal']['dept1']['tut1']['lec1']['qntmp'].reindexObject()
-        self.notifyModify(self.layer['portal']['dept1']['tut1']['lec1'])  # TODO: This wouldn't happen in reality
+        self.notifyModify(self.layer['portal']['dept1']['tut1']['lec1']['qntmp'])
         transaction.commit()
 
         # Sync, should see new copy (and only one copy) of first question
