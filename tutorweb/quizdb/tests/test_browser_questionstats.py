@@ -7,50 +7,50 @@ from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 
 
 class QuestionStatsViewTest(IntegrationTestCase):
-
     def test_getStats(self):
         """Get counts of questions within lectures"""
         portal = self.layer['portal']
         login(portal, MANAGER_ID)
 
-        # Set initial stats
-        portal['dept1']['tut1']['lec1']['qn1'].timesanswered = 5
-        portal['dept1']['tut1']['lec1']['qn1'].timescorrect = 2
-        portal['dept1']['tut1']['lec1']['qn2'].timesanswered = 6
-        portal['dept1']['tut1']['lec1']['qn2'].timescorrect = 3
-        self.objectPublish(portal['dept1']['tut1']['lec1'])
+        # Create test lecture with some initial stats
+        testLec = self.createTestLecture(qnCount=2, qnOpts=lambda i: dict(
+            timesanswered=5+i,
+            timescorrect=2+i,
+        ))
         transaction.commit()
 
         # Get whole-lecture stats...
-        stats = portal.restrictedTraverse('dept1/tut1/lec1/@@question-stats').getStats()
+        stats = testLec.restrictedTraverse('@@question-stats').getStats()
         self.assertEqual(stats, [
-            dict(id='qn1', timesAnswered=5, timesCorrect=2, title='Unittest D1 T1 L1 Q1', url='http://nohost/plone/dept1/tut1/lec1/qn1'),
-            dict(id='qn2', timesAnswered=6, timesCorrect=3, title='Unittest D1 T1 L1 Q2', url='http://nohost/plone/dept1/tut1/lec1/qn2'),
+            dict(id='qn-0', timesAnswered=5, timesCorrect=2, title='Unittest tw_latexquestion 0', url='%s/qn-0' % testLec.absolute_url()),
+            dict(id='qn-1', timesAnswered=6, timesCorrect=3, title='Unittest tw_latexquestion 1', url='%s/qn-1' % testLec.absolute_url()),
         ])
 
         # ...or just question stats
-        stats = portal.restrictedTraverse('dept1/tut1/lec1/qn1/@@question-stats').getStats()
+        stats = testLec.restrictedTraverse('qn-0/@@question-stats').getStats()
         self.assertEqual(stats, [
-            dict(id='qn1', timesAnswered=5, timesCorrect=2, title='Unittest D1 T1 L1 Q1', url='http://nohost/plone/dept1/tut1/lec1/qn1'),
+            dict(id='qn-0', timesAnswered=5, timesCorrect=2, title='Unittest tw_latexquestion 0', url='%s/qn-0' % testLec.absolute_url()),
         ])
-        stats = portal.restrictedTraverse('dept1/tut1/lec1/qn2/@@question-stats').getStats()
+        stats = testLec.restrictedTraverse('qn-1/@@question-stats').getStats()
         self.assertEqual(stats, [
-            dict(id='qn2', timesAnswered=6, timesCorrect=3, title='Unittest D1 T1 L1 Q2', url='http://nohost/plone/dept1/tut1/lec1/qn2'),
+            dict(id='qn-1', timesAnswered=6, timesCorrect=3, title='Unittest tw_latexquestion 1', url='%s/qn-1' % testLec.absolute_url()),
         ])
 
         # Update in-plone stats, has no effect on stats now stored in db
-        portal['dept1']['tut1']['lec1']['qn1'].timesanswered = 8
-        portal['dept1']['tut1']['lec1']['qn1'].timescorrect = 4
-        portal['dept1']['tut1']['lec1']['qn2'].timesanswered = 9
-        portal['dept1']['tut1']['lec1']['qn2'].timescorrect = 5
-        self.objectPublish(portal['dept1']['tut1']['lec1'])
+        testLec['qn-0'].timesanswered = 8
+        testLec['qn-0'].timescorrect = 4
+        testLec['qn-1'].timesanswered = 9
+        testLec['qn-1'].timescorrect = 5
+        self.notifyModify(testLec['qn-0'])
+        self.notifyModify(testLec['qn-1'])
+        self.notifyModify(testLec)
         transaction.commit()
-        stats = portal.restrictedTraverse('dept1/tut1/lec1/@@question-stats').getStats()
+        stats = testLec.restrictedTraverse('@@question-stats').getStats()
         self.assertEqual(stats, [
-            dict(id='qn1', timesAnswered=5, timesCorrect=2, title='Unittest D1 T1 L1 Q1', url='http://nohost/plone/dept1/tut1/lec1/qn1'),
-            dict(id='qn2', timesAnswered=6, timesCorrect=3, title='Unittest D1 T1 L1 Q2', url='http://nohost/plone/dept1/tut1/lec1/qn2'),
+            dict(id='qn-0', timesAnswered=5, timesCorrect=2, title='Unittest tw_latexquestion 0', url='%s/qn-0' % testLec.absolute_url()),
+            dict(id='qn-1', timesAnswered=6, timesCorrect=3, title='Unittest tw_latexquestion 1', url='%s/qn-1' % testLec.absolute_url()),
         ])
-        stats = portal.restrictedTraverse('dept1/tut1/lec1/qn1/@@question-stats').getStats()
+        stats = testLec.restrictedTraverse('qn-0/@@question-stats').getStats()
         self.assertEqual(stats, [
-            dict(id='qn1', timesAnswered=5, timesCorrect=2, title='Unittest D1 T1 L1 Q1', url='http://nohost/plone/dept1/tut1/lec1/qn1'),
+            dict(id='qn-0', timesAnswered=5, timesCorrect=2, title='Unittest tw_latexquestion 0', url='%s/qn-0' % testLec.absolute_url()),
         ])
