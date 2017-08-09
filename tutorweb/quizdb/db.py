@@ -652,6 +652,38 @@ class AnswerSummary(ORMBase):
     )
 
 
+class DeprecatedLectureSetting(ORMBase):
+    """
+    Settings given to a student when answering questions
+    DEPRECATED: Use Global/Student lecture setting, used for replication with older instances
+    """
+    __tablename__ = 'lectureSetting'
+    __table_args__ = dict(
+        mysql_engine='InnoDB',
+        mysql_charset='utf8',
+    )
+
+    lectureId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('lecture.lectureId'),
+        primary_key=True,
+    )
+    studentId = sqlalchemy.schema.Column(
+        sqlalchemy.types.Integer(),
+        sqlalchemy.schema.ForeignKey('student.studentId'),
+        primary_key=True,
+    )
+    key = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
+        nullable=False,
+        primary_key=True,
+    )
+    value = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+    )
+
+
 class UserGeneratedQuestion(ORMBase):
     """Table of questions submitted from question templates"""
     __tablename__ = 'userGeneratedQuestions'
