@@ -98,9 +98,9 @@ class QuestionView(JSONBrowserView):
             # Fetch value of required settings
             settings = getStudentSettings(dbLec, student)
             setting_values = dict(
-                prob_template_eval=settings.get('prob_template_eval', 0.8),
-                cap_template_qns=settings.get('cap_template_qns', 5),
-                cap_template_qn_reviews=settings.get('cap_template_qn_reviews', 10),
+                prob_template_eval=float(settings.get('prob_template_eval', 0.8)),
+                cap_template_qns=int(settings.get('cap_template_qns', 5)),
+                cap_template_qn_reviews=int(settings.get('cap_template_qn_reviews', 10)),
             )
 
             # Should the user be reviewing a question?
