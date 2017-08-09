@@ -334,6 +334,7 @@ class LectureGlobalSetting(ORMBase):
     __table_args__ = dict(
         mysql_engine='InnoDB',
         mysql_charset='utf8',
+        mysql_collate='utf8_bin',
     )
 
     lectureId = sqlalchemy.schema.Column(
@@ -346,7 +347,7 @@ class LectureGlobalSetting(ORMBase):
         primary_key=True,
     )
     key = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
+        sqlalchemy.types.String(100),
         nullable=False,
         primary_key=True,
     )
@@ -383,6 +384,7 @@ class LectureStudentSetting(ORMBase):
     __table_args__ = dict(
         mysql_engine='InnoDB',
         mysql_charset='utf8',
+        mysql_collate='utf8_bin',
     )
 
     lectureId = sqlalchemy.schema.Column(
@@ -409,7 +411,7 @@ class LectureStudentSetting(ORMBase):
     )
 
     key = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
+        sqlalchemy.types.String(100),
         nullable=False,
         primary_key=True,
     )
@@ -662,6 +664,7 @@ class DeprecatedLectureSetting(ORMBase):
     __table_args__ = dict(
         mysql_engine='InnoDB',
         mysql_charset='utf8',
+        mysql_collate='utf8_bin',
     )
 
     lectureId = sqlalchemy.schema.Column(
@@ -675,7 +678,7 @@ class DeprecatedLectureSetting(ORMBase):
         primary_key=True,
     )
     key = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100), # TODO: We need to say collation='binary'/'utf8_bin' here
+        sqlalchemy.types.String(100),
         nullable=False,
         primary_key=True,
     )
