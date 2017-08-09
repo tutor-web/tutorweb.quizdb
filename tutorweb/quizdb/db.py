@@ -546,7 +546,7 @@ class Answer(ORMBase):
         sqlalchemy.schema.ForeignKey('lecture.lectureId'),
     )
     lectureVersion = sqlalchemy.schema.Column(
-        sqlalchemy.types.Integer(), # TODO: Should be unsigned
+        sqlalchemy.types.Integer(),
         sqlalchemy.schema.ForeignKey('lectureGlobalSetting.lectureVersion'),
     )
     __table_args__ = (
