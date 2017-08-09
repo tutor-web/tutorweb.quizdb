@@ -17,7 +17,7 @@ from Products.CMFCore.utils import getToolByName
 from Products.Five.browser import BrowserView
 
 from tutorweb.quizdb import db
-from tutorweb.quizdb.utils import getDbHost, getDbStudent
+from tutorweb.quizdb.utils import getDbHost, getDbStudent, getDbLecture
 
 
 class BrowserViewHelpers(object):
@@ -50,27 +50,18 @@ class BrowserViewHelpers(object):
         return re.sub(r'/?$', '/' + view, lectureObj.absolute_url())
 
     @view.memoize
-    def getDbLecture(self, plonePath=None):
+    def getDbLecture(self, lecUrl=None):
         """Return database ID for the current lecture"""
-        if plonePath:
-            plonePath = self.lectureUrlToPlonePath(plonePath)
+        if lecUrl:
+            plonePath = self.lectureUrlToPlonePath(lecUrl)
         else:
             # Go up until we find a lecture
             context = self.context
             while context.portal_type != 'tw_lecture':
                 context = context.aq_parent
             plonePath = '/'.join(context.getPhysicalPath())
-        # Hack around an upgrade bug
-        plonePath = re.sub('/tutor-web/tutor-web/', '/tutor-web/', plonePath)
 
-        try:
-            # TODO: Is this racy, if we fire off 4 updates?
-            dbLec = Session.query(db.Lecture) \
-                .filter(db.Lecture.hostId == self.getDbHost().hostId) \
-                .filter(db.Lecture.plonePath == plonePath).one()
-            return dbLec
-        except NoResultFound:
-            raise ValueError("lecture %s does not exist" % plonePath)
+        return getDbLecture(plonePath)
 
     def texToHTML(self, f):
         """Encode TeX in f into HTML"""

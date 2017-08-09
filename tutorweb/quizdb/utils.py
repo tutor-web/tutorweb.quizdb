@@ -1,5 +1,6 @@
 import socket
 import uuid
+import re
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -49,3 +50,21 @@ def getDbStudent(username, email=None):
         dbStudent.eMail = email
     Session.flush()
     return dbStudent
+
+
+def getDbLecture(plonePath):
+    """
+    Find a lecture object corresponding to plonePath
+    (should have been created via. sync)
+    """
+    # Hack around an upgrade bug
+    plonePath = re.sub('/tutor-web/tutor-web/', '/tutor-web/', plonePath)
+
+    try:
+        # TODO: Is this racy, if we fire off 4 updates?
+        dbLec = Session.query(db.Lecture) \
+            .filter(db.Lecture.hostId == getDbHost().hostId) \
+            .filter(db.Lecture.plonePath == plonePath).one()
+        return dbLec
+    except NoResultFound:
+        raise ValueError("lecture %s does not exist" % plonePath)
