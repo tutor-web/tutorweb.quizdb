@@ -13,11 +13,10 @@ def _chooseSettingValue(lgs):
     """Return a new value according to restrictions in the lgs object"""
     if lgs.shape is not None:
         # Fetch value according to a gamma function
-        while True:  # TODO: This might not ever return
+        for i in xrange(10):
             out = numpy.random.gamma(shape=float(lgs.shape), scale=float(lgs.value) / float(lgs.shape))
-            if lgs.max is not None and not((lgs.min or 0) <= out < lgs.max):
-                continue
-            return str(out)
+            if lgs.max is None or (lgs.min or 0) <= out < lgs.max:
+                return str(out)
         raise ValueError("Cannot pick value that satisfies shape %f / value %f / min %f / max %f" % (
             lgs.shape,
             lgs.value,
