@@ -187,18 +187,57 @@ def ingestData(data):
             inserts['answer'] += 1
     Session.flush()
 
-    inserts['lecture_setting'] = 0
-    for (dataEntry, dbEntry) in findMissingEntries(
-            data['lecture_setting'],
-            Session.query(db.LectureSetting)
-                .filter(db.LectureSetting.lectureId.in_(idMap['lectureId'].values()))
-                .filter(db.LectureSetting.studentId.in_(idMap['studentId'].values()))
-                .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key),
-            sortCols=['lectureId', 'studentId', 'key'],
-            idMap=idMap):
-        Session.add(db.LectureSetting(**dataEntry))
-        inserts['lecture_setting'] += 1
-    Session.flush()
+    if 'lecture_setting' in data:
+        inserts['lecture_setting'] = 0
+        for (dataEntry, dbEntry) in findMissingEntries(
+                data['lecture_setting'],
+                Session.query(db.DeprecatedLectureSetting)
+                    .filter(db.DeprecatedLectureSetting.lectureId.in_(idMap['lectureId'].values()))
+                    .filter(db.DeprecatedLectureSetting.studentId.in_(idMap['studentId'].values()))
+                    .order_by(db.DeprecatedLectureSetting.lectureId, db.DeprecatedLectureSetting.studentId, db.DeprecatedLectureSetting.key),
+                sortCols=['lectureId', 'studentId', 'key'],
+                idMap=idMap):
+            Session.add(db.DeprecatedLectureSetting(**dataEntry))
+            inserts['lecture_setting'] += 1
+        Session.flush()
+
+    if 'lecture_global_setting' in data:
+        inserts['lecture_global_setting'] = 0
+        for (dataEntry, dbEntry) in findMissingEntries(
+                data['lecture_global_setting'],
+                Session.query(db.LectureGlobalSetting)
+                    .filter(db.LectureGlobalSetting.lectureId.in_(idMap['lectureId'].values()))
+                    .order_by(
+                        db.LectureGlobalSetting.lectureId,
+                        db.LectureGlobalSetting.lectureVersion,
+                        db.LectureGlobalSetting.key,
+                    ),
+                sortCols=['lectureId', 'lectureVersion', 'key'],
+                idMap=idMap):
+            dataEntry['creationDate'] = datetime.datetime.utcfromtimestamp(dataEntry['creationDate'])
+            Session.add(db.LectureGlobalSetting(**dataEntry))
+            inserts['lecture_global_setting'] += 1
+        Session.flush()
+
+    if 'lecture_student_setting' in data:
+        inserts['lecture_student_setting'] = 0
+        for (dataEntry, dbEntry) in findMissingEntries(
+                data['lecture_student_setting'],
+                Session.query(db.LectureStudentSetting)
+                    .filter(db.LectureStudentSetting.lectureId.in_(idMap['lectureId'].values()))
+                    .filter(db.LectureStudentSetting.studentId.in_(idMap['studentId'].values()))
+                    .order_by(
+                        db.LectureStudentSetting.lectureId,
+                        db.LectureStudentSetting.lectureVersion,
+                        db.LectureStudentSetting.studentId,
+                        db.LectureStudentSetting.key,
+                    ),
+                sortCols=['lectureId', 'lectureVersion', 'studentId', 'key'],
+                idMap=idMap):
+            dataEntry['creationDate'] = datetime.datetime.utcfromtimestamp(dataEntry['creationDate'])
+            Session.add(db.LectureStudentSetting(**dataEntry))
+            inserts['lecture_student_setting'] += 1
+        Session.flush()
 
     inserts['coin_award'] = 0
     for (dataEntry, dbEntry) in findMissingEntries(

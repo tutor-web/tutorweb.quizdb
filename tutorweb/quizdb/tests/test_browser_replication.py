@@ -1,9 +1,10 @@
+import datetime
 import calendar
 import uuid
 
 from plone.app.testing import login
 
-from ..sync.questions import syncPloneQuestions, getQuestionAllocation
+from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 
 from .base import IntegrationTestCase, FunctionalTestCase
@@ -60,8 +61,6 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ), qnOpts=lambda i: dict(
             type_name="tw_questiontemplate",
         )) for _ in xrange(1)]
-        for l in lecObjs + ugLecObjs:
-            syncPloneQuestions(l.restrictedTraverse('@@quizdb-sync').getDbLecture(), l)
 
         # Create some students
         students = [self.createTestStudent('student%d' % i) for i in range(0,3)]
@@ -91,13 +90,13 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(studentId=2, hostId=1, userName=students[1].userName, eMail=students[1].eMail),
         ])
         self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
+            dict(hostId=1, currentVersion=1, lectureId=5, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
-            (1, 3, 1271050000),
-            (1, 3, 1272060000),
-            (2, 3, 1271070000),
-            (2, 3, 1271080000),
+            (1, 5, 1271050000),
+            (1, 5, 1272060000),
+            (2, 5, 1271070000),
+            (2, 5, 1271080000),
         ])
 
         # Fetch all of the data with an oversize range
@@ -112,25 +111,25 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ])
         # We only get the lecture that we just answered, none of the default ones
         self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][1]['lastUpdate']),
+            dict(hostId=1, lectureId=3, currentVersion=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
+            dict(hostId=1, lectureId=5, currentVersion=1, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][1]['lastUpdate']),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
-            (1, 1, 1271010000),
-            (1, 1, 1271020000),
-            (1, 1, 1272030000),
-            (1, 3, 1271040000),
-            (1, 3, 1271050000),
-            (1, 3, 1272060000),
-            (2, 3, 1271070000),
-            (2, 3, 1271080000),
-            (2, 3, 1272090000),
+            (1, 3, 1271010000),
+            (1, 3, 1271020000),
+            (1, 3, 1272030000),
+            (1, 5, 1271040000),
+            (1, 5, 1271050000),
+            (1, 5, 1272060000),
+            (2, 5, 1271070000),
+            (2, 5, 1271080000),
+            (2, 5, 1272090000),
         ])
-        self.assertEqual([x for x in dump['lecture_setting'] if x['key'] in [u'hist_sel']], [
-            dict(studentId=1, lectureId=1, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
-            dict(studentId=1, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
+        self.assertEqual([x for x in dump['lecture_global_setting'] if x['key'] in [u'hist_sel']], [
+            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][0]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][-1]['creationDate']),
         ])
+        # TODO: lecture_student_setting
         self.assertEqual(dump['ug_question'], [])
         self.assertEqual(dump['ug_answer'], [])
         self.assertEqual(dump['coin_award'], [])
@@ -151,32 +150,34 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(studentId=3, hostId=1, userName=students[2].userName, eMail=students[2].eMail),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dump['answer']], [
-            (1, 1, 1271010000),
-            (1, 1, 1271020000),
-            (1, 1, 1272030000),
-            (1, 3, 1271040000),
-            (1, 3, 1271050000),
-            (1, 3, 1272060000),
-            (2, 3, 1271070000),
-            (2, 3, 1271080000),
-            (2, 3, 1272090000),
-            (3, 4, 1273010000),
+            (1, 3, 1271010000),
+            (1, 3, 1271020000),
+            (1, 3, 1272030000),
+            (1, 5, 1271040000),
+            (1, 5, 1271050000),
+            (1, 5, 1272060000),
+            (2, 5, 1271070000),
+            (2, 5, 1271080000),
+            (2, 5, 1272090000),
+            (3, 6, 1273010000),
         ])
         self.assertEqual(dump['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][1]['lastUpdate']),
-            dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][2]['lastUpdate']),
+            dict(hostId=1, lectureId=3, currentVersion=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][0]['lastUpdate']),
+            dict(hostId=1, lectureId=5, currentVersion=1, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dump['lecture'][1]['lastUpdate']),
+            dict(hostId=1, lectureId=6, currentVersion=1, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dump['lecture'][2]['lastUpdate']),
         ])
-        self.assertEqual([x for x in dump['lecture_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
-            dict(studentId=1, lectureId=1, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=1, lectureId=1, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
-            dict(studentId=1, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=1, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=2, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=3, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=3, lectureId=4, key=u'hist_sel', value=u'0'),
+        creationDates = {}
+        for x in dump['lecture_global_setting']:
+            creationDates[x['lectureId']] = x['creationDate']
+        self.assertEqual([x for x in dump['lecture_global_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
+            dict(lectureId=3, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[3]),
+            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[3]),
+            dict(lectureId=5, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[5]),
+            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[5]),
+            dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6]),
+            dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6]),
         ])
+        # TODO: lecture_student_setting
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dump['ug_question']], [
             (1, "My question"),
         ])
@@ -201,17 +202,17 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(studentId=3, hostId=1, userName=students[2].userName, eMail=students[2].eMail),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dump['answer']], [
-            (1, 1, 1271010000, 0),
-            (1, 1, 1271020000, 0),
-            (1, 1, 1272030000, 0),
-            (1, 3, 1271040000, 0),
-            (1, 3, 1271050000, 0),
-            (1, 3, 1272060000, 0),
-            (2, 3, 1271070000, 0),
-            (2, 3, 1271080000, 0),
-            (2, 3, 1272090000, 0),
-            (1, 4, 1273020000, 0),
-            (3, 4, 1273010000, 0),
+            (1, 3, 1271010000, 0),
+            (1, 3, 1271020000, 0),
+            (1, 3, 1272030000, 0),
+            (1, 5, 1271040000, 0),
+            (1, 5, 1271050000, 0),
+            (1, 5, 1272060000, 0),
+            (2, 5, 1271070000, 0),
+            (2, 5, 1271080000, 0),
+            (2, 5, 1272090000, 0),
+            (1, 6, 1273020000, 0),
+            (3, 6, 1273010000, 0),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dump['ug_question']], [
             (1, "My question"),
@@ -253,7 +254,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             student=3,
             lecture=3,
             answer=11,
-            lecture_setting=85,
+            lecture_global_setting=51,
+            lecture_student_setting=0,  # TODO: Surely a few here?
             coin_award=0,
             ug_question=1,
             ug_answer=1,
@@ -276,60 +278,57 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         ])
         # There's no gap between new lectures, since we don't know about them
         self.assertEqual(dumpPostIngest['lecture'], [
-            dict(hostId=1, lectureId=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][0]['lastUpdate']),
-            dict(hostId=1, lectureId=3, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][1]['lastUpdate']),
-            dict(hostId=1, lectureId=4, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][2]['lastUpdate']),
-            dict(hostId=2, lectureId=5, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][3]['lastUpdate']),
-            dict(hostId=2, lectureId=6, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][4]['lastUpdate']),
-            dict(hostId=2, lectureId=7, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][5]['lastUpdate']),
+            dict(hostId=1, lectureId=3, currentVersion=1, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][0]['lastUpdate']),
+            dict(hostId=1, lectureId=5, currentVersion=1, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][1]['lastUpdate']),
+            dict(hostId=1, lectureId=6, currentVersion=1, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][2]['lastUpdate']),
+            dict(hostId=2, lectureId=7, currentVersion=0, plonePath='/'.join(lecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][3]['lastUpdate']),
+            dict(hostId=2, lectureId=8, currentVersion=0, plonePath='/'.join(lecObjs[2].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][4]['lastUpdate']),
+            dict(hostId=2, lectureId=9, currentVersion=0, plonePath='/'.join(ugLecObjs[0].getPhysicalPath()), lastUpdate=dumpPostIngest['lecture'][5]['lastUpdate']),
         ])
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart']) for a in dumpPostIngest['answer']], [
-            (1, 1, 1271010000),
-            (1, 1, 1271020000),
-            (1, 1, 1272030000),
-            (1, 3, 1271040000),
-            (1, 3, 1271050000),
-            (1, 3, 1272060000),
-            (2, 3, 1271070000),
-            (2, 3, 1271080000),
-            (2, 3, 1272090000),
-            (1, 4, 1273020000),
-            (3, 4, 1273010000),
-            (4, 5, 1271010000),
-            (4, 5, 1271020000),
-            (4, 5, 1272030000),
-            (4, 6, 1271040000),
-            (4, 6, 1271050000),
-            (4, 6, 1272060000),
-            (5, 6, 1271070000),
-            (5, 6, 1271080000),
-            (5, 6, 1272090000),
-            (4, 7, 1273020000),
-            (6, 7, 1273010000),
+            (1, 3, 1271010000),
+            (1, 3, 1271020000),
+            (1, 3, 1272030000),
+            (1, 5, 1271040000),
+            (1, 5, 1271050000),
+            (1, 5, 1272060000),
+            (2, 5, 1271070000),
+            (2, 5, 1271080000),
+            (2, 5, 1272090000),
+            (1, 6, 1273020000),
+            (3, 6, 1273010000),
+            (4, 7, 1271010000),
+            (4, 7, 1271020000),
+            (4, 7, 1272030000),
+            (4, 8, 1271040000),
+            (4, 8, 1271050000),
+            (4, 8, 1272060000),
+            (5, 8, 1271070000),
+            (5, 8, 1271080000),
+            (5, 8, 1272090000),
+            (4, 9, 1273020000),
+            (6, 9, 1273010000),
         ])
-        self.assertEqual([x for x in dumpPostIngest['lecture_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
-            dict(studentId=1, lectureId=1, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=1, lectureId=1, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
-            dict(studentId=1, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=1, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=2, lectureId=3, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=2, lectureId=3, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=1, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=1, lectureId=4, key=u'hist_sel', value=u'0'),
-            dict(studentId=3, lectureId=4, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=3, lectureId=4, key=u'hist_sel', value=u'0'),
 
-            dict(studentId=4, lectureId=5, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=4, lectureId=5, key=u'hist_sel', value=lecObjs[0].id.replace('lec-', '0.')),
-            dict(studentId=4, lectureId=6, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=4, lectureId=6, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=5, lectureId=6, key=u'cap_template_qn_reviews', value=u'10'),
-            dict(studentId=5, lectureId=6, key=u'hist_sel', value=lecObjs[2].id.replace('lec-', '0.')),
-            dict(studentId=4, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=4, lectureId=7, key=u'hist_sel', value=u'0'),
-            dict(studentId=6, lectureId=7, key=u'cap_template_qn_reviews', value=u'3'),
-            dict(studentId=6, lectureId=7, key=u'hist_sel', value=u'0'),
+        creationDates = {}
+        for x in dumpPostIngest['lecture_global_setting']:
+            creationDates[x['lectureId']] = x['creationDate']
+        self.assertEqual([x for x in dumpPostIngest['lecture_global_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
+            dict(lectureId=3, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[3]),
+            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[3]),
+            dict(lectureId=5, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[5]),
+            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[5]),
+            dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6]),
+            dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6]),
+
+            dict(lectureId=7, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[7]),
+            dict(lectureId=7, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[7]),
+            dict(lectureId=8, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[8]),
+            dict(lectureId=8, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[8]),
+            dict(lectureId=9, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[9]),
+            dict(lectureId=9, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[9]),
         ])
+        # TODO: lecture_student_setting
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dumpPostIngest['ug_question']], [
             (1, "My question"),
             (2, "My question"),
@@ -347,7 +346,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             student=0,
             lecture=0,
             answer=0,
-            lecture_setting=0,
+            lecture_global_setting=0,
+            lecture_student_setting=0,
             coin_award=0,
             ug_question=0,
             ug_answer=0,
@@ -370,29 +370,29 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         dumpPostIngest = self.doDump()
         self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=0))
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
-            (1, 1, 1271010000, 0),
-            (1, 1, 1271020000, 0),
-            (1, 1, 1272030000, 0),
-            (1, 3, 1271040000, 0),
-            (1, 3, 1271050000, 0),
-            (1, 3, 1272060000, 0),
-            (2, 3, 1271070000, 0),
-            (2, 3, 1271080000, 0),
-            (2, 3, 1272090000, 0),
-            (1, 4, 1273020000, 0),
-            (2, 4, 1273030000, 0), # NB: We gave an answer here
-            (3, 4, 1273010000, 10000),
-            (4, 5, 1271010000, 0),
-            (4, 5, 1271020000, 0),
-            (4, 5, 1272030000, 0),
-            (4, 6, 1271040000, 0),
-            (4, 6, 1271050000, 0),
-            (4, 6, 1272060000, 0),
-            (5, 6, 1271070000, 0),
-            (5, 6, 1271080000, 0),
-            (5, 6, 1272090000, 0),
-            (4, 7, 1273020000, 0),
-            (6, 7, 1273010000, 0),
+            (1, 3, 1271010000, 0),
+            (1, 3, 1271020000, 0),
+            (1, 3, 1272030000, 0),
+            (1, 5, 1271040000, 0),
+            (1, 5, 1271050000, 0),
+            (1, 5, 1272060000, 0),
+            (2, 5, 1271070000, 0),
+            (2, 5, 1271080000, 0),
+            (2, 5, 1272090000, 0),
+            (1, 6, 1273020000, 0),
+            (2, 6, 1273030000, 0), # NB: We gave an answer here
+            (3, 6, 1273010000, 10000),
+            (4, 7, 1271010000, 0),
+            (4, 7, 1271020000, 0),
+            (4, 7, 1272030000, 0),
+            (4, 8, 1271040000, 0),
+            (4, 8, 1271050000, 0),
+            (4, 8, 1272060000, 0),
+            (5, 8, 1271070000, 0),
+            (5, 8, 1271080000, 0),
+            (5, 8, 1272090000, 0),
+            (4, 9, 1273020000, 0),
+            (6, 9, 1273010000, 0),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dumpPostIngest['ug_question']], [
             (1, "My question"),
@@ -421,7 +421,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             student=0,
             lecture=0,
             answer=0,
-            lecture_setting=0,
+            lecture_global_setting=0,
+            lecture_student_setting=0,
             coin_award=0,
             ug_question=0,
             ug_answer=0,
@@ -429,28 +430,28 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         dumpPostIngest = self.doDump()
         self.assertEqual(dumpPostIngest['state'], dict(answerId=24, coinAwardId=2))
         self.assertEqual([(a['studentId'], a['lectureId'], a['timeStart'], a['coinsAwarded']) for a in dumpPostIngest['answer']], [
-            (1, 1, 1271010000, 0),
-            (1, 1, 1271020000, 0),
-            (1, 1, 1272030000, 0),
-            (1, 3, 1271040000, 0),
-            (1, 3, 1271050000, 0),
-            (1, 3, 1272060000, 0),
-            (2, 3, 1271070000, 0),
-            (2, 3, 1271080000, 0),
-            (2, 3, 1272090000, 0),
-            (1, 4, 1273020000, 0),
-            (2, 4, 1273030000, 0),
-            (3, 4, 1273010000, 10000),
-            (4, 5, 1271010000, 0),
-            (4, 5, 1271020000, 0),
-            (4, 5, 1272030000, 0),
-            (4, 6, 1271040000, 0),
-            (4, 6, 1271050000, 0),
-            (4, 6, 1272060000, 0),
-            (5, 6, 1271070000, 0),
-            (5, 6, 1271080000, 0),
-            (5, 6, 1272090000, 0),
-            (4, 7, 1273020000, 0),
-            (6, 7, 1273010000, 99999),
+            (1, 3, 1271010000, 0),
+            (1, 3, 1271020000, 0),
+            (1, 3, 1272030000, 0),
+            (1, 5, 1271040000, 0),
+            (1, 5, 1271050000, 0),
+            (1, 5, 1272060000, 0),
+            (2, 5, 1271070000, 0),
+            (2, 5, 1271080000, 0),
+            (2, 5, 1272090000, 0),
+            (1, 6, 1273020000, 0),
+            (2, 6, 1273030000, 0),
+            (3, 6, 1273010000, 10000),
+            (4, 7, 1271010000, 0),
+            (4, 7, 1271020000, 0),
+            (4, 7, 1272030000, 0),
+            (4, 8, 1271040000, 0),
+            (4, 8, 1271050000, 0),
+            (4, 8, 1272060000, 0),
+            (5, 8, 1271070000, 0),
+            (5, 8, 1271080000, 0),
+            (5, 8, 1272090000, 0),
+            (4, 9, 1273020000, 0),
+            (6, 9, 1273010000, 99999),
         ])
 

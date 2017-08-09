@@ -98,12 +98,17 @@ def dumpData(stateIn={}):
             .filter(answerFilter)
             .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd)],
         # NB: Return data for all relevant lectures, regardless of host
-        lecture_setting=[objDict(r) for r in Session.query(db.LectureSetting)
+        lecture_global_setting=[objDict(r) for r in Session.query(db.LectureGlobalSetting)
             .join(matchingAnswers, and_(
-                matchingAnswers.c.lectureId == db.LectureSetting.lectureId,
-                matchingAnswers.c.studentId == db.LectureSetting.studentId,
+                matchingAnswers.c.lectureId == db.LectureGlobalSetting.lectureId,
              ))
-            .order_by(db.LectureSetting.lectureId, db.LectureSetting.studentId, db.LectureSetting.key)],
+            .order_by(db.LectureGlobalSetting.lectureId, db.LectureGlobalSetting.key)],
+        lecture_student_setting=[objDict(r) for r in Session.query(db.LectureStudentSetting)
+            .join(matchingAnswers, and_(
+                matchingAnswers.c.lectureId == db.LectureStudentSetting.lectureId,
+                matchingAnswers.c.studentId == db.LectureStudentSetting.studentId,
+             ))
+            .order_by(db.LectureStudentSetting.lectureId, db.LectureStudentSetting.studentId, db.LectureStudentSetting.key)],
         coin_award=[objDict(r) for r in Session.query(db.CoinAward)
             .filter(coinAwardFilter)
             .order_by(db.CoinAward.studentId, db.CoinAward.awardTime)],
