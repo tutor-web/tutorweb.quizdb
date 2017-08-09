@@ -356,8 +356,9 @@ class LectureGlobalSetting(ORMBase):
         default=datetime.utcnow,
     )
     value = sqlalchemy.schema.Column(
+        # Fixed value / mean value for gamma distribution
         sqlalchemy.types.String(100),
-        nullable=False,
+        nullable=True,
     )
     shape = sqlalchemy.schema.Column(
         # Shape of gamma curve, if set will choose value for each student from gamma curve

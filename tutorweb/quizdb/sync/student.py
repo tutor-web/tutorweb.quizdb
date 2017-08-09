@@ -14,7 +14,7 @@ def _chooseSettingValue(lgs):
     if lgs.shape is not None:
         # Fetch value according to a gamma function
         while True:  # TODO: This might not ever return
-            out = numpy.random.gamma(shape=lgs.shape, scale=float(lgs.value) * lgs.shape)
+            out = numpy.random.gamma(shape=float(lgs.shape), scale=float(lgs.value) / float(lgs.shape))
             if lgs.max is not None and not((lgs.min or 0) <= out < lgs.max):
                 continue
             return str(out)
