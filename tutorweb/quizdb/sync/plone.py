@@ -70,12 +70,11 @@ def syncPloneLecture(lectureObj):
 
         return True
 
-    #TODO: Lock lecture / entire table?
     # Create Lecture object if not available in DB
     dbHost = getDbHost()
     plonePath = '/'.join(lectureObj.getPhysicalPath())
     try:
-        dbLec = Session.query(db.Lecture) \
+        dbLec = Session.query(db.Lecture).with_lockmode('update') \
             .filter(db.Lecture.hostId == dbHost.hostId) \
             .filter(db.Lecture.plonePath == plonePath).one()
     except NoResultFound:
