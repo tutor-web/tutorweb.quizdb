@@ -61,7 +61,6 @@ def getDbLecture(plonePath):
     plonePath = re.sub('/tutor-web/tutor-web/', '/tutor-web/', plonePath)
 
     try:
-        # TODO: Is this racy, if we fire off 4 updates?
         dbLec = Session.query(db.Lecture) \
             .filter(db.Lecture.hostId == getDbHost().hostId) \
             .filter(db.Lecture.plonePath == plonePath).one()
