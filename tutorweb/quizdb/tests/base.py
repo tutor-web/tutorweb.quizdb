@@ -190,6 +190,18 @@ class TestHelpers(object):
         )
         return parseAnswerQueue(dbLec, student, alloc, rawAnswerQueue, settings, **kwargs)
 
+    def allocGetQuestionAllocation(self, dbLec, student, settings, **kwargs):
+        """Helper that generates alloc for us"""
+        from ..allocation.base import Allocation
+        from ..sync.questions import getQuestionAllocation
+
+        alloc = Allocation.allocFor(
+            student=student,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        return getQuestionAllocation(dbLec, student, alloc, settings, **kwargs)
+
 
 class IntegrationTestCase(TestCase, TestHelpers):
     layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING

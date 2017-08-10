@@ -10,7 +10,6 @@ from .base import FunctionalTestCase, IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID
 
 from tutorweb.quizdb import db
-from ..sync.questions import getQuestionAllocation
 from ..sync.student import getStudentSettings
 from ..utils import getDbLecture, getDbStudent
 
@@ -69,8 +68,8 @@ class GetCoinAwardTest(FunctionalTestCase):
         login(portal, USER_A_ID)
         dbStudent = lectureObjs[0].restrictedTraverse('@@quizdb-sync').getCurrentStudent()
         aAllocs = [
-            list(getQuestionAllocation(dbLecs[0], dbStudent, portal.absolute_url(), {})),
-            list(getQuestionAllocation(dbLecs[1], dbStudent, portal.absolute_url(), {})),
+            list(self.allocGetQuestionAllocation(dbLecs[0], dbStudent, {})),
+            list(self.allocGetQuestionAllocation(dbLecs[1], dbStudent, {})),
         ]
         import transaction ; transaction.commit()
 
@@ -135,7 +134,7 @@ class GetCoinAwardTest(FunctionalTestCase):
             for qnCount in range(7):
                 # user 1 generates a question (assign, answer), don't get any coin for that
                 login(portal, creator.userName)
-                creatorAllocs = list(getQuestionAllocation(dbLec, creator, portal.absolute_url(), {}))
+                creatorAllocs = list(self.allocGetQuestionAllocation(dbLec, creator, {}))
 
                 creatorAq = self.allocParseAnswerQueue(dbLec, creator, [
                     dict(
@@ -170,7 +169,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                 # Start reviewing question
                 for (i, reviewer) in enumerate(reviewers):
                     login(portal, reviewer.userName)
-                    reviewerAllocs = list(getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {}))
+                    reviewerAllocs = list(self.allocGetQuestionAllocation(dbLec, reviewer, {}))
                     # Don't know which of reviewerAllocs matches creatorAq[-1], so guess
                     try:
                         self.allocParseAnswerQueue(dbLec, reviewer, [
@@ -245,7 +244,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.assertEqual(dbStudent.chatTutor, [])
 
         # Student aces lecture1, but this doesn't make them a tutor
-        aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
+        aAllocs = list(self.allocGetQuestionAllocation(dbLec, dbStudent, {}))
         import transaction ; transaction.commit()
         aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAllocs, 0, True, 0.5),
@@ -265,7 +264,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         lectureObj = portal['dept1']['tut1']['lec2']
         dbLec = lectureObj.restrictedTraverse('@@quizdb-sync').getDbLecture()
         self.notifyModify(lectureObj)
-        aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
+        aAllocs = list(self.allocGetQuestionAllocation(dbLec, dbStudent, {}))
         import transaction ; transaction.commit()
         aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAllocs, 0, True, 0.5),
@@ -312,7 +311,7 @@ class GetCoinAwardTest(FunctionalTestCase):
 
         # Get an allocation from the first version
         settings = getStudentSettings(dbLec, dbStudent)
-        aAlloc = [x for x in getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {})]
+        aAlloc = [x for x in self.allocGetQuestionAllocation(dbLec, dbStudent, {})]
         self.assertEqual(settings['lecture_version'], '1')
         self.assertEqual(settings['timeout_max'], '10')
         transaction.commit()  # So we can fetch questions later

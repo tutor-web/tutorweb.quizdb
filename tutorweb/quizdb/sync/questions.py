@@ -7,12 +7,7 @@ from tutorweb.quizdb.allocation.base import Allocation
 logger = logging.getLogger(__package__)
 
 
-def getQuestionAllocation(dbLec, student, questionRoot, settings, targetDifficulty=None, reAllocQuestions=False):
-    alloc = Allocation.allocFor(
-        student=student,
-        dbLec=dbLec,
-        urlBase=questionRoot,
-    )
+def getQuestionAllocation(dbLec, student, alloc, settings, targetDifficulty=None, reAllocQuestions=False):
     # Return all active questions
     for questionUri, allocType, dbQn in alloc.updateAllocation(settings, targetDifficulty=targetDifficulty, reAllocQuestions=reAllocQuestions):
         yield dict(

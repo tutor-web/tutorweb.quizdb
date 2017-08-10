@@ -85,7 +85,7 @@ class SyncLectureView(JSONBrowserView):
         questions = getQuestionAllocation(
             dbLec,
             student,
-            portalObj.absolute_url(),
+            allocObj,
             settings,
             targetDifficulty=(answerQueue[-1].get('grade_after', None) if len(answerQueue) > 8 else None),
             # TODO: If just syncing then this will cause lots of churn
