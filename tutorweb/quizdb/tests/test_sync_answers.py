@@ -11,7 +11,6 @@ from .base import MANAGER_ID, USER_A_ID
 
 from tutorweb.quizdb import db
 from ..sync.questions import getQuestionAllocation
-from ..sync.answers import parseAnswerQueue
 from ..sync.student import getStudentSettings
 from ..utils import getDbLecture, getDbStudent
 
@@ -76,7 +75,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         import transaction ; transaction.commit()
 
         # Student answers lecture1
-        aAq = parseAnswerQueue(dbLecs[0], lectureObjs[0], dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLecs[0], dbStudent, [
             aqEntry(aAllocs[0], 0, True, 5.5),
         ], {})
         import transaction ; transaction.commit()
@@ -86,7 +85,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         )
 
         # Student aces lecture1
-        aAq = parseAnswerQueue(dbLecs[0], lectureObjs[0], dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLecs[0], dbStudent, [
             aqEntry(aAllocs[0], 0, True, 9.9),
         ], {})
         import transaction ; transaction.commit()
@@ -96,7 +95,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         )
 
         # Student answers lecture2
-        aAq = parseAnswerQueue(dbLecs[1], lectureObjs[1], dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLecs[1], dbStudent, [
             aqEntry(aAllocs[1], 0, True, 5.5),
         ], {})
         import transaction ; transaction.commit()
@@ -106,7 +105,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         )
 
         # Student aces lecture2, gets tutorial award
-        aAq = parseAnswerQueue(dbLecs[1], lectureObjs[1], dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLecs[1], dbStudent, [
             aqEntry(aAllocs[1], 0, True, 9.9),
         ], {})
         import transaction ; transaction.commit()
@@ -138,7 +137,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                 login(portal, creator.userName)
                 creatorAllocs = list(getQuestionAllocation(dbLec, creator, portal.absolute_url(), {}))
 
-                creatorAq = parseAnswerQueue(dbLec, lectureObj, creator, [
+                creatorAq = self.allocParseAnswerQueue(dbLec, creator, [
                     dict(
                         synced=False,
                         uri=creatorAllocs[0]['uri'],
@@ -174,7 +173,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                     reviewerAllocs = list(getQuestionAllocation(dbLec, reviewer, portal.absolute_url(), {}))
                     # Don't know which of reviewerAllocs matches creatorAq[-1], so guess
                     try:
-                        parseAnswerQueue(dbLec, lectureObj, reviewer, [
+                        self.allocParseAnswerQueue(dbLec, reviewer, [
                             dict(
                                 uri='%s?question_id=%s' % (reviewerAllocs[0]['uri'], creatorAq[-1]['student_answer']['question_id']),
                                 question_type='usergenerated',
@@ -187,7 +186,7 @@ class GetCoinAwardTest(FunctionalTestCase):
                         # Should be complaining that can't find question
                         if creatorAq[-1]['student_answer']['question_id'] not in e.message:
                             self.fail()
-                        parseAnswerQueue(dbLec, lectureObj, reviewer, [
+                        self.allocParseAnswerQueue(dbLec, reviewer, [
                             dict(
                                 uri='%s?question_id=%s' % (reviewerAllocs[1]['uri'], creatorAq[-1]['student_answer']['question_id']),
                                 question_type='usergenerated',
@@ -198,18 +197,18 @@ class GetCoinAwardTest(FunctionalTestCase):
                         ], {})
 
                     # User-generated question gets more coins once high reviews are majority
-                    creatorAq = parseAnswerQueue(dbLec, lectureObj, creator, [], {})
+                    creatorAq = self.allocParseAnswerQueue(dbLec, creator, [], {})
                     self.assertEqual(sorted([a['coins_awarded'] for a in creatorAq][-2:]), [0, 10000] if i >= 4 and qnCount < 5 else [0, 0])
 
             # Awarded coins for first 5 instances of the question that people review, even after first creator maxed out
             self.assertEqual(
-                [a['coins_awarded'] for a in parseAnswerQueue(dbLec, lectureObj, creator, [], {})],
+                [a['coins_awarded'] for a in self.allocParseAnswerQueue(dbLec, creator, [], {})],
                 [0, 10000, 0, 10000, 0, 10000, 0, 10000, 0, 10000, 0, 0, 0, 0],
             )
 
         # Reviewers didn't get anything throughout entire process
         self.assertEqual(
-            [a['coins_awarded'] for a in parseAnswerQueue(dbLec, lectureObj, reviewers[0], [], {})],
+            [a['coins_awarded'] for a in self.allocParseAnswerQueue(dbLec, reviewers[0], [], {})],
             [0, 0, 0, 0, 0, 0, 0] * 2,
         )
 
@@ -248,7 +247,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         # Student aces lecture1, but this doesn't make them a tutor
         aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
         import transaction ; transaction.commit()
-        aAq = parseAnswerQueue(dbLec, lectureObj, dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAllocs, 0, True, 0.5),
             aqEntry(aAllocs, 0, True, 3.5),
             aqEntry(aAllocs, 0, True, 8.5),
@@ -268,7 +267,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.notifyModify(lectureObj)
         aAllocs = list(getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {}))
         import transaction ; transaction.commit()
-        aAq = parseAnswerQueue(dbLec, lectureObj, dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAllocs, 0, True, 0.5),
             aqEntry(aAllocs, 0, True, 3.5),
         ], dict(chat_competent_grade=5))
@@ -276,7 +275,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.assertEqual(dbStudent.chatTutor, [])
 
         # Goes above threshold, is competent
-        aAq = parseAnswerQueue(dbLec, lectureObj, dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAllocs, 0, True, 4.5),
             aqEntry(aAllocs, 0, True, 5.5),
         ], dict(chat_competent_grade=5))
@@ -328,13 +327,13 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.assertEqual(newSettings['timeout_max'], '20')
 
         # Parse an answerQueue, hand old settings as student settings
-        aAq = parseAnswerQueue(dbLec, lecObj, dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAlloc, 0, True, 5.5),
         ], newSettings, studentSettings=settings)
         transaction.commit()
 
         # Parse an answerQueue, hand new settings as student settings
-        aAq = parseAnswerQueue(dbLec, lecObj, dbStudent, [
+        aAq = self.allocParseAnswerQueue(dbLec, dbStudent, [
             aqEntry(aAlloc, 0, True, 6.5),
         ], newSettings, studentSettings=newSettings)
         transaction.commit()

@@ -14,7 +14,6 @@ from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
 from ..sync.plone import syncPloneQuestions
 from ..sync.questions import getQuestionAllocation
-from ..sync.answers import parseAnswerQueue
 
 def getAllocation(portal, alloc, user):
     login(portal, USER_A_ID)
@@ -411,7 +410,7 @@ Stak sem er í annaðhvort $A$ eða $B$ og er í $C$ en
         ])
 
         # Answer a symlinked question, should update both lectures
-        parseAnswerQueue(dbLec, testLec, student, [
+        self.allocParseAnswerQueue(dbLec, student, [
             dict(
                 synced=False,
                 uri=allocByTitleTestLec[u'Unittest D1 T1 L1 Q1']['uri'],

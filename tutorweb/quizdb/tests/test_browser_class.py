@@ -12,7 +12,6 @@ from tutorweb.content.tests.base import setRelations
 from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 from ..sync.questions import getQuestionAllocation
-from ..sync.answers import parseAnswerQueue
 from ..sync.plone import removeClassSubscriptions
 
 
@@ -233,7 +232,7 @@ class StudentResultsViewTest(IntegrationTestCase):
 
         # Get an allocation, write back an answer, updating the grade
         qns = list(getQuestionAllocation(syncView.getDbLecture(), student, self.layer['portal'].absolute_url(), {}))
-        out = parseAnswerQueue(syncView.getDbLecture(), lecture, student, [dict(
+        out = self.allocParseAnswerQueue(syncView.getDbLecture(), student, [dict(
             synced=False,
             uri=qns[0]['uri'],
             student_answer=0,
@@ -360,7 +359,7 @@ class StudentTableViewTest(IntegrationTestCase):
 
         # Get an allocation, write back an answer, updating the grade
         qns = list(getQuestionAllocation(syncView.getDbLecture(), student, self.layer['portal'].absolute_url(), {}))
-        out = parseAnswerQueue(syncView.getDbLecture(), lecture, student, [dict(
+        out = self.allocParseAnswerQueue(syncView.getDbLecture(), student, [dict(
             synced=False,
             uri=random.choice(qns)['uri'],
             student_answer=0,

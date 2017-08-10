@@ -178,6 +178,18 @@ class TestHelpers(object):
             workflowTool.doActionFor(obj, 'publish')
         self.notifyModify(obj)
 
+    def allocParseAnswerQueue(self, dbLec, student, rawAnswerQueue, settings, **kwargs):
+        """Helper that generates alloc for us"""
+        from ..allocation.base import Allocation
+        from ..sync.answers import parseAnswerQueue
+
+        alloc = Allocation.allocFor(
+            student=student,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        return parseAnswerQueue(dbLec, student, alloc, rawAnswerQueue, settings, **kwargs)
+
 
 class IntegrationTestCase(TestCase, TestHelpers):
     layer = TUTORWEB_QUIZDB_INTEGRATION_TESTING

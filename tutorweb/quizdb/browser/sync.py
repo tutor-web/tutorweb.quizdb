@@ -2,6 +2,7 @@ from AccessControl import Unauthorized
 
 from .base import JSONBrowserView
 
+from ..allocation.base import Allocation
 from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
 from ..sync.student import getStudentSettings
@@ -64,11 +65,17 @@ class SyncLectureView(JSONBrowserView):
         # Get settings for student
         settings = getStudentSettings(dbLec, student)
 
+        allocObj = Allocation.allocFor(
+            student=student,
+            dbLec=dbLec,
+            urlBase=self.context.portal_url.getPortalObject().absolute_url(),
+        )
+
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(
             dbLec,
-            self.context,
             student,
+            allocObj,
             lecture.get('answerQueue', []),
             settings,
             studentSettings=lecture.get('settings', []),

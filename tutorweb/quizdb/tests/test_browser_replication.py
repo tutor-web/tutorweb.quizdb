@@ -5,7 +5,6 @@ import uuid
 from plone.app.testing import login
 
 from ..sync.questions import getQuestionAllocation
-from ..sync.answers import parseAnswerQueue
 
 from .base import IntegrationTestCase, FunctionalTestCase
 from .base import MANAGER_ID

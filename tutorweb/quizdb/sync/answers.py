@@ -146,13 +146,7 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
     return out
 
 
-def parseAnswerQueue(dbLec, lectureObj, student, rawAnswerQueue, settings, studentSettings={}):
-    alloc = Allocation.allocFor(
-        student=student,
-        dbLec=dbLec,
-        urlBase=lectureObj.portal_url.getPortalObject().absolute_url(),
-    )
-
+def parseAnswerQueue(dbLec, student, alloc, rawAnswerQueue, settings, studentSettings={}):
     # Filter nonsense out of answerQueue
     answerQueue = []
     for a in rawAnswerQueue:
