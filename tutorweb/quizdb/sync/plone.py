@@ -78,7 +78,6 @@ def syncPloneLecture(lectureObj):
             .filter(db.Lecture.hostId == dbHost.hostId) \
             .filter(db.Lecture.plonePath == plonePath).one()
     except NoResultFound:
-        #TODO: Does the lecture actually have questions? If not this is pointless
         dbLec = db.Lecture(
             plonePath=plonePath,
             hostId=dbHost.hostId,
@@ -157,7 +156,6 @@ def _ploneQuestionDict(listing):
     return ploneQns
 
 
-#TODO: Should this get merged with the above, and all tests use events?
 def syncPloneQuestions(dbLec, lectureObj):
     """Ensure database has same questions as Plone"""
     # Get all plone questions, turn it into a dict by path

@@ -31,7 +31,6 @@ def lectureModified(obj, event=None):
         syncPloneQuestions(dbLec, obj)
     else:
         removePloneLecture(obj)
-    #TODO: Adding questions should also trigger lectureModified.
 
 
 def lectureRemoved(obj, event=None):
