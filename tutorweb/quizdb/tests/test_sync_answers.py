@@ -4,11 +4,16 @@ import transaction
 
 from plone.app.testing import login
 
+from z3c.saconfig import Session
+
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID
 
+from tutorweb.quizdb import db
 from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
+from ..sync.student import getStudentSettings
+from ..utils import getDbLecture, getDbStudent
 
 
 class GetCoinAwardTest(FunctionalTestCase):
@@ -281,3 +286,65 @@ class GetCoinAwardTest(FunctionalTestCase):
             [l.plonePath for l in dbStudent.chatTutor[0].competentLectures],
             [u'/plone/dept1/tut1/lec2'],
         )
+
+    def test_lectureVersion(self):
+        """We can return the lecture version"""
+        aqTime = [1400000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc[qnIndex]['uri'], user=user)
+            aqTime[0] += 10
+            return dict(
+                uri=qnData.get('uri', alloc[qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 5,
+                answer_time=aqTime[0] - 9,
+                grade_after=grade_after,
+            )
+
+        portal = self.layer['portal']
+        lecObj = portal['dept1']['tut1']['lec1']
+        self.objectPublish(lecObj)
+
+        dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
+        dbStudent = getDbStudent(USER_A_ID)
+
+        # Get an allocation from the first version
+        settings = getStudentSettings(dbLec, dbStudent)
+        aAlloc = [x for x in getQuestionAllocation(dbLec, dbStudent, portal.absolute_url(), {})]
+        self.assertEqual(settings['lecture_version'], '1')
+        self.assertEqual(settings['timeout_max'], '10')
+        transaction.commit()  # So we can fetch questions later
+
+        # Update the lecture, so we go onto version 2
+        lecObj.settings = [
+            dict(key='timeout_max', value='20')
+        ]
+        self.notifyModify(lecObj)
+        newSettings = getStudentSettings(dbLec, dbStudent)
+        self.assertEqual(newSettings['lecture_version'], '2')
+        self.assertEqual(newSettings['timeout_max'], '20')
+
+        # Parse an answerQueue, hand old settings as student settings
+        aAq = parseAnswerQueue(dbLec, lecObj, dbStudent, [
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], newSettings, studentSettings=settings)
+        transaction.commit()
+
+        # Parse an answerQueue, hand new settings as student settings
+        aAq = parseAnswerQueue(dbLec, lecObj, dbStudent, [
+            aqEntry(aAlloc, 0, True, 6.5),
+        ], newSettings, studentSettings=newSettings)
+        transaction.commit()
+
+        # Dig into DB, should see one with old one with new settings
+        results = (Session.query(db.Answer.lectureVersion, db.Answer.grade)
+            .filter_by(lectureId=dbLec.lectureId)
+            .filter_by(studentId=dbStudent.studentId)
+            .all())
+        self.assertEqual(results, [
+            (1, 5.5),
+            (2, 6.5),
+        ])

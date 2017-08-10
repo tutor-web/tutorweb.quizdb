@@ -71,6 +71,7 @@ class SyncLectureView(JSONBrowserView):
             student,
             lecture.get('answerQueue', []),
             settings,
+            studentSettings=lecture.get('settings', []),
         )
 
         # ... then fetch question lists
