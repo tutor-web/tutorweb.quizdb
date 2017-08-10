@@ -378,8 +378,11 @@ class LectureGlobalSetting(ORMBase):
     )
 
     def equivalent(self, other):
-        for a in ['value', 'shape', 'max', 'min']:
+        for a in ['value']:
             if getattr(self, a) != getattr(other, a):
+                return False
+        for a in ['shape', 'max', 'min']:
+            if abs(getattr(self, a) - getattr(other, a)) > 0.00001:
                 return False
         return True
 

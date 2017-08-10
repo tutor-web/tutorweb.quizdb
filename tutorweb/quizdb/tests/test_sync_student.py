@@ -37,7 +37,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         lecObj = self.createTestLecture(qnCount=5, lecOpts=lambda i: dict(settings=[
             dict(key="ut_static", value="0.9"),
             dict(key="ut_uniform:max", value="100"),
-            dict(key="ut_uniform2:max", value="100"),
+            dict(key="ut_uniform2:max", value="0.01"),
         ]))
         self.objectPublish(lecObj)
         dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
@@ -59,16 +59,16 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.assertTrue(settings1['andrew']['ut_uniform'] != settings1['betty']['ut_uniform'] or settings1['betty']['ut_uniform'] != settings1['clara']['ut_uniform'])
 
         # Other random settings1 meet requirements
-        self.assertTrue(float(settings1['andrew']['ut_uniform2']) < 100)
-        self.assertTrue(float(settings1['betty']['ut_uniform2']) < 100)
-        self.assertTrue(float(settings1['clara']['ut_uniform2']) < 100)
+        self.assertTrue(float(settings1['andrew']['ut_uniform2']) < 0.01)
+        self.assertTrue(float(settings1['betty']['ut_uniform2']) < 0.01)
+        self.assertTrue(float(settings1['clara']['ut_uniform2']) < 0.01)
         self.assertTrue(settings1['andrew']['ut_uniform2'] != settings1['betty']['ut_uniform2'] or settings1['betty']['ut_uniform'] != settings1['clara']['ut_uniform2'])
 
         # Change static setting
         lecObj.settings = [
             dict(key="ut_static", value="0.4"),
             dict(key="ut_uniform:max", value="100"),
-            dict(key="ut_uniform2:max", value="100"),
+            dict(key="ut_uniform2:max", value="0.01"),
         ]
         self.notifyModify(lecObj)
 
@@ -91,7 +91,7 @@ class SyncStudentIntegration(IntegrationTestCase):
             dict(key="ut_static", value="0.4"),
             dict(key="ut_uniform:min", value="99"),
             dict(key="ut_uniform:max", value="100"),
-            dict(key="ut_uniform2:max", value="100"),
+            dict(key="ut_uniform2:max", value="0.01"),
         ]
         self.notifyModify(lecObj)
 

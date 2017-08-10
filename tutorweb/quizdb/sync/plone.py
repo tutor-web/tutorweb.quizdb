@@ -61,7 +61,11 @@ def syncPloneLecture(lectureObj):
 
             # Do each of the values set for it match?
             for (k, v) in globalSettings[dbLgs.key].iteritems():
-                if getattr(dbLgs, k) != v:
+                dbValue = getattr(dbLgs, k)
+                if isinstance(dbValue, float):
+                    if abs(dbValue - float(v)) > 0.00001:
+                        return False
+                elif getattr(dbLgs, k) != v:
                     return False
 
         # Are there are keys in plone we did not consider?
