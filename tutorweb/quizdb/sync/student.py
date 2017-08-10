@@ -2,7 +2,8 @@ import random
 
 import numpy.random
 
-from sqlalchemy import func
+from sqlalchemy import func, and_
+from sqlalchemy.orm.exc import NoResultFound
 
 from z3c.saconfig import Session
 
@@ -54,6 +55,22 @@ def getStudentSettings(dbLec, dbStudent):
                ):
         if lgs.key in out:
             # Already have a current student-overriden setting, ignore this one
+            continue
+
+        # Find any previous setting, if it was created with the same values copy it
+        old_set = (Session.query(db.LectureGlobalSetting, db.LectureStudentSetting)
+                .join(db.LectureStudentSetting, and_(
+                      db.LectureGlobalSetting.lectureId == db.LectureStudentSetting.lectureId,
+                      db.LectureGlobalSetting.lectureVersion == db.LectureStudentSetting.lectureVersion,
+                      db.LectureGlobalSetting.key == db.LectureStudentSetting.key))
+                .filter_by(lectureId=dbLec.lectureId)
+                .filter_by(key=lgs.key)
+                .filter(db.LectureStudentSetting.student == dbStudent)
+                .order_by(db.LectureGlobalSetting.lectureVersion.desc())
+                .first())
+        if old_set and lgs.equivalent(old_set[0]):
+            Session.add(old_set[1].recreate(latestLectureVersion))
+            out[lgs.key] = old_set[1].value
             continue
 
         newValue = _chooseSettingValue(lgs)

@@ -37,6 +37,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         lecObj = self.createTestLecture(qnCount=5, lecOpts=lambda i: dict(settings=[
             dict(key="ut_static", value="0.9"),
             dict(key="ut_uniform:max", value="100"),
+            dict(key="ut_uniform2:max", value="100"),
         ]))
         self.objectPublish(lecObj)
         dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
@@ -57,10 +58,17 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.assertTrue(float(settings1['clara']['ut_uniform']) < 100)
         self.assertTrue(settings1['andrew']['ut_uniform'] != settings1['betty']['ut_uniform'] or settings1['betty']['ut_uniform'] != settings1['clara']['ut_uniform'])
 
+        # Other random settings1 meet requirements
+        self.assertTrue(float(settings1['andrew']['ut_uniform2']) < 100)
+        self.assertTrue(float(settings1['betty']['ut_uniform2']) < 100)
+        self.assertTrue(float(settings1['clara']['ut_uniform2']) < 100)
+        self.assertTrue(settings1['andrew']['ut_uniform2'] != settings1['betty']['ut_uniform2'] or settings1['betty']['ut_uniform'] != settings1['clara']['ut_uniform2'])
+
         # Change static setting
         lecObj.settings = [
             dict(key="ut_static", value="0.4"),
             dict(key="ut_uniform:max", value="100"),
+            dict(key="ut_uniform2:max", value="100"),
         ]
         self.notifyModify(lecObj)
 
@@ -71,16 +79,19 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.assertEqual(settings2['andrew']['ut_static'], "0.4")
         self.assertEqual(settings2['betty']['ut_static'], "0.4")
         self.assertEqual(settings2['clara']['ut_static'], "0.4")
-        # TODO: This is changed from before, when we'd only update them if something else changed---probably bad
-        self.assertNotEqual(settings2['andrew']['ut_uniform'], settings1['andrew']['ut_uniform'])
-        self.assertNotEqual(settings2['betty']['ut_uniform'], settings1['betty']['ut_uniform'])
-        self.assertNotEqual(settings2['clara']['ut_uniform'], settings1['clara']['ut_uniform'])
+        self.assertEqual(settings2['andrew']['ut_uniform'], settings1['andrew']['ut_uniform'])
+        self.assertEqual(settings2['betty']['ut_uniform'], settings1['betty']['ut_uniform'])
+        self.assertEqual(settings2['clara']['ut_uniform'], settings1['clara']['ut_uniform'])
+        self.assertEqual(settings2['andrew']['ut_uniform2'], settings1['andrew']['ut_uniform2'])
+        self.assertEqual(settings2['betty']['ut_uniform2'], settings1['betty']['ut_uniform2'])
+        self.assertEqual(settings2['clara']['ut_uniform2'], settings1['clara']['ut_uniform2'])
 
         # Change uniform random setting with new bounds
         lecObj.settings = [
             dict(key="ut_static", value="0.4"),
             dict(key="ut_uniform:min", value="99"),
             dict(key="ut_uniform:max", value="100"),
+            dict(key="ut_uniform2:max", value="100"),
         ]
         self.notifyModify(lecObj)
 
@@ -100,3 +111,8 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.assertTrue(float(settings3['andrew']['ut_uniform']) >= 99)
         self.assertTrue(float(settings3['betty']['ut_uniform']) >= 99)
         self.assertTrue(float(settings3['clara']['ut_uniform']) >= 99)
+
+        # Other random settings still the same
+        self.assertEqual(settings3['andrew']['ut_uniform2'], settings1['andrew']['ut_uniform2'])
+        self.assertEqual(settings3['betty']['ut_uniform2'], settings1['betty']['ut_uniform2'])
+        self.assertEqual(settings3['clara']['ut_uniform2'], settings1['clara']['ut_uniform2'])

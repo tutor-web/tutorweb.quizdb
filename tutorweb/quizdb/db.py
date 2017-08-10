@@ -377,6 +377,12 @@ class LectureGlobalSetting(ORMBase):
         nullable=True,
     )
 
+    def equivalent(self, other):
+        for a in ['value', 'shape', 'max', 'min']:
+            if getattr(self, a) != getattr(other, a):
+                return False
+        return True
+
 
 class LectureStudentSetting(ORMBase):
     """All settings assigned to a student"""
@@ -424,6 +430,18 @@ class LectureStudentSetting(ORMBase):
         sqlalchemy.types.String(100),
         nullable=False,
     )
+
+    def recreate(self, newversion):
+        """Return a new LSS with an updated version"""
+        if newversion == self.lectureVersion:
+            raise ValueError("Version of new lss must be different, not %d", newversion)
+        return LectureStudentSetting(
+            lectureId=self.lectureId,
+            lectureVersion=newversion,
+            studentId=self.studentId,
+            key=self.key,
+            value=self.value,
+        )
 
 
 class Question(ORMBase):
