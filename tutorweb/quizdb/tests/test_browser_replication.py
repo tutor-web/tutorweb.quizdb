@@ -50,9 +50,11 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         login(portal, MANAGER_ID)
 
         # Create test lectures and sync them
-        lecObjs = [self.createTestLecture(qnCount=3, lecOpts=lambda i: dict(
-            settings=[dict(key="hist_sel", value="0.%d" % i)],
-        )) for _ in xrange(3)]
+        lecObjs = [self.createTestLecture(qnCount=3, lecOpts=lambda i: dict(settings=[
+            dict(key="hist_sel", value="0.%d" % i),
+            dict(key="timeout_min:min", value=str(i)),
+            dict(key="timeout_min:max", value=str(i + 1)),
+        ])) for _ in xrange(3)]
         ugLecObjs = [self.createTestLecture(qnCount=1, lecOpts=lambda i: dict(
             settings=[dict(key="cap_template_qn_reviews", value="3")],
         ), qnOpts=lambda i: dict(
@@ -126,7 +128,21 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][0]['creationDate']),
             dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][-1]['creationDate']),
         ])
-        # TODO: lecture_student_setting
+        self.assertEqual([x for x in dump['lecture_student_setting']], [
+            dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][0]['value'],
+                 creationDate=dump['lecture_student_setting'][0]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, studentId=1, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][1]['value'],
+                 creationDate=dump['lecture_student_setting'][1]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, studentId=2, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][2]['value'],
+                 creationDate=dump['lecture_student_setting'][2]['creationDate']),
+        ])
+        # Make sure chosen settings fit requirements
+        for x in dump['lecture_student_setting']:
+            self.assertTrue(float(x['value']) >= float(lecObjs[x['lectureId'] - 3].id.split('-')[-1]))
+            self.assertTrue(float(x['value']) < float(lecObjs[x['lectureId'] - 3].id.split('-')[-1]) + 1)
         self.assertEqual(dump['ug_question'], [])
         self.assertEqual(dump['ug_answer'], [])
         self.assertEqual(dump['coin_award'], [])
@@ -174,7 +190,17 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6]),
             dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6]),
         ])
-        # TODO: lecture_student_setting
+        self.assertEqual([x for x in dump['lecture_student_setting']], [
+            dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][0]['value'],
+                 creationDate=dump['lecture_student_setting'][0]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, studentId=1, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][1]['value'],
+                 creationDate=dump['lecture_student_setting'][1]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, studentId=2, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][2]['value'],
+                 creationDate=dump['lecture_student_setting'][2]['creationDate']),
+        ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dump['ug_question']], [
             (1, "My question"),
         ])
@@ -252,7 +278,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             lecture=3,
             answer=11,
             lecture_global_setting=51,
-            lecture_student_setting=0,  # TODO: Surely a few here?
+            lecture_student_setting=3,
             coin_award=0,
             ug_question=1,
             ug_answer=1,
@@ -325,7 +351,17 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             dict(lectureId=9, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[9]),
             dict(lectureId=9, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[9]),
         ])
-        # TODO: lecture_student_setting
+        self.assertEqual([x for x in dump['lecture_student_setting']], [
+            dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][0]['value'],
+                 creationDate=dump['lecture_student_setting'][0]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, studentId=1, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][1]['value'],
+                 creationDate=dump['lecture_student_setting'][1]['creationDate']),
+            dict(lectureId=5, lectureVersion=1, studentId=2, key=u'timeout_min',
+                 value=dump['lecture_student_setting'][2]['value'],
+                 creationDate=dump['lecture_student_setting'][2]['creationDate']),
+        ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dumpPostIngest['ug_question']], [
             (1, "My question"),
             (2, "My question"),

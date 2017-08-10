@@ -102,13 +102,13 @@ def dumpData(stateIn={}):
             .join(matchingAnswers, and_(
                 matchingAnswers.c.lectureId == db.LectureGlobalSetting.lectureId,
              ))
-            .order_by(db.LectureGlobalSetting.lectureId, db.LectureGlobalSetting.key)],
+            .order_by(db.LectureGlobalSetting.lectureId, db.LectureGlobalSetting.lectureVersion, db.LectureGlobalSetting.key)],
         lecture_student_setting=[objDict(r) for r in Session.query(db.LectureStudentSetting)
             .join(matchingAnswers, and_(
                 matchingAnswers.c.lectureId == db.LectureStudentSetting.lectureId,
                 matchingAnswers.c.studentId == db.LectureStudentSetting.studentId,
              ))
-            .order_by(db.LectureStudentSetting.lectureId, db.LectureStudentSetting.studentId, db.LectureStudentSetting.key)],
+            .order_by(db.LectureStudentSetting.lectureId, db.LectureStudentSetting.lectureVersion, db.LectureStudentSetting.studentId, db.LectureStudentSetting.key)],
         coin_award=[objDict(r) for r in Session.query(db.CoinAward)
             .filter(coinAwardFilter)
             .order_by(db.CoinAward.studentId, db.CoinAward.awardTime)],
