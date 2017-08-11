@@ -73,8 +73,6 @@ class SyncLectureView(JSONBrowserView):
 
         # Parse answer queue first to update question counts
         answerQueue = parseAnswerQueue(
-            dbLec,
-            student,
             allocObj,
             lecture.get('answerQueue', []),
             settings,

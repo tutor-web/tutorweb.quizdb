@@ -146,7 +146,10 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
     return out
 
 
-def parseAnswerQueue(dbLec, student, alloc, rawAnswerQueue, settings, studentSettings={}):
+def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
+    dbLec = alloc.dbLec
+    student = alloc.student
+
     # Filter nonsense out of answerQueue
     answerQueue = []
     for a in rawAnswerQueue:

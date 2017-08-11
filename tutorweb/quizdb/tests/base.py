@@ -188,7 +188,7 @@ class TestHelpers(object):
             dbLec=dbLec,
             urlBase=self.layer['portal'].absolute_url(),
         )
-        return parseAnswerQueue(dbLec, student, alloc, rawAnswerQueue, settings, **kwargs)
+        return parseAnswerQueue(alloc, rawAnswerQueue, settings, **kwargs)
 
     def allocGetQuestionAllocation(self, dbLec, student, settings, **kwargs):
         """Helper that generates alloc for us"""
