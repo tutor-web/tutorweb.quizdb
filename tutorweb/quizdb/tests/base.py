@@ -204,7 +204,7 @@ class TestHelpers(object):
             alloc.targetDifficulty=kwargs['targetDifficulty']
         if 'reAllocQuestions' in kwargs:
             alloc.reAllocQuestions=kwargs['reAllocQuestions']
-        return getQuestionAllocation(dbLec, student, alloc, settings)
+        return getQuestionAllocation(alloc, settings)
 
 
 class IntegrationTestCase(TestCase, TestHelpers):

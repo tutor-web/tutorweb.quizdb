@@ -81,8 +81,6 @@ class SyncLectureView(JSONBrowserView):
 
         # ... then fetch question lists
         questions = getQuestionAllocation(
-            dbLec,
-            student,
             allocObj,
             settings,
         )
