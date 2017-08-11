@@ -181,6 +181,7 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
         active=None,  # NB: Might be writing historical answers
     ))
 
+    rowsAdded = 0
     for (questionUri, queryString, a) in answerQueue:
         # We have work to do, so get/create the summary
         # NB: On intial sync we do lots of lectures at once, creating the entry at this
@@ -331,6 +332,7 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
             coinsAwarded=coinsAwarded,
             ugQuestionGuid=a['student_answer'].get('question_id', None) if isinstance(a['student_answer'], dict) else None,
         ))
+        rowsAdded += 1
         a['synced'] = True
     Session.flush()
 
@@ -353,10 +355,10 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
         synced=True,
     ) for dbAns in reversed(dbAnswers)]
 
-    # Update parameters used when fetching the allocation
-    alloc.targetDifficulty = (out[-1].get('grade_after', None) if len(out) > 8 else None),
-    # TODO: If just syncing then this will cause lots of churn
-    # TODO: This also will only reallocate at precisely a 10 boundary, unlikely.
-    alloc.reAllocQuestions=(len(out) > 10 and len(out) % 10 == 0),
+    if len(out) > 8:
+        # Configure a target difficulty
+        alloc.targetDifficulty = out[-1].get('grade_after', None)
+        # If we've crossed over to the next 10, allocate some different questions
+        alloc.reAllocQuestions= len(out) // 10 > (len(out) - rowsAdded) // 10
 
     return out

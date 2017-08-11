@@ -10,6 +10,8 @@ from .base import FunctionalTestCase, IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID
 
 from tutorweb.quizdb import db
+from ..allocation.base import Allocation
+from ..sync.answers import parseAnswerQueue
 from ..sync.student import getStudentSettings
 from ..utils import getDbLecture, getDbStudent
 
@@ -346,3 +348,188 @@ class GetCoinAwardTest(FunctionalTestCase):
             (1, 5.5),
             (2, 6.5),
         ])
+
+    def test_targetDifficulty(self):
+        """We set target difficulty as part of parsing the answer queue"""
+        aqTime = [1400000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc[qnIndex]['uri'], user=user)
+            aqTime[0] += 10
+            return dict(
+                uri=qnData.get('uri', alloc[qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 5,
+                answer_time=aqTime[0] - 9,
+                grade_after=grade_after,
+            )
+
+        portal = self.layer['portal']
+        lecObj = portal['dept1']['tut1']['lec1']
+        self.objectPublish(lecObj)
+
+        dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
+        dbStudent = getDbStudent(USER_A_ID)
+
+        # Get an allocation from the first version
+        settings = getStudentSettings(dbLec, dbStudent)
+        aAlloc = [x for x in self.allocGetQuestionAllocation(dbLec, dbStudent, {})]
+        transaction.commit()  # So we can fetch questions later
+
+        # One question isn't enough
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.targetDifficulty, None)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 1)
+        self.assertEqual(alloc.targetDifficulty, None)
+
+        # 9 is
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.targetDifficulty, None)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 9)
+        self.assertEqual(alloc.targetDifficulty, 5.5)
+
+        # Any more and we use the last value
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.targetDifficulty, None)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 6.5),
+            aqEntry(aAlloc, 0, True, 7.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 11)
+        self.assertEqual(alloc.targetDifficulty, 7.5)
+
+    def test_reAllocQuestions(self):
+        """We set reallocAuestions as part of parsing the answer queue"""
+        aqTime = [1400000000]
+        def aqEntry(alloc, qnIndex, correct, grade_after, user=USER_A_ID):
+            qnData = self.getJson(alloc[qnIndex]['uri'], user=user)
+            aqTime[0] += 10
+            return dict(
+                uri=qnData.get('uri', alloc[qnIndex]['uri']),
+                type='tw_latexquestion',
+                synced=False,
+                correct=correct,
+                student_answer=self.findAnswer(qnData, correct),
+                quiz_time=aqTime[0] - 5,
+                answer_time=aqTime[0] - 9,
+                grade_after=grade_after,
+            )
+
+        portal = self.layer['portal']
+        lecObj = portal['dept1']['tut1']['lec1']
+        self.objectPublish(lecObj)
+
+        dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
+        dbStudent = getDbStudent(USER_A_ID)
+
+        # Get an allocation from the first version
+        settings = getStudentSettings(dbLec, dbStudent)
+        aAlloc = [x for x in self.allocGetQuestionAllocation(dbLec, dbStudent, {})]
+        transaction.commit()  # So we can fetch questions later
+
+        # One question isn't enough
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.reAllocQuestions, False)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 1)
+        self.assertEqual(alloc.reAllocQuestions, False)
+
+        # Ten is
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.reAllocQuestions, False)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 10)
+        self.assertEqual(alloc.reAllocQuestions, True)
+
+        # Fifteen isn't
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.reAllocQuestions, False)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 15)
+        self.assertEqual(alloc.reAllocQuestions, False)
+
+        # Jump past 20 to 25 is fine
+        alloc = Allocation.allocFor(
+            student=dbStudent,
+            dbLec=dbLec,
+            urlBase=self.layer['portal'].absolute_url(),
+        )
+        self.assertEqual(alloc.reAllocQuestions, False)
+        aAq = parseAnswerQueue(alloc, [
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+            aqEntry(aAlloc, 0, True, 5.5),
+        ], settings)
+        transaction.commit()
+        self.assertEqual(len(aAq), 25)
+        self.assertEqual(alloc.reAllocQuestions, True)
