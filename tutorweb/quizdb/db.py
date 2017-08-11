@@ -382,8 +382,14 @@ class LectureGlobalSetting(ORMBase):
             if getattr(self, a) != getattr(other, a):
                 return False
         for a in ['shape', 'max', 'min']:
-            if abs(getattr(self, a) - getattr(other, a)) > 0.00001:
-                return False
+            if getattr(self, a) is None:
+                if getattr(other, a) is not None:
+                    return False
+            else:
+                if getattr(other, a) is None:
+                    return False
+                if abs(getattr(self, a) - getattr(other, a)) > 0.00001:
+                    return False
         return True
 
 
