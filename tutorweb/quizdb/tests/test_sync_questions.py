@@ -181,6 +181,8 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         syncPloneQuestions(dbLec, lectureObj)
 
         def gqa(targetDifficulty, reAllocQuestions, student=self.studentA):
+            # NB: targetDifficulty and reAllocQuestions aren't parameters any more, but
+            # we keep them here to keep tests working
             allocs = list(self.allocGetQuestionAllocation(
                 dbLec,
                 student,

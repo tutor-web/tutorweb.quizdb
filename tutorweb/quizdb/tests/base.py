@@ -200,7 +200,11 @@ class TestHelpers(object):
             dbLec=dbLec,
             urlBase=self.layer['portal'].absolute_url(),
         )
-        return getQuestionAllocation(dbLec, student, alloc, settings, **kwargs)
+        if 'targetDifficulty' in kwargs:
+            alloc.targetDifficulty=kwargs['targetDifficulty']
+        if 'reAllocQuestions' in kwargs:
+            alloc.reAllocQuestions=kwargs['reAllocQuestions']
+        return getQuestionAllocation(dbLec, student, alloc, settings)
 
 
 class IntegrationTestCase(TestCase, TestHelpers):

@@ -78,7 +78,7 @@ class OriginalAllocation(BaseAllocation):
         for (dbQn, dbAlloc) in query:
             yield (self._questionUrl(dbAlloc.publicId), dbQn)
 
-    def updateAllocation(self, settings, question_cap=DEFAULT_QUESTION_CAP, targetDifficulty=None, reAllocQuestions=False):
+    def updateAllocation(self, settings, question_cap=DEFAULT_QUESTION_CAP):
         # Get all existing allocations from the DB and their questions
         allocsByType = dict()
         hist_sel = float(settings.get('hist_sel', '0'))
@@ -117,8 +117,8 @@ class OriginalAllocation(BaseAllocation):
                 del allocs[i]
 
             # If there's questions to spare, and requested to do so, reallocate questions
-            if len(allocs) == questionCap and reAllocQuestions:
-                if targetDifficulty is None:
+            if len(allocs) == questionCap and self.reAllocQuestions:
+                if self.targetDifficulty is None:
                     raise ValueError("Must have a target difficulty to know what to remove")
 
                 # Make ranking how likely questions are, based on targetDifficulty
@@ -128,7 +128,7 @@ class OriginalAllocation(BaseAllocation):
                         # New questions should be added regardless
                         suitability.append(1)
                     else:
-                        suitability.append(1 - abs(targetDifficulty - float(a['question'].timesCorrect) / a['question'].timesAnswered))
+                        suitability.append(1 - abs(self.targetDifficulty - float(a['question'].timesCorrect) / a['question'].timesAnswered))
                 ranking = sorted(range(len(allocs)), key=lambda k: suitability[k])
 
                 # Remove the least likely tenth
@@ -157,8 +157,8 @@ class OriginalAllocation(BaseAllocation):
                     query = query.filter(~db.Question.questionId.in_(allocIds))
 
                 # Give a target difficulty
-                if targetDifficulty is not None:
-                    query = query.order_by(func.abs(round(targetDifficulty * 50) - func.round((50.0 * db.Question.timesCorrect) / db.Question.timesAnswered)))
+                if self.targetDifficulty is not None:
+                    query = query.order_by(func.abs(round(self.targetDifficulty * 50) - func.round((50.0 * db.Question.timesCorrect) / db.Question.timesAnswered)))
 
                 for dbQn in query.order_by(func.random()).limit(max(questionCap - len(allocs), 0)):
                     dbAlloc = db.Allocation(

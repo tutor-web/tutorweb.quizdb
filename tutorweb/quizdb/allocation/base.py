@@ -56,6 +56,8 @@ class Allocation(object):
         self.student = student
         self.dbLec = dbLec
         self.urlBase = urlBase
+        self.targetDifficulty = None
+        self.reAllocQuestions = False
 
     def getQuestion(self, uri, **kwargs):
         qns = list(self.getQuestions(uris=[uri], **kwargs))

@@ -87,10 +87,6 @@ class SyncLectureView(JSONBrowserView):
             student,
             allocObj,
             settings,
-            targetDifficulty=(answerQueue[-1].get('grade_after', None) if len(answerQueue) > 8 else None),
-            # TODO: If just syncing then this will cause lots of churn
-            # TODO: This also will only reallocate at precisely a 10 boundary, unlikely.
-            reAllocQuestions=(len(answerQueue) > 10 and len(answerQueue) % 10 == 0),
         )
 
         # Build lecture dict
