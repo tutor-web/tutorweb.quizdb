@@ -171,9 +171,8 @@ class TestHelpers(object):
     def objectPublish(self, obj):
         login(self.layer['portal'], MANAGER_ID)
         workflowTool = getToolByName(self.layer['portal'], 'portal_workflow')
-        workflowTool.setDefaultChain('plone_workflow')
 
-        status = workflowTool.getStatusOf("plone_workflow", obj) or dict()
+        status = workflowTool.getStatusOf("simple_publication_workflow", obj) or dict()
         if status.get("review_state", None) != "published":
             workflowTool.doActionFor(obj, 'publish')
         self.notifyModify(obj)

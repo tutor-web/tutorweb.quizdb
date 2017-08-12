@@ -25,7 +25,7 @@ def lectureModified(obj, event=None):
     portal_workflow = getToolByName(obj, "portal_workflow")
     logger.debug("lecture %s modified" % obj.id)
 
-    status = portal_workflow.getStatusOf("plone_workflow", obj)
+    status = portal_workflow.getStatusOf("simple_publication_workflow", obj)
     if status and status.get("review_state", None) == "published":
         dbLec = syncPloneLecture(obj)
         syncPloneQuestions(dbLec, obj)
