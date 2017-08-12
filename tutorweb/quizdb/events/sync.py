@@ -1,6 +1,11 @@
 import logging
+
+from zope.component import adapter
+from zope.component.hooks import getSite
+from plone.registry.interfaces import IRecordModifiedEvent
 from Products.CMFCore.utils import getToolByName
 
+from tutorweb.content.schema import ILectureSettings
 from tutorweb.quizdb.sync.plone import \
     syncClassSubscriptions, removeClassSubscriptions, \
     syncPloneLecture, removePloneLecture, \
@@ -76,9 +81,10 @@ def questionRemoved(obj, event):
         syncPloneQuestions(syncPloneLecture(event.oldParent), event.oldParent)
 
 
+@adapter(ILectureSettings, IRecordModifiedEvent)
 def registryUpdated(obj, event=None):
-    logger.debug("registry object %s updated" % obj.id)
-    for l in _childrenOfType(portal, "tw_lecture"):
+    logger.debug("registry object updated")
+    for l in _childrenOfType(getSite(), "tw_lecture"):
         # Make sure lectures inheriting settings are up-to-date
         syncPloneLecture(l)
 

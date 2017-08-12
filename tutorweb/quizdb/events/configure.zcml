@@ -43,7 +43,7 @@
         />
 
     <subscriber
-        for="plone.registry.interfaces.IRecordRemovedEvent"
+        for="plone.registry.interfaces.IRecordModifiedEvent"
         handler=".sync.registryUpdated"
         />
 
