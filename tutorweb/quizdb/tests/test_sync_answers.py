@@ -44,9 +44,9 @@ class GetCoinAwardTest(FunctionalTestCase):
             id='tut_awards',
             title='Unittest awards test',
             settings=[
-                dict(key='award_lecture_answered', value=1 * 1000),
-                dict(key='award_lecture_aced',     value=10 * 1000),
-                dict(key='award_tutorial_aced',    value=100 * 1000),
+                dict(key='award_lecture_answered', value=str(1 * 1000)),
+                dict(key='award_lecture_aced',     value=str(10 * 1000)),
+                dict(key='award_tutorial_aced',    value=str(100 * 1000)),
             ],
         )]
         lectureObjs = [

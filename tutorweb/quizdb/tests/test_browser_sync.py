@@ -285,7 +285,7 @@ class SyncViewFunctional(FunctionalTestCase):
         portal['dept1']['tut1']['lec1'].settings = toList(dict(
             value_b='555',
             value_c='666',
-            question_cap=99
+            question_cap='99'
         ))
         self.notifyModify(portal['dept1']['tut1'])
         transaction.commit()

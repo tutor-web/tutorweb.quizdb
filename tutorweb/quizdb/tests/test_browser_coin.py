@@ -222,7 +222,7 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
 
         # Create lecture with a stonking award
         lec = self.createTestLecture(qnCount=2, lecOpts=lambda i: dict(settings=[
-            dict(key='award_lecture_answered', value=BIG_AWARD),
+            dict(key='award_lecture_answered', value=str(BIG_AWARD)),
         ]))
         lecPath = '/'.join(lec.getPhysicalPath())
         lecSyncUri = 'http://nohost%s/@@quizdb-sync' % lecPath
@@ -278,10 +278,10 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         # Create lectures, with a total award bigger than the max
         HALF_AWARD = (MAX_STUDENT_HOURLY_AWARD / 2) + 2000
         lec = self.createTestLecture(qnCount=2, lecOpts=lambda i: dict(settings=[
-            dict(key='award_lecture_answered', value=HALF_AWARD),
-            dict(key='award_lecture_aced', value=HALF_AWARD),
+            dict(key='award_lecture_answered', value=str(HALF_AWARD)),
+            dict(key='award_lecture_aced', value=str(HALF_AWARD)),
         ]), tutOpts=lambda i: dict(settings=[
-            dict(key='award_tutorial_aced', value=0),
+            dict(key='award_tutorial_aced', value="0"),
         ]))
         lecPath = '/'.join(lec.getPhysicalPath())
         lecSyncUri = 'http://nohost%s/@@quizdb-sync' % lecPath
@@ -376,10 +376,10 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
         # Create lectures, with a total award slightly smaller than max
         BIG_AWARD = MAX_DAILY_AWARD + 1000
         lec = self.createTestLecture(qnCount=2, lecOpts=lambda i: dict(settings=[
-            dict(key='award_lecture_answered', value=BIG_AWARD),
-            dict(key='award_lecture_aced', value=BIG_AWARD),
+            dict(key='award_lecture_answered', value=str(BIG_AWARD)),
+            dict(key='award_lecture_aced', value=str(BIG_AWARD)),
         ]), tutOpts=lambda i: dict(settings=[
-            dict(key='award_tutorial_aced', value=0),
+            dict(key='award_tutorial_aced', value="0"),
         ]))
         lecPath = '/'.join(lec.getPhysicalPath())
         lecSyncUri = 'http://nohost%s/@@quizdb-sync' % lecPath
@@ -467,7 +467,7 @@ class StudentUpdateViewFunctional(FunctionalTestCase):
 
         # Create lecture with award
         lec = self.createTestLecture(qnCount=2, lecOpts=lambda i: dict(settings=[
-            dict(key='award_lecture_answered', value=1000),
+            dict(key='award_lecture_answered', value="1000"),
         ]))
         lecPath = '/'.join(lec.getPhysicalPath())
         lecSyncUri = 'http://nohost%s/@@quizdb-sync' % lecPath
