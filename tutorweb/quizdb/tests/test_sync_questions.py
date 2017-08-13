@@ -201,11 +201,13 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         aAllocs.append(gqa(0.925, True))
         self.assertEquals(len(aAllocs[1]), 10)
 
-        # Old items should be easy
+        # Should have picked off the 2 easiest old items
         oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
         self.assertEquals(len(oldItems), 2)
-        for a in oldItems:
-            self.assertLess(a['correct'], 25)
+        self.assertEqual(
+            sorted(oldItems, key=lambda x: x['correct']),
+            sorted(aAllocs[-2], key=lambda x: x['correct'])[0:2]
+        )
 
         # New items should be hard
         newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
@@ -217,11 +219,13 @@ class GetQuestionAllocationTest(FunctionalTestCase):
         aAllocs.append(gqa(0.025, True))
         self.assertEquals(len(aAllocs[1]), 10)
 
-        # Old items should be hard
+        # Should have picked off the 2 hardest old items
         oldItems = [a for a in aAllocs[-2] if a not in aAllocs[-1]]
         self.assertEquals(len(oldItems), 2)
-        for a in oldItems:
-            self.assertGreater(a['correct'], 75)
+        self.assertEqual(
+            sorted(oldItems, key=lambda x: x['correct']),
+            sorted(aAllocs[-2], key=lambda x: x['correct'])[-2:]
+        )
 
         # New items should be easy
         newItems = [a for a in aAllocs[-1] if a not in aAllocs[-2]]
