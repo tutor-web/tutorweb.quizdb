@@ -340,7 +340,6 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
     dbAnswers = (Session.query(db.Answer)
         .filter(db.Answer.lectureId == dbLec.lectureId)
         .filter(db.Answer.studentId == student.studentId)
-        .filter(db.Answer.practice == False)
         .order_by(db.Answer.timeEnd.desc())
         .with_lockmode('update')  # NB: Use FOR UPDATE, as otherwise we might get the table state at the start of the transaction
         .all())
@@ -352,6 +351,7 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
                   else dbAns.chosenAnswer,
         grade_after=dbAns.grade,
         coins_awarded=dbAns.coinsAwarded,
+        practice=dbAns.practice,
         synced=True,
     ) for dbAns in reversed(dbAnswers)]
 

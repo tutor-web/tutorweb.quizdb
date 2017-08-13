@@ -359,6 +359,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
             {
                 u'synced': True,
@@ -368,6 +369,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
         ])
 
@@ -382,6 +384,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
             {
                 u'synced': True,
@@ -391,6 +394,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
         ])
 
@@ -406,6 +410,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000010,
                     grade_after=0.1,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -415,6 +420,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000021,
                     answer_time=1377000031,
                     grade_after=0.2,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -424,6 +430,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000020,
                     answer_time=1377000030,
                     grade_after=0.3,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -433,6 +440,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000010,
                     grade_after=0.9,
+                    practice=False,
                 ),
             ],
         ))
@@ -454,6 +462,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
             {
                 u'synced': True,
@@ -463,6 +472,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
         ])
 
@@ -478,6 +488,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000040,
                     answer_time=1377000050,
                     grade_after=0.1,
+                    practice=False,
                 ),
             ]
         ))
@@ -522,6 +533,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000010,
                     grade_after=0.1,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -531,6 +543,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000020,
                     answer_time=1377000030,
                     grade_after=0.3,
+                    practice=False,
                 ),
             ],
         ))
@@ -553,6 +566,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000040,
                     answer_time=1377000050,
                     grade_after=0.3,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -562,6 +576,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000041,
                     answer_time=1377000051,
                     grade_after=0.3,
+                    practice=False,
                 ),
             ],
         ))
@@ -582,6 +597,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000010,
                 u'grade_after': 0.1,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
             {
                 u'synced': True,
@@ -591,6 +607,7 @@ class SyncViewFunctional(FunctionalTestCase):
                 u'answer_time': 1377000030,
                 u'grade_after': 0.3,
                 u'coins_awarded': 0,
+                u'practice': False,
             },
         ])
 
@@ -606,6 +623,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000060,
                     answer_time=1377000070,
                     grade_after=0.3,
+                    practice=False,
                 ),
             ],
         ), expectedStatus=403)
@@ -642,6 +660,7 @@ class SyncViewFunctional(FunctionalTestCase):
                         quiz_time=1379900000,
                         answer_time=1379900010,
                         grade_after=0.1,
+                        practice=False,
                     ),
                 ]),
                 dict(uri=tutAlloc['lectures'][1]['uri'], answerQueue=[
@@ -653,6 +672,7 @@ class SyncViewFunctional(FunctionalTestCase):
                         quiz_time=1373300020,
                         answer_time=1373300030,
                         grade_after=0.1,
+                        practice=False,
                     ),
                 ]),
             ],
@@ -731,6 +751,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000010,
                     grade_after=0.1,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -740,6 +761,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000020,
                     answer_time=1377000030,
                     grade_after=0.3,
+                    practice=False,
                 ),
                 dict(
                     synced=False,
@@ -753,6 +775,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000040,
                     grade_after=0.1,
+                    practice=False,
                 ),
             ],
         ))
@@ -790,6 +813,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000010,
                     grade_after=0.1,
+                    practice=False,
                 ),
             ],
         ))
@@ -825,6 +849,7 @@ class SyncViewFunctional(FunctionalTestCase):
                     quiz_time=1377000000,
                     answer_time=1377000050,
                     grade_after=0.1,
+                    practice=False,
                 ),
             ],
         ))
@@ -1131,7 +1156,7 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             [a['answer_time'] for a in aAlloc['answerQueue']],
-            [1379900100, 1379900200, 1379900400],  # NB: No practice questions in answerQueue
+            [1379900100, 1379900200, 1379900300, 1379900400],
         )
         self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.15)
 
@@ -1145,7 +1170,7 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             [a['answer_time'] for a in aAlloc['answerQueue']],
-            [1379900100, 1379900110, 1379900120, 1379900200, 1379900400],
+            [1379900100, 1379900110, 1379900120, 1379900130, 1379900200, 1379900300, 1379900400],
         )
         self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.15)
 
@@ -1163,12 +1188,12 @@ class SyncViewFunctional(FunctionalTestCase):
         ))
         self.assertEqual(
             [a['answer_time'] for a in aAlloc['answerQueue']],
-            [1379900100, 1379900110, 1379900120, 1379900200, 1379900400, 1379900510],
+            [1379900100, 1379900110, 1379900120, 1379900130, 1379900200, 1379900300, 1379900400, 1379900510],
         )
         self.assertEqual(aAlloc['answerQueue'][-1]['grade_after'], 0.41)
 
     def test_practiceMode(self):
-        """Practice mod answers are recorded, but not returned"""
+        """Practice mode answers are recorded and returned"""
         # Allocate to user A
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         qns = dict((self.getJson(qn['uri'])['title'], qn) for qn in aAlloc['questions'])
@@ -1202,17 +1227,21 @@ class SyncViewFunctional(FunctionalTestCase):
             answerQueue=answerQueue,
         ))
 
-        # Skip over practice values
-        self.assertEquals([a['quiz_time'] for a in aAlloc['answerQueue']], [
-            answerQueue[0]['quiz_time'],
-            answerQueue[1]['quiz_time'],
-            answerQueue[2]['quiz_time'],
-            answerQueue[3]['quiz_time'],
-            answerQueue[8]['quiz_time'],
-            answerQueue[9]['quiz_time'],
-            answerQueue[10]['quiz_time'],
-            answerQueue[11]['quiz_time'],
-            answerQueue[12]['quiz_time'],
+        # answerQueue includes practice values
+        self.assertEquals([(a['quiz_time'], a['practice']) for a in aAlloc['answerQueue']], [
+            (answerQueue[0]['quiz_time'], False),
+            (answerQueue[1]['quiz_time'], False),
+            (answerQueue[2]['quiz_time'], False),
+            (answerQueue[3]['quiz_time'], False),
+            (answerQueue[4]['quiz_time'], True),
+            (answerQueue[5]['quiz_time'], True),
+            (answerQueue[6]['quiz_time'], True),
+            (answerQueue[7]['quiz_time'], True),
+            (answerQueue[8]['quiz_time'], False),
+            (answerQueue[9]['quiz_time'], False),
+            (answerQueue[10]['quiz_time'], False),
+            (answerQueue[11]['quiz_time'], False),
+            (answerQueue[12]['quiz_time'], False),
         ])
 
     def test_lotsofquestions(self):
