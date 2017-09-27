@@ -10,6 +10,7 @@ from zope.publisher.interfaces import IPublishTraverse, NotFound
 from z3c.saconfig import Session
 from zExceptions import BadRequest
 
+from sqlalchemy import and_, or_
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
@@ -101,6 +102,7 @@ class QuestionView(JSONBrowserView):
                 prob_template_eval=float(settings.get('prob_template_eval', 0.8)),
                 cap_template_qns=int(settings.get('cap_template_qns', 5)),
                 cap_template_qn_reviews=int(settings.get('cap_template_qn_reviews', 10)),
+                cap_template_qn_nonsense=int(settings.get('cap_template_qn_nonsense', 10)),
             )
 
             # Should the user be reviewing a question?
@@ -117,13 +119,22 @@ class QuestionView(JSONBrowserView):
                 reviewQuestion = False
 
             if reviewQuestion:
-                # Try and find a user-generated question that student hasn't answered before
-                ugAnswerQuery = aliased(db.UserGeneratedAnswer, (Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
+                # Generate query of all irrelevant questions; either the student already reviewed it
+                ugAnswerQuery = (Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
                     .filter(db.UserGeneratedAnswer.studentId == student.studentId)
-                ).union(Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
+                )
+                # ...or that question has reached it's review cap
+                ugAnswerQuery = ugAnswerQuery.union(Session.query(db.UserGeneratedAnswer.ugQuestionGuid)
                     .group_by(db.UserGeneratedAnswer.ugQuestionGuid)
-                    .having(func.count(db.UserGeneratedAnswer.ugAnswerId) >= setting_values['cap_template_qn_reviews'])).subquery())
+                    .having(or_(
+                        func.count(db.UserGeneratedAnswer.ugAnswerId) >= setting_values['cap_template_qn_reviews'],
+                        and_(
+                            func.count(db.UserGeneratedAnswer.ugAnswerId) >= setting_values['cap_template_qn_nonsense'],
+                            func.sum(db.UserGeneratedAnswer.questionRating) < 0
+                        )
+                    )))
 
+                ugAnswerQuery = aliased(db.UserGeneratedAnswer, ugAnswerQuery.subquery())
                 ugQn = (Session.query(db.UserGeneratedQuestion)
                     .outerjoin(ugAnswerQuery)
                     .filter(ugAnswerQuery.ugQuestionGuid == None)
