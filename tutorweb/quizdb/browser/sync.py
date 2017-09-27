@@ -16,8 +16,6 @@ SERVERSIDE_SETTINGS = [
     'question_cap',
     'award_lecture_answered',
 ]
-INTEGER_SETTINGS = ['grade_s', 'grade_nmin', 'grade_nmax']  # Randomly-chosen questions that should result in an integer value
-STRING_SETTINGS = ['iaa_mode', 'grade_algorithm']
 
 
 class SyncTutorialView(JSONBrowserView):

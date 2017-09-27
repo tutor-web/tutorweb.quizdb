@@ -4,7 +4,7 @@ from tutorweb.quizdb.utils import getDbStudent, getDbLecture
 
 from .base import IntegrationTestCase
 
-LOTS_OF_TESTS = 1000
+LOTS_OF_TESTS = 100000
 
 class SyncStudentIntegration(IntegrationTestCase):
     def test_chooseSettingValue(self):
@@ -28,9 +28,20 @@ class SyncStudentIntegration(IntegrationTestCase):
         # Gamma values hit the mean
         out = 0
         for x in xrange(LOTS_OF_TESTS):
-            out += float(csv(value=40, shape=2))
+            out += float(csv(value=1000000, shape=2))
         out = out / LOTS_OF_TESTS
-        self.assertTrue(abs(out - 40) < 2)
+        self.assertTrue(abs(out - 2000000) < 5000)
+
+        # String values come out unaltered, but can't be randomly chosen
+        self.assertEqual(csv(key="iaa_mode", value="fun-size"), None)
+        with self.assertRaisesRegexp(ValueError, 'iaa_mode'):
+            csv(key="iaa_mode", value="fun-size", shape=2)
+        with self.assertRaisesRegexp(ValueError, 'iaa_mode'):
+            csv(key="iaa_mode", value="fun-size", max=4)
+
+        # Integer settings get rounded
+        for x in xrange(LOTS_OF_TESTS):
+            self.assertIn(csv(key="grade_nmin", max=9), '0 1 2 3 4 5 6 7 8 9'.split())
 
     def test_getStudentSettings(self):
         # Create lecture with lots of different forms of setting

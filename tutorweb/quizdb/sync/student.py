@@ -9,14 +9,22 @@ from z3c.saconfig import Session
 
 from tutorweb.quizdb import db
 
+INTEGER_SETTINGS = set(('grade_nmin', 'grade_nmax'))  # Randomly-chosen questions that should result in an integer value
+STRING_SETTINGS = set(('iaa_mode', 'grade_algorithm'))
+
 
 def _chooseSettingValue(lgs):
     """Return a new value according to restrictions in the lgs object"""
+    if lgs.key in STRING_SETTINGS and (lgs.shape is not None or lgs.max is not None):
+        raise ValueError("Cannot choose random value for setting %s" % lgs.key)
+
     if lgs.shape is not None:
         # Fetch value according to a gamma function
         for i in xrange(10):
-            out = numpy.random.gamma(shape=float(lgs.shape), scale=float(lgs.value) / float(lgs.shape))
+            out = numpy.random.gamma(shape=float(lgs.shape), scale=float(lgs.value))
             if lgs.max is None or (lgs.min or 0) <= out < lgs.max:
+                if lgs.key in INTEGER_SETTINGS:
+                    out = int(round(out))
                 return str(out)
         raise ValueError("Cannot pick value that satisfies shape %f / value %f / min %f / max %f" % (
             lgs.shape,
@@ -27,7 +35,10 @@ def _chooseSettingValue(lgs):
 
     if lgs.max is not None:
         # Uniform random choice
-        return str(random.uniform(lgs.min or 0, lgs.max))
+        out = random.uniform(lgs.min or 0, lgs.max)
+        if lgs.key in INTEGER_SETTINGS:
+            out = int(round(out))
+        return str(out)
 
     # Nothing to choose, use default value
     return None
