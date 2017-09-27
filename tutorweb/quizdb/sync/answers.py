@@ -68,6 +68,26 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
         """True iff student has crossed grade boundary for the first time"""
         return dbAnsSummary.gradeHighWaterMark < boundary and newGrade >= boundary
 
+    def get_award_setting(award_type, default):
+        registered_student = None
+        if registered_student is None:
+            # Is the student subscribed to a course?
+            if (Session.query(db.Subscription)
+                       .filter_by(student=student)
+                       .filter_by(hidden=0)
+                       .filter(db.Subscription.plonePath.like('/%/schools-and-classes/%'))
+                       .first()):
+                registered_student = True
+            else:
+                registered_student = False
+
+        out = None
+        if registered_student and 'award_registered_' + award_type in settings:
+            out = settings['award_registered_' + award_type]
+        if out is None:
+            out = settings.get('award_' + award_type, default)
+        return round(float(out))
+
     newGrade = a.get('grade_after', None)
     out = 0
 
@@ -85,11 +105,11 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
 
     # Got 8 questions right
     if crossedGradeBoundary(5.000):
-        out += round(float(settings.get('award_lecture_answered', "1000")))
+        out += get_award_setting('lecture_answered', "1000")
 
     # Has the lecture just been aced?
     if crossedGradeBoundary(9.750):
-        out += round(float(settings.get('award_lecture_aced', "10000")))
+        out += get_award_setting('lecture_aced', "10000")
 
         # Is every other lecture aced?
         # TODO: Bit ugly relying on plonePath structure here
@@ -105,7 +125,7 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
                 .filter(db.AnswerSummary.studentId == student.studentId)
                 .filter(db.AnswerSummary.gradeHighWaterMark >= 9.750)
                 .count() >= len(siblingLectures)):
-            out += round(float(settings.get('award_tutorial_aced', "100000")))
+            out += get_award_setting('tutorial_aced', "100000")
 
     # Is this a review of a template question?
     if dbQn.qnType == 'tw_questiontemplate' and a.get('question_type', '') == 'usergenerated':
@@ -141,7 +161,7 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
                     # NB: Technically we should be using the other student's cap_template_qns. Meh.
                     if allQnsAwardedCoins < int(settings.get('cap_template_qns', '5')):
                         # Finally, update the original question a coin award
-                        ugQnAns.coinsAwarded = float(settings.get('award_templateqn_aced', "10000"))
+                        ugQnAns.coinsAwarded = get_award_setting('templateqn_aced', "10000")
 
     return out
 
