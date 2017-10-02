@@ -11,6 +11,13 @@ from tutorweb.quizdb import db
 
 INTEGER_SETTINGS = set(('grade_nmin', 'grade_nmax'))  # Randomly-chosen questions that should result in an integer value
 STRING_SETTINGS = set(('iaa_mode', 'grade_algorithm'))
+SERVERSIDE_SETTINGS = [
+    'prob_template_eval',
+    'cap_template_qns',
+    'cap_template_qn_reviews',
+    'question_cap',
+    'award_lecture_answered',
+]
 
 
 def _chooseSettingValue(lgs):

@@ -5,18 +5,9 @@ from .base import JSONBrowserView
 from ..allocation.base import Allocation
 from ..sync.questions import getQuestionAllocation
 from ..sync.answers import parseAnswerQueue
-from ..sync.student import getStudentSettings
+from ..sync.student import getStudentSettings, SERVERSIDE_SETTINGS
 
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
-
-SERVERSIDE_SETTINGS = [
-    'prob_template_eval',
-    'cap_template_qns',
-    'cap_template_qn_reviews',
-    'question_cap',
-    'award_lecture_answered',
-]
-
 
 class SyncTutorialView(JSONBrowserView):
     def asDict(self, data):
