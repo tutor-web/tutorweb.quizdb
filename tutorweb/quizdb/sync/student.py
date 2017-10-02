@@ -9,7 +9,23 @@ from z3c.saconfig import Session
 
 from tutorweb.quizdb import db
 
-INTEGER_SETTINGS = set(('grade_nmin', 'grade_nmax'))  # Randomly-chosen questions that should result in an integer value
+# Randomly-chosen questions that should result in an integer value
+INTEGER_SETTINGS = set((
+    'question_cap',
+    'award_lecture_answered',
+    'award_lecture_aced',
+    'award_tutorial_aced',
+    'award_templateqn_aced',
+    'award_registered_lecture_answered',
+    'award_registered_lecture_aced',
+    'award_registered_tutorial_aced',
+    'award_registered_templateqn_aced',
+    'cap_template_qns',
+    'cap_template_qn_reviews',
+    'cap_template_qn_nonsense',
+    'grade_nmin',
+    'grade_nmax',
+))
 STRING_SETTINGS = set(('iaa_mode', 'grade_algorithm'))
 SERVERSIDE_SETTINGS = [
     'prob_template_eval',
