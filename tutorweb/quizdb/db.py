@@ -351,6 +351,12 @@ class LectureGlobalSetting(ORMBase):
         nullable=False,
         primary_key=True,
     )
+    variant = sqlalchemy.schema.Column(
+        sqlalchemy.types.String(100),
+        nullable=False,
+        default="",
+        primary_key=True,
+    )
     creationDate = sqlalchemy.schema.Column(
         sqlalchemy.types.DateTime(),
         nullable=False,

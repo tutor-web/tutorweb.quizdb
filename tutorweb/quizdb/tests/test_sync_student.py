@@ -1,8 +1,12 @@
+from plone.app.testing import login
+
 from tutorweb.quizdb import db
 from tutorweb.quizdb.sync.student import _chooseSettingValue, getStudentSettings
 from tutorweb.quizdb.utils import getDbStudent, getDbLecture
 
+from tutorweb.content.tests.base import setRelations
 from .base import IntegrationTestCase
+from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
 
 LOTS_OF_TESTS = 100000
 
@@ -127,3 +131,71 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.assertEqual(settings3['andrew']['ut_uniform2'], settings1['andrew']['ut_uniform2'])
         self.assertEqual(settings3['betty']['ut_uniform2'], settings1['betty']['ut_uniform2'])
         self.assertEqual(settings3['clara']['ut_uniform2'], settings1['clara']['ut_uniform2'])
+
+    def test_getStudentSettingsVariants(self):
+        # Create lecture that uses settings variants
+        lecObj = self.createTestLecture(qnCount=5, lecOpts=lambda i: dict(settings=[
+            dict(key="ut_static", value="0.9"),
+            dict(key="ut_static:registered", value="1.9"),
+            dict(key="ut_uniform:max", value="10"),
+            dict(key="ut_uniform:registered:min", value="100"),
+            dict(key="ut_uniform:registered:max", value="110"),
+        ]))
+        self.objectPublish(lecObj)
+        dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
+
+        # Add it to a class with A in it
+        portal = self.layer['portal']
+        login(portal, MANAGER_ID)
+        classObj = portal['schools-and-classes'][portal['schools-and-classes'].invokeFactory(
+            type_name="tw_class",
+            id="hard_knocks",
+            title="Unittest Hard Knocks class",
+            lectures=[lecObj],
+            students=[USER_A_ID],
+        )]
+        setRelations(classObj, 'lectures', [lecObj])
+        self.notifyModify(classObj)
+        import transaction ; transaction.commit()
+
+        # Get settings for A&B students
+        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID]]
+        self.assertEqual(
+            [s['ut_static'] for s in settings],
+            [u'1.9', u'0.9'],
+        )
+        self.assertEqual(
+            [float(s['ut_uniform']) > 10 for s in settings],
+            [True, False],
+        )
+
+        # Add B&C to the class
+        classObj.students = [USER_A_ID, USER_B_ID, USER_C_ID]
+        self.notifyModify(classObj)
+
+        # Get settings for all students
+        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        self.assertEqual(
+            [s['ut_static'] for s in settings],
+            [u'1.9', u'1.9', u'1.9'], # NB: All part of a class now
+        )
+        self.assertEqual(
+            [float(s['ut_uniform']) > 10 for s in settings],
+            [True, False, True], # NB: B does not get a new value, since we chose one last time round and lecture version has not bumped
+        )
+
+        # Remove class
+        portal['schools-and-classes'].manage_delObjects([classObj.id])
+        portal['schools-and-classes'].reindexObject()
+        self.notifyDelete(classObj)
+
+        # Get settings for all students
+        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        self.assertEqual(
+            [s['ut_static'] for s in settings],
+            [u'0.9', u'0.9', u'0.9'],  # static values update
+        )
+        self.assertEqual(
+            [float(s['ut_uniform']) > 10 for s in settings],
+            [True, False, True],  # NB: Random values are kept again.
+        )

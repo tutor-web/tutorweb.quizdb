@@ -53,14 +53,16 @@ def syncPloneLecture(lectureObj):
                       .filter_by(lectureId=dbLec.lectureId)
                       .filter_by(lectureVersion=dbLec.currentVersion)
                      ):
-            dbKeys.append(dbLgs.key)
+            # Combine key and variant for comparison's sake, plone will leave them combined
+            key_variant = dbLgs.key + (":" + dbLgs.variant if dbLgs.variant else "")
+            dbKeys.append(key_variant)
 
             # Does DB key exist in Plone?
-            if dbLgs.key not in globalSettings:
+            if key_variant not in globalSettings:
                 return False
 
             # Do each of the values set for it match?
-            for (k, v) in globalSettings[dbLgs.key].iteritems():
+            for (k, v) in globalSettings[key_variant].iteritems():
                 dbValue = getattr(dbLgs, k)
                 if isinstance(dbValue, float):
                     if abs(dbValue - float(v)) > 0.00001:
@@ -96,10 +98,13 @@ def syncPloneLecture(lectureObj):
     if not compareLgs(dbLec, globalSettings):
         dbLec.currentVersion += 1
         for (key, values) in globalSettings.iteritems():
+            # Split key & variant
+            (key, variant) = key.split(":", 2) if ":" in key else (key, "")
             dbLgs = db.LectureGlobalSetting(
                 lectureId=dbLec.lectureId,
                 lectureVersion=dbLec.currentVersion,
                 key=key,
+                variant=variant,
                 **values)
             Session.add(dbLgs)
         Session.flush()

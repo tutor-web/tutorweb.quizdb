@@ -16,10 +16,6 @@ INTEGER_SETTINGS = set((
     'award_lecture_aced',
     'award_tutorial_aced',
     'award_templateqn_aced',
-    'award_registered_lecture_answered',
-    'award_registered_lecture_aced',
-    'award_registered_tutorial_aced',
-    'award_registered_templateqn_aced',
     'cap_template_qns',
     'cap_template_qn_reviews',
     'cap_template_qn_nonsense',
@@ -67,6 +63,22 @@ def _chooseSettingValue(lgs):
     return None
 
 
+def _variantApplicable(variant, dbStudent):
+    """Is this variant applicable to this student?"""
+    if not variant:
+        return True
+
+    if variant == "registered":
+        # Is the student subscribed to a course?
+        return (Session.query(db.Subscription)
+                       .filter_by(student=dbStudent)
+                       .filter_by(hidden=False)
+                       .filter(db.Subscription.plonePath.like('/%/schools-and-classes/%'))
+                       .first())
+
+    raise ValueError("Unknown variant %s" % variant)
+
+
 def getStudentSettings(dbLec, dbStudent):
     """Fetch settings for this lecture, customised for the student"""
     latestLectureVersion = (Session.query(func.max(db.LectureGlobalSetting.lectureVersion))
@@ -83,12 +95,21 @@ def getStudentSettings(dbLec, dbStudent):
         out[lss.key] = lss.value
 
     # Check all global settings for the lecture
+    variants_applicable = {}
     for lgs in (Session.query(db.LectureGlobalSetting)
                 .filter_by(lectureId=dbLec.lectureId)
                 .filter_by(lectureVersion=latestLectureVersion)
+                .order_by(db.LectureGlobalSetting.key, db.LectureGlobalSetting.variant.desc())  # i.e we want variants first.
                ):
+        # If this setting variant isn't applicable to the student, ignore it.
+        if lgs.variant not in variants_applicable:
+            variants_applicable[lgs.variant] = _variantApplicable(lgs.variant, dbStudent)
+        if not variants_applicable[lgs.variant]:
+            continue
+
         if lgs.key in out:
             # Already have a current student-overriden setting, ignore this one
+            # NB: This includes the case when a variant has overriden the general case
             continue
 
         # Find any previous setting, if it was created with the same values copy it

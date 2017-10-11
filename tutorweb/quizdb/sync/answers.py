@@ -69,24 +69,7 @@ def getCoinAward(dbLec, student, dbAnsSummary, dbQn, a, settings):
         return dbAnsSummary.gradeHighWaterMark < boundary and newGrade >= boundary
 
     def get_award_setting(award_type, default):
-        registered_student = None
-        if registered_student is None:
-            # Is the student subscribed to a course?
-            if (Session.query(db.Subscription)
-                       .filter_by(student=student)
-                       .filter_by(hidden=0)
-                       .filter(db.Subscription.plonePath.like('/%/schools-and-classes/%'))
-                       .first()):
-                registered_student = True
-            else:
-                registered_student = False
-
-        out = None
-        if registered_student and 'award_registered_' + award_type in settings:
-            out = settings['award_registered_' + award_type]
-        if out is None:
-            out = settings.get('award_' + award_type, default)
-        return round(float(out))
+        return round(float(settings.get('award_' + award_type, default)))
 
     newGrade = a.get('grade_after', None)
     out = 0
