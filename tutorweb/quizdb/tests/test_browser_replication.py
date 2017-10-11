@@ -125,8 +125,8 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             (2, 5, 1272090000),
         ])
         self.assertEqual([x for x in dump['lecture_global_setting'] if x['key'] in [u'hist_sel']], [
-            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][0]['creationDate']),
-            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][-1]['creationDate']),
+            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][0]['creationDate'], variant=''),
+            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=dump['lecture_global_setting'][-1]['creationDate'], variant=''),
         ])
         self.assertEqual([x for x in dump['lecture_student_setting']], [
             dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
@@ -183,12 +183,12 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         for x in dump['lecture_global_setting']:
             creationDates[x['lectureId']] = x['creationDate']
         self.assertEqual([x for x in dump['lecture_global_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
-            dict(lectureId=3, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[3]),
-            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[3]),
-            dict(lectureId=5, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[5]),
-            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[5]),
-            dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6]),
-            dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6]),
+            dict(lectureId=3, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[3], variant=''),
+            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[3], variant=''),
+            dict(lectureId=5, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[5], variant=''),
+            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[5], variant=''),
+            dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6], variant=''),
+            dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6], variant=''),
         ])
         self.assertEqual([x for x in dump['lecture_student_setting']], [
             dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
@@ -337,19 +337,19 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         for x in dumpPostIngest['lecture_global_setting']:
             creationDates[x['lectureId']] = x['creationDate']
         self.assertEqual([x for x in dumpPostIngest['lecture_global_setting'] if x['key'] in [u'hist_sel',u'cap_template_qn_reviews']], [
-            dict(lectureId=3, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[3]),
-            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[3]),
-            dict(lectureId=5, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[5]),
-            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[5]),
-            dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6]),
-            dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6]),
+            dict(lectureId=3, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[3], variant=''),
+            dict(lectureId=3, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[3], variant=''),
+            dict(lectureId=5, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[5], variant=''),
+            dict(lectureId=5, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[5], variant=''),
+            dict(lectureId=6, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[6], variant=''),
+            dict(lectureId=6, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[6], variant=''),
 
-            dict(lectureId=7, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[7]),
-            dict(lectureId=7, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[7]),
-            dict(lectureId=8, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[8]),
-            dict(lectureId=8, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[8]),
-            dict(lectureId=9, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[9]),
-            dict(lectureId=9, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[9]),
+            dict(lectureId=7, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[7], variant=''),
+            dict(lectureId=7, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[0].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[7], variant=''),
+            dict(lectureId=8, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'10', min=None, max=None, shape=None, creationDate=creationDates[8], variant=''),
+            dict(lectureId=8, lectureVersion=1, key=u'hist_sel', value=unicode(lecObjs[2].id.replace('lec-', '0.')), min=None, max=None, shape=None, creationDate=creationDates[8], variant=''),
+            dict(lectureId=9, lectureVersion=1, key=u'cap_template_qn_reviews', value=u'3', min=None, max=None, shape=None, creationDate=creationDates[9], variant=''),
+            dict(lectureId=9, lectureVersion=1, key=u'hist_sel', value=u'0', min=None, max=None, shape=None, creationDate=creationDates[9], variant=''),
         ])
         self.assertEqual([x for x in dump['lecture_student_setting']], [
             dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',

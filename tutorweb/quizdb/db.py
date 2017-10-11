@@ -352,6 +352,7 @@ class LectureGlobalSetting(ORMBase):
         primary_key=True,
     )
     variant = sqlalchemy.schema.Column(
+        # Variant, e.g. "registered" or all-purpose "". We will choose one for a student
         sqlalchemy.types.String(100),
         nullable=False,
         default="",
@@ -384,7 +385,7 @@ class LectureGlobalSetting(ORMBase):
     )
 
     def equivalent(self, other):
-        for a in ['value']:
+        for a in ['variant', 'value']:
             if getattr(self, a) != getattr(other, a):
                 return False
         for a in ['shape', 'max', 'min']:
@@ -431,6 +432,13 @@ class LectureStudentSetting(ORMBase):
         __table_args__,
     )
 
+    variant = sqlalchemy.schema.Column(
+        # Variant, e.g. "registered" or all-purpose "".
+        # NB: Not part of the primary key, we only choose one.
+        sqlalchemy.types.String(100),
+        nullable=False,
+        default="",
+    )
     key = sqlalchemy.schema.Column(
         sqlalchemy.types.String(100),
         nullable=False,
@@ -454,6 +462,7 @@ class LectureStudentSetting(ORMBase):
             lectureId=self.lectureId,
             lectureVersion=newversion,
             studentId=self.studentId,
+            variant=self.variant,
             key=self.key,
             value=self.value,
         )

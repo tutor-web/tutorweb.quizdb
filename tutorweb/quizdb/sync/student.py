@@ -59,6 +59,10 @@ def _chooseSettingValue(lgs):
             out = int(round(out))
         return str(out)
 
+    if lgs.variant and lgs.value is not None:
+        # We should explicitly note the variant being used
+        return lgs.value
+
     # Nothing to choose, use default value
     return None
 
@@ -70,7 +74,7 @@ def _variantApplicable(variant, dbStudent):
 
     if variant == "registered":
         # Is the student subscribed to a course?
-        return (Session.query(db.Subscription)
+        return bool(Session.query(db.Subscription)
                        .filter_by(student=dbStudent)
                        .filter_by(hidden=False)
                        .filter(db.Subscription.plonePath.like('/%/schools-and-classes/%'))
@@ -120,6 +124,7 @@ def getStudentSettings(dbLec, dbStudent):
                       db.LectureGlobalSetting.key == db.LectureStudentSetting.key))
                 .filter_by(lectureId=dbLec.lectureId)
                 .filter_by(key=lgs.key)
+                .filter_by(variant=lgs.variant)
                 .filter(db.LectureStudentSetting.student == dbStudent)
                 .order_by(db.LectureGlobalSetting.lectureVersion.desc())
                 .first())
@@ -138,6 +143,7 @@ def getStudentSettings(dbLec, dbStudent):
                 lectureId=dbLec.lectureId,
                 lectureVersion=latestLectureVersion,
                 student=dbStudent,
+                variant=lgs.variant,
                 key=lgs.key,
                 value=newValue,
             ))

@@ -184,6 +184,34 @@ class SyncStudentIntegration(IntegrationTestCase):
             [True, False, True], # NB: B does not get a new value, since we chose one last time round and lecture version has not bumped
         )
 
+        # Update lecture, throw away registered variant
+        old_settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        lecObj.settings = [
+            dict(key="ut_extra", value="1"),
+            dict(key="ut_static", value="0.9"),
+            dict(key="ut_uniform:max", value="10"),
+            dict(key="ut_uniform:registered:min", value="100"),
+            dict(key="ut_uniform:registered:max", value="110"),
+        ]
+        self.notifyModify(lecObj)
+        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        self.assertEqual(
+            [s['ut_extra'] for s in settings],
+            [u'1', u'1', u'1'],
+        )
+        self.assertEqual(
+            [s['ut_static'] for s in settings],
+            [u'0.9', u'0.9', u'0.9'], # All went back to normal setting
+        )
+        self.assertEqual(
+            [float(s['ut_uniform']) > 10 for s in settings],
+            [True, True, True], # B got a new value as we updated the lecture
+        )
+        self.assertEqual(
+            [round(float(s['ut_uniform']) * 100) for s in old_settings],
+            [round(float(s['ut_uniform']) * 100) for s in old_settings],
+        )  # We kept the old ut_uniform values, since nothing changed here.
+
         # Remove class
         portal['schools-and-classes'].manage_delObjects([classObj.id])
         portal['schools-and-classes'].reindexObject()
@@ -197,5 +225,5 @@ class SyncStudentIntegration(IntegrationTestCase):
         )
         self.assertEqual(
             [float(s['ut_uniform']) > 10 for s in settings],
-            [True, False, True],  # NB: Random values are kept again.
+            [True, True, True],  # NB: Random values are kept again.
         )
