@@ -44,3 +44,16 @@ ALTER TABLE answer ADD `lectureVersion` int(11) DEFAULT NULL;
 ALTER TABLE answer ADD CONSTRAINT `answer_ibfk_x`
     FOREIGN KEY (`lectureId`, `lectureVersion`)
     REFERENCES `lectureGlobalSetting` (`lectureId`, `lectureVersion`);
+
+-- b2f9572159b037b43c3e06ba02eab2aac6e615cf
+
+ALTER TABLE lectureGlobalSetting
+    ADD variant VARCHAR(100) NOT NULL DEFAULT "";
+ALTER TABLE lectureGlobalSetting
+    DROP PRIMARY KEY,
+    ADD PRIMARY KEY (`lectureId`,`lectureVersion`,`key`,`variant`);
+
+-- f7bba547b306891585663f688ba1f65bdd486ef8
+
+ALTER TABLE lectureStudentSetting
+    ADD variant VARCHAR(100) NOT NULL DEFAULT "";
