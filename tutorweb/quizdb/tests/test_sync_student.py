@@ -37,11 +37,11 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.assertTrue(abs(out - 2000000) < 5000)
 
         # String values come out unaltered, but can't be randomly chosen
-        self.assertEqual(csv(key="iaa_mode", value="fun-size"), None)
-        with self.assertRaisesRegexp(ValueError, 'iaa_mode'):
-            csv(key="iaa_mode", value="fun-size", shape=2)
-        with self.assertRaisesRegexp(ValueError, 'iaa_mode'):
-            csv(key="iaa_mode", value="fun-size", max=4)
+        self.assertEqual(csv(key="iaa_type", value="fun-size"), None)
+        with self.assertRaisesRegexp(ValueError, 'iaa_type'):
+            csv(key="iaa_type", value="fun-size", shape=2)
+        with self.assertRaisesRegexp(ValueError, 'iaa_type'):
+            csv(key="iaa_type", value="fun-size", max=4)
 
         # Integer settings get rounded, don't have "3.0" at end
         for x in xrange(LOTS_OF_TESTS):
