@@ -6,7 +6,10 @@ import datetime
 from sqlalchemy.sql import func
 from z3c.saconfig import Session
 
-from norecaptcha import captcha
+try:
+    from norecaptcha import captcha
+except ImportError:
+    captcha = None
 
 from Products.Five.browser import BrowserView
 
@@ -82,16 +85,17 @@ class StudentAwardView(JSONBrowserView):
                 remote_addr = self.request.get('HTTP_X_FORWARDED_FOR', '').split(',')[0]
                 if not remote_addr:
                     remote_addr = self.request.get('REMOTE_ADDR')
-                res = captcha.submit(
-                    data.get('captchaResponse', ''),
-                    coin_config.CAPTCHA_KEY,
-                    remote_addr
-                )
 
-                if res.error_code:
-                    raise ValueError("Could not validate CAPTCHA")
-                elif not res.is_valid:
-                    raise ValueError("Invalid CAPTCHA")
+                if captcha:
+                    res = captcha.submit(
+                        data.get('captchaResponse', ''),
+                        coin_config.CAPTCHA_KEY,
+                        remote_addr
+                    )
+                    if res.error_code:
+                        raise ValueError("Could not validate CAPTCHA")
+                    elif not res.is_valid:
+                        raise ValueError("Invalid CAPTCHA")
 
             # Have we already given out our maximum for today?
             dailyTotalAward = (Session.query(func.sum(db.CoinAward.amount))
