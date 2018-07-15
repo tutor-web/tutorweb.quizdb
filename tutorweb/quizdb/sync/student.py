@@ -1,6 +1,10 @@
 import random
 
-import numpy.random
+try:
+    import numpy.random
+except ImportError:
+    # Some of the older EiaS NUCs don't have numpy installed
+    pass
 
 from sqlalchemy import func, and_
 from sqlalchemy.orm.exc import NoResultFound
