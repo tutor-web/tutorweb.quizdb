@@ -37,7 +37,11 @@ def findMissingEntries(dataRawEntries, dbQuery, sortCols=[], ignoreCols=[], idMa
         """Translate dict to use local ids, datetime objects, resort"""
         def tlate(k, v):
             if k in idMap:
-                return (k, idMap[k][v])
+                # NB: We don't worry about missing values for ug_question cases,
+                # when students are reviewing the questions the source student
+                # won't be in the map. However, the question will be already inserted
+                # so won't cause a problem.
+                return (k, idMap[k].get(v, None))
             elif k in ['timeStart', 'timeEnd', 'awardTime']:
                 return (k, datetime.datetime.utcfromtimestamp(v))
             elif k in ['ugQuestionGuid'] and v:
@@ -204,6 +208,36 @@ def ingestData(data):
             inserts['lecture_student_setting'] += 1
         Session.flush()
 
+    inserts['ug_question'] = 0
+    for (dataEntry, dbEntry) in findMissingEntries(
+            data['ug_question'],
+            Session.query(db.UserGeneratedQuestion)
+                .order_by(db.UserGeneratedQuestion.ugQuestionGuid),
+            sortCols=['ugQuestionGuid'],
+            ignoreCols=['ugQuestionId'],
+            idMap=idMap):
+        Session.add(db.UserGeneratedQuestion(**dataEntry))
+        inserts['ug_question'] += 1
+    Session.flush()
+
+    inserts['ug_answer'] = 0
+    for (dataEntry, dbEntry) in findMissingEntries(
+            data['ug_answer'],
+            Session.query(db.UserGeneratedAnswer)
+                .filter(db.UserGeneratedAnswer.studentId.in_(idMap['studentId'].values()))
+                .order_by(db.UserGeneratedAnswer.studentId, db.UserGeneratedAnswer.ugQuestionGuid),
+            sortCols=['studentId', 'ugQuestionGuid'],
+            ignoreCols=['ugAnswerId'],
+            idMap=idMap):
+        if dataEntry['studentId'] is not None:
+            Session.add(db.UserGeneratedAnswer(**dataEntry))
+            inserts['ug_answer'] += 1
+        else:
+            # If studentId is None, we've selected it but not relevant to current data
+            # (the dump isn't selective enough). Ignore it, will import eventually
+            continue
+    Session.flush()
+
     # Filter out answer student/question/timeEnd combinations already stored in DB
     inserts['answer'] = 0
     for (dataEntry, dbEntry) in findMissingEntries(
@@ -251,32 +285,6 @@ def ingestData(data):
             idMap=idMap):
         Session.add(db.CoinAward(**dataEntry))
         inserts['coin_award'] += 1
-    Session.flush()
-
-    inserts['ug_question'] = 0
-    for (dataEntry, dbEntry) in findMissingEntries(
-            data['ug_question'],
-            Session.query(db.UserGeneratedQuestion)
-                .filter(db.UserGeneratedQuestion.studentId.in_(idMap['studentId'].values()))
-                .order_by(db.UserGeneratedQuestion.studentId, db.UserGeneratedQuestion.ugQuestionGuid),
-            sortCols=['studentId', 'ugQuestionGuid'],
-            ignoreCols=['ugQuestionId'],
-            idMap=idMap):
-        Session.add(db.UserGeneratedQuestion(**dataEntry))
-        inserts['ug_question'] += 1
-    Session.flush()
-
-    inserts['ug_answer'] = 0
-    for (dataEntry, dbEntry) in findMissingEntries(
-            data['ug_answer'],
-            Session.query(db.UserGeneratedAnswer)
-                .filter(db.UserGeneratedAnswer.studentId.in_(idMap['studentId'].values()))
-                .order_by(db.UserGeneratedAnswer.studentId, db.UserGeneratedAnswer.ugQuestionGuid),
-            sortCols=['studentId', 'ugQuestionGuid'],
-            ignoreCols=['ugAnswerId'],
-            idMap=idMap):
-        Session.add(db.UserGeneratedAnswer(**dataEntry))
-        inserts['ug_answer'] += 1
     Session.flush()
 
     Session.flush()
