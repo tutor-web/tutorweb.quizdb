@@ -166,41 +166,6 @@ def ingestData(data):
             minVal = a['awardTime']
     coinAwardFilter = db.CoinAward.awardTime.__ge__(datetime.datetime.utcfromtimestamp(minVal or 0))
 
-    # Filter out answer student/question/timeEnd combinations already stored in DB
-    inserts['answer'] = 0
-    for (dataEntry, dbEntry) in findMissingEntries(
-            data['answer'],
-            Session.query(db.Answer)
-                .filter(db.Answer.lectureId.in_(idMap['lectureId'].values()))
-                .filter(db.Answer.studentId.in_(idMap['studentId'].values()))
-                .filter(answerFilter)
-                .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd),
-            sortCols=['lectureId', 'studentId', 'timeEnd'],
-            ignoreCols=['answerId'],
-            idMap=idMap,
-            returnUpdates=True):
-        if dbEntry:
-            # Coins awarded might have been updated afer the fact
-            dbEntry.coinsAwarded = dataEntry['coinsAwarded']
-        else:
-            Session.add(db.Answer(**dataEntry))
-            inserts['answer'] += 1
-    Session.flush()
-
-    if 'lecture_setting' in data:
-        inserts['lecture_setting'] = 0
-        for (dataEntry, dbEntry) in findMissingEntries(
-                data['lecture_setting'],
-                Session.query(db.DeprecatedLectureSetting)
-                    .filter(db.DeprecatedLectureSetting.lectureId.in_(idMap['lectureId'].values()))
-                    .filter(db.DeprecatedLectureSetting.studentId.in_(idMap['studentId'].values()))
-                    .order_by(db.DeprecatedLectureSetting.lectureId, db.DeprecatedLectureSetting.studentId, db.DeprecatedLectureSetting.key),
-                sortCols=['lectureId', 'studentId', 'key'],
-                idMap=idMap):
-            Session.add(db.DeprecatedLectureSetting(**dataEntry))
-            inserts['lecture_setting'] += 1
-        Session.flush()
-
     if 'lecture_global_setting' in data:
         inserts['lecture_global_setting'] = 0
         for (dataEntry, dbEntry) in findMissingEntries(
@@ -237,6 +202,41 @@ def ingestData(data):
             dataEntry['creationDate'] = datetime.datetime.utcfromtimestamp(dataEntry['creationDate'])
             Session.add(db.LectureStudentSetting(**dataEntry))
             inserts['lecture_student_setting'] += 1
+        Session.flush()
+
+    # Filter out answer student/question/timeEnd combinations already stored in DB
+    inserts['answer'] = 0
+    for (dataEntry, dbEntry) in findMissingEntries(
+            data['answer'],
+            Session.query(db.Answer)
+                .filter(db.Answer.lectureId.in_(idMap['lectureId'].values()))
+                .filter(db.Answer.studentId.in_(idMap['studentId'].values()))
+                .filter(answerFilter)
+                .order_by(db.Answer.lectureId, db.Answer.studentId, db.Answer.timeEnd),
+            sortCols=['lectureId', 'studentId', 'timeEnd'],
+            ignoreCols=['answerId'],
+            idMap=idMap,
+            returnUpdates=True):
+        if dbEntry:
+            # Coins awarded might have been updated afer the fact
+            dbEntry.coinsAwarded = dataEntry['coinsAwarded']
+        else:
+            Session.add(db.Answer(**dataEntry))
+            inserts['answer'] += 1
+    Session.flush()
+
+    if 'lecture_setting' in data:
+        inserts['lecture_setting'] = 0
+        for (dataEntry, dbEntry) in findMissingEntries(
+                data['lecture_setting'],
+                Session.query(db.DeprecatedLectureSetting)
+                    .filter(db.DeprecatedLectureSetting.lectureId.in_(idMap['lectureId'].values()))
+                    .filter(db.DeprecatedLectureSetting.studentId.in_(idMap['studentId'].values()))
+                    .order_by(db.DeprecatedLectureSetting.lectureId, db.DeprecatedLectureSetting.studentId, db.DeprecatedLectureSetting.key),
+                sortCols=['lectureId', 'studentId', 'key'],
+                idMap=idMap):
+            Session.add(db.DeprecatedLectureSetting(**dataEntry))
+            inserts['lecture_setting'] += 1
         Session.flush()
 
     inserts['coin_award'] = 0
