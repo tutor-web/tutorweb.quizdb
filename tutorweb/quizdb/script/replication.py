@@ -50,7 +50,7 @@ def replicateIngest():
     app = getApplication(args.zope_conf)
     import transaction
 
-    for fileName in os.listdir(args.work_dir):
+    for fileName in sorted(os.listdir(args.work_dir)):
         if not fileName.endswith('.json'):
             continue
         logger.info("Ingesting dump %s", fileName)
