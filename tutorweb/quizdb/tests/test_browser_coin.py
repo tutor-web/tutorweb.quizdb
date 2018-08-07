@@ -41,6 +41,14 @@ class TotalCoinViewTest(IntegrationTestCase):
 
     def test_totalCoinView(self):
         chooseOpener(MockHTTPHandler)
+        def captureOutput(view):
+            view.request.response.captured_output = ""
+            def addToCaptured(str):
+                view.request.response.captured_output += str
+
+            view.request.response.write = addToCaptured
+            view()
+            return view.request.response.captured_output
 
         view = self.layer['portal'].unrestrictedTraverse('@@quizdb-coin-totalcoins')
 
@@ -49,7 +57,7 @@ class TotalCoinViewTest(IntegrationTestCase):
             result=blockCount,
         )
         self.assertEqual(
-            int(view()),
+            int(captureOutput(view)),
             (blockCount - 1000) * 10000 + 24000000000,
         )
 
@@ -58,7 +66,7 @@ class TotalCoinViewTest(IntegrationTestCase):
             result=blockCount,
         )
         self.assertEqual(
-            int(view()),
+            int(captureOutput(view)),
             (blockCount - 1000) * 10000 + 24000000000,
         )
 

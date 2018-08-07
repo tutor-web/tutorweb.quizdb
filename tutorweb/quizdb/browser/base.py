@@ -146,3 +146,44 @@ class JSONBrowserView(BrowserView, BrowserViewHelpers):
                 message=str(ex),
                 stacktrace=traceback.format_exc() if DevelopmentMode else '',
             ))
+
+
+class PlainTextBrowserView(BrowserView, BrowserViewHelpers):
+    def __call__(self):
+        response = self.request.response
+        headerSent = False
+
+        try:
+            # Is there a request body?
+            if self.request.get_header('content_length') > 0:
+                # NB: Should be checking self.request.getHeader('Content-Type') ==
+                # 'application/json' but zope.testbrowser cannae do that.
+                self.request.stdin.seek(0)
+                data = json.loads(self.request.stdin.read())
+            else:
+                data = self.request.form
+
+            for line in self.asPlainText(data):
+                if not headerSent:
+                    response.setStatus(200)
+                    response.setHeader("Content-type", "text/plain")
+                    headerSent = True
+                response.write(line)
+            return ""
+
+        except Exception, ex:
+            if DevelopmentMode:
+                import traceback
+            logging.error("Failed call: " + self.request['URL'])
+            logging.exception(ex)
+            self.request.response.setStatus(500)
+            self.request.response.setHeader("Content-type", "text/plain")
+            response.write("Error: %s: %s\n%s" % (
+                ex.__class__.__name__,
+                str(ex),
+                traceback.format_exc() if DevelopmentMode else '',
+            ))
+
+    def asPlainText(self):
+        """Yield lines of text output"""
+        raise NotImplementedError

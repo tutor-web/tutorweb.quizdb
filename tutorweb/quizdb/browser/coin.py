@@ -11,23 +11,18 @@ try:
 except ImportError:
     captcha = None
 
-from Products.Five.browser import BrowserView
-
 from tutorweb.quizdb import db
 from ..config import coin_config
-from .base import JSONBrowserView
+from .base import JSONBrowserView, PlainTextBrowserView
 from ...quizdb import coin
 
 MAX_STUDENT_HOURLY_AWARD = 7 * 10**6 * 1000  # 7 million milliSMLY
 MAX_DAILY_AWARD = 15 * 10**6 * 1000  # 15 million milliSMLY
 
-class TotalCoinView(BrowserView):
+class TotalCoinView(PlainTextBrowserView):
     """Show approximate number of coins"""
-    def __call__(self):
-        out = (coin.getBlockCount() - 1000) * 10000 + 24000000000
-        self.request.response.setStatus(200)
-        self.request.response.setHeader("Content-type", "text/plain")
-        return str(out)
+    def asPlainText(self, data={}):
+        yield str((coin.getBlockCount() - 1000) * 10000 + 24000000000)
 
 
 def utcnow():
