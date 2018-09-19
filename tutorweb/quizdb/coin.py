@@ -11,7 +11,7 @@ def getBlockCount():
     return callMethod('getblockcount')
 
 
-def sendTransaction(walletId, coinOwed):
+def sendTransaction(walletId, coinOwed, message="Award from tutorweb"):
     """Send coinOwed in milli-SMLY to walletId, return tx id if worked"""
     if walletId.startswith('$$UNITTEST'):
         # Unit test wallets don't do anything
@@ -23,7 +23,7 @@ def sendTransaction(walletId, coinOwed):
         'sendtoaddress',
         walletId,
         float(coinOwed) / 1000,
-        "Award from tutorweb",
+        message,
     )
 
 

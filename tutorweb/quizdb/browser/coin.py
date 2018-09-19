@@ -18,6 +18,7 @@ from ...quizdb import coin
 
 MAX_STUDENT_HOURLY_AWARD = 7 * 10**6 * 1000  # 7 million milliSMLY
 MAX_DAILY_AWARD = 15 * 10**6 * 1000  # 15 million milliSMLY
+EIAS_WALLET = 'BPj18BBacYdvEnqgJqKVRNFQrw5ka76gxy'
 
 class TotalCoinView(PlainTextBrowserView):
     """Show approximate number of coins"""
@@ -75,7 +76,7 @@ class StudentAwardView(JSONBrowserView):
             if walletId.startswith('$$UNITTEST'):
                 pass
             elif walletId =='$$DONATE:EIAS':
-                walletId = 'BPj18BBacYdvEnqgJqKVRNFQrw5ka76gxy'
+                walletId = EIAS_WALLET
             else:
                 remote_addr = self.request.get('HTTP_X_FORWARDED_FOR', '').split(',')[0]
                 if not remote_addr:
@@ -135,3 +136,45 @@ class StudentAwardView(JSONBrowserView):
             coin_available=int(coinAwarded - coinClaimed),
             tx_id=txId,
         )
+
+
+class RedeemUnclaimedView(PlainTextBrowserView):
+    def asPlainText(self, data={}):
+        if 'dry-run' in data:
+            yield "*** DRY RUN ***\n"
+
+        total_reclaimed = 0
+        for (studentId, unclaimed) in Session.execute("""
+SELECT a.studentId,
+    SUM(coinsAwarded) -
+    COALESCE((SELECT SUM(amount) FROM coinAward ca WHERE ca.studentId = a.studentId), 0)
+    AS unclaimed
+FROM answer a, student s
+WHERE coinsAwarded > 0
+AND a.studentId = s.studentId AND s.hostId = 1
+AND a.timeEnd < CURDATE() - INTERVAL 2 YEAR
+AND a.studentId NOT IN (SELECT DISTINCT c.studentId FROM coinAward c WHERE c.awardTime >= CURDATE() - INTERVAL 2 YEAR)
+GROUP BY a.studentId
+HAVING unclaimed > 0
+        """):
+
+            total_reclaimed += int(unclaimed)
+            if 'dry-run' in data:
+                txId = 'DRY_RUN'
+            else:
+                txId = coin.sendTransaction(EIAS_WALLET, unclaimed, message="Auto-reclaim of awards")
+                # Worked, so update database
+                Session.add(db.CoinAward(
+                    studentId=studentId,
+                    amount=int(unclaimed),
+                    walletId=EIAS_WALLET,
+                    txId=txId,
+                    awardTime=utcnow(),  # NB: So it gets mocked in the tests
+                ))
+                Session.flush()
+            yield "StudentId: %d Unclaimed: %d Transaction: %s\n" % (
+                studentId,
+                unclaimed,
+                txId,
+            )
+        yield "Total: %d\n" % total_reclaimed

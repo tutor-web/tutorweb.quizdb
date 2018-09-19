@@ -86,6 +86,11 @@
       class=".coin.TotalCoinView"
       permission="zope2.View"
       />
+    <browser:page name="quizdb-redeem-unclaimed"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class=".coin.RedeemUnclaimedView"
+      permission="zope2.View"
+      />
 
     <!-- replication.py -->
     <browser:page name="quizdb-replication-dump"
