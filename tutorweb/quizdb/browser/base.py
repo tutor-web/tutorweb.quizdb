@@ -168,7 +168,7 @@ class PlainTextBrowserView(BrowserView, BrowserViewHelpers):
                     response.setStatus(200)
                     response.setHeader("Content-type", "text/plain")
                     headerSent = True
-                response.write(line)
+                response.write(str(line))
             return ""
 
         except Exception, ex:

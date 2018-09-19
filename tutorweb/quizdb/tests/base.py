@@ -300,6 +300,29 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
         )
         return json.loads(browser.contents)
 
+    def getPlainText(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
+        """Call view, decode JSON results"""
+        browser = self.getBrowser(None, user=user, streaming=True)
+        browser.handleErrors = False
+        browser.raiseHttpErrors = False
+        if isinstance(expectedStatus, list):
+            expectedStatuses = [str(x) for x in expectedStatus]
+        else:
+            expectedStatuses = [str(expectedStatus)]
+        if body:
+            browser.post(path, json.dumps(body))
+        else:
+            browser.open(path)
+        self.assertTrue(
+            browser.headers['Status'][0:3] in expectedStatuses,
+            msg="Status %s didn't match %s: %s" % (
+                browser.headers['Status'][0:3],
+                "/".join(expectedStatuses),
+                browser.contents,
+            )
+        )
+        return browser.contents
+
     def assertTrue(self, expr, thing=None, msg=None):
         if thing is not None:
             raise ValueError("Did you really mean to use assertTrue?")
