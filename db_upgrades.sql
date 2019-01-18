@@ -62,3 +62,4 @@ ALTER TABLE lectureStudentSetting
 
 ALTER TABLE host
     ADD comment VARCHAR(1024) NULL;
+ALTER TABLE host DROP INDEX ix_host_fqdn;

@@ -100,7 +100,6 @@ class Host(ORMBase):
     fqdn = sqlalchemy.schema.Column(
         sqlalchemy.types.String(64),
         nullable=False,
-        unique=True,
         index=True,
     )
     hostKey = sqlalchemy.schema.Column(
