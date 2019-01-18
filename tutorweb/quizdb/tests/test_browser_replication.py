@@ -131,13 +131,16 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         self.assertEqual([x for x in dump['lecture_student_setting']], [
             dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
                  value=dump['lecture_student_setting'][0]['value'],
-                 creationDate=dump['lecture_student_setting'][0]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][0]['creationDate'],
+                 variant=u''),
             dict(lectureId=5, lectureVersion=1, studentId=1, key=u'timeout_min',
                  value=dump['lecture_student_setting'][1]['value'],
-                 creationDate=dump['lecture_student_setting'][1]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][1]['creationDate'],
+                 variant=u''),
             dict(lectureId=5, lectureVersion=1, studentId=2, key=u'timeout_min',
                  value=dump['lecture_student_setting'][2]['value'],
-                 creationDate=dump['lecture_student_setting'][2]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][2]['creationDate'],
+                 variant=u''),
         ])
         # Make sure chosen settings fit requirements
         for x in dump['lecture_student_setting']:
@@ -193,13 +196,16 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         self.assertEqual([x for x in dump['lecture_student_setting']], [
             dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
                  value=dump['lecture_student_setting'][0]['value'],
-                 creationDate=dump['lecture_student_setting'][0]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][0]['creationDate'],
+                 variant=u''),
             dict(lectureId=5, lectureVersion=1, studentId=1, key=u'timeout_min',
                  value=dump['lecture_student_setting'][1]['value'],
-                 creationDate=dump['lecture_student_setting'][1]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][1]['creationDate'],
+                 variant=u''),
             dict(lectureId=5, lectureVersion=1, studentId=2, key=u'timeout_min',
                  value=dump['lecture_student_setting'][2]['value'],
-                 creationDate=dump['lecture_student_setting'][2]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][2]['creationDate'],
+                 variant=u''),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dump['ug_question']], [
             (1, "My question"),
@@ -354,13 +360,16 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         self.assertEqual([x for x in dump['lecture_student_setting']], [
             dict(lectureId=3, lectureVersion=1, studentId=1, key=u'timeout_min',
                  value=dump['lecture_student_setting'][0]['value'],
-                 creationDate=dump['lecture_student_setting'][0]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][0]['creationDate'],
+                 variant=u''),
             dict(lectureId=5, lectureVersion=1, studentId=1, key=u'timeout_min',
                  value=dump['lecture_student_setting'][1]['value'],
-                 creationDate=dump['lecture_student_setting'][1]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][1]['creationDate'],
+                 variant=u''),
             dict(lectureId=5, lectureVersion=1, studentId=2, key=u'timeout_min',
                  value=dump['lecture_student_setting'][2]['value'],
-                 creationDate=dump['lecture_student_setting'][2]['creationDate']),
+                 creationDate=dump['lecture_student_setting'][2]['creationDate'],
+                 variant=u''),
         ])
         self.assertEqual([(q['ugQuestionId'], q['text']) for q in dumpPostIngest['ug_question']], [
             (1, "My question"),
