@@ -100,7 +100,10 @@ def ingestData(data):
     # Check all host keys match our stored versions, and map to our IDs
     for host in data['host']:
         try:
-            dbHost = Session.query(db.Host).filter(db.Host.hostKey == host['hostKey']).one()
+            dbHost = Session.query(db.Host).filter_by(
+                hostKey=host['hostKey'],
+                fqdn=host['fqdn'],
+            ).one()
         except NoResultFound:
             raise ValueError("Unknown host %s:%s, cannot import results" % (host['hostKey'], host['fqdn']))
         idMap['hostId'][host['hostId']] = dbHost.hostId

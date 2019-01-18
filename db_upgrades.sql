@@ -57,3 +57,8 @@ ALTER TABLE lectureGlobalSetting
 
 ALTER TABLE lectureStudentSetting
     ADD variant VARCHAR(100) NOT NULL DEFAULT "";
+
+-- 2019-01-18
+
+ALTER TABLE host
+    ADD comment VARCHAR(1024) NULL;

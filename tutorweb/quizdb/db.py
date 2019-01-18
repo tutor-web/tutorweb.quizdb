@@ -109,6 +109,10 @@ class Host(ORMBase):
     )
     lectures = relationship("Lecture",
         backref="host")
+    comment = sqlalchemy.schema.Column(
+        sqlalchemy.types.Text(),
+        nullable=True,
+    )
 
 
 class LectureQuestion(ORMBase):

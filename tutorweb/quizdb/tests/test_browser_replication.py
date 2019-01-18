@@ -102,7 +102,7 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
         dump = self.doDump(dict(answerId=1))
         self.assertEqual(dump['state'], dict(answerId=10, coinAwardId=0))
         self.assertEqual(dump['host'], [
-            dict(hostId=1, hostKey=dump['host'][0]['hostKey'], fqdn=dump['host'][0]['fqdn']),
+            dict(hostId=1, hostKey=dump['host'][0]['hostKey'], fqdn=dump['host'][0]['fqdn'], comment=None),
         ])
         self.assertEqual(dump['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
@@ -290,12 +290,25 @@ class ReplicationDumpIngestViewTest(FunctionalTestCase):
             ug_answer=1,
         ))
 
+        # Can't upload dump when fqdn/hostKey don't match
+        dump_different_fqdn = dump.copy()
+        dump_different_fqdn['host'] = [
+            dict(hostId=1, fqdn=u'pork.tutor-web.net', hostKey=u'0123456789012345678900000000beef'),
+        ]
+        with self.assertRaisesRegexp(ValueError, "pork.tutor-web.net"):
+            ingest = self.doIngest(dump_different_fqdn)
+        dump_different_fqdn['host'] = [
+            dict(hostId=1, fqdn=u'beef.tutor-web.net', hostKey=u'0123456789012345678900000000beet'),
+        ]
+        with self.assertRaisesRegexp(ValueError, "0123456789012345678900000000beet"):
+            ingest = self.doIngest(dump_different_fqdn)
+
         # All the data should be doubled-up now
         dumpPostIngest = self.doDump()
         self.assertEqual(dumpPostIngest['state'], dict(answerId=23, coinAwardId=0))
         self.assertEqual(dumpPostIngest['host'], [
-            dict(hostId=1, hostKey=dumpPostIngest['host'][0]['hostKey'], fqdn=dumpPostIngest['host'][0]['fqdn']),
-            dict(hostId=2, hostKey=u'0123456789012345678900000000beef', fqdn='beef.tutor-web.net'),
+            dict(hostId=1, hostKey=dumpPostIngest['host'][0]['hostKey'], fqdn=dumpPostIngest['host'][0]['fqdn'], comment=None),
+            dict(hostId=2, hostKey=u'0123456789012345678900000000beef', fqdn='beef.tutor-web.net', comment=None),
         ])
         self.assertEqual(dumpPostIngest['student'], [
             dict(studentId=1, hostId=1, userName=students[0].userName, eMail=students[0].eMail),
