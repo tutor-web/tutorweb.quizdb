@@ -41,7 +41,13 @@ class SubscriptionView(JSONBrowserView):
         del_lec = toArray(data.get('del_lec', []))
         subs = dict(children=[])
         for dbSub in Session.query(db.Subscription).filter_by(student=student).filter_by(hidden=False).order_by(db.Subscription.plonePath):
-            obj = self.portalObject().restrictedTraverse(str(dbSub.plonePath))
+            try:
+                obj = self.portalObject().restrictedTraverse(str(dbSub.plonePath))
+            except KeyError:
+                # Subscription item vanished, hide it and move on
+                dbSub.hidden = True
+                Session.flush()
+                continue
             if obj.portal_type == 'tw_tutorial':
                 lectures = (l.getObject() for l in obj.restrictedTraverse('@@folderListing')(portal_type='tw_lecture'))
             elif obj.portal_type == 'tw_class':

@@ -153,6 +153,33 @@ class StudentResultsViewTest(IntegrationTestCase):
             ])
         )
 
+        # Add the extra one back again, remove the object. Subsequent syncs will autoremove it
+        self.assertEqual(
+            getSubscriptions(dict(add_lec=self.extra_lec.absolute_url())),
+            dict(children=[
+                dict(title=self.extra_lec.aq_parent.Title(), children=[
+                    dict(uri=self.extra_lec.absolute_url() + '/quizdb-sync', title=self.extra_lec.Title()),
+                ]),
+                dict(title='Unittest D1 T1', children=[
+                    dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
+                    dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
+                ]),
+            ])
+        )
+        login(self.layer['portal'], MANAGER_ID)
+        self.extra_lec.aq_parent.aq_parent.manage_delObjects([
+            self.extra_lec.aq_parent.id,
+        ])
+        self.assertEqual(
+            getSubscriptions(),
+            dict(children=[
+                dict(title='Unittest D1 T1', children=[
+                    dict(uri='http://nohost/plone/dept1/tut1/lec1/quizdb-sync', title='Unittest D1 T1 L1'),
+                    dict(uri='http://nohost/plone/dept1/tut1/lec2/quizdb-sync', title='Unittest D1 T1 L2'),
+                ]),
+            ])
+        )
+
         # Can remove everything in one go
         self.assertEqual(
             getSubscriptions(dict(del_lec=[
