@@ -1,4 +1,5 @@
 import re
+import urllib
 import urllib2
 
 from z3c.saconfig import Session
@@ -9,10 +10,11 @@ from .base import Allocation as BaseAllocation
 
 class ExamAllocation(BaseAllocation):
     def _questionUrl(self, dbQn):
-        return u'%s/quizdb-get-question/%d:%s' % (
+        return u'%s/quizdb-get-question/%d:%s?title=%s' % (
             self.urlBase,
             self.dbLec.lectureId,
             dbQn.plonePath.rsplit('/', 1)[-1],
+            urllib.quote((dbQn.title or '').encode('utf8')),
         )
 
     def _decomposeUrl(self, url):

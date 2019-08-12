@@ -29,12 +29,13 @@ class ExamAllocationTest(FunctionalTestCase):
         dbLec = lecObj.unrestrictedTraverse('@@quizdb-sync').getDbLecture()
 
         def getQuestionPath(dbLec, qnId):
-            return u'http://nohost/plone/quizdb-get-question/%d:qn-%d' % (
+            return u'http://nohost/plone/quizdb-get-question/%d:qn-%d?title=Unittest%%20tw_latexquestion%%20%d' % (
                 dbLec.lectureId,
+                qnId,
                 qnId,
             )
 
-        # Syncing returns a list of questions
+        # Syncing returns a list of questions with title appended
         aAlloc = self.getJson(lecPath + '/@@quizdb-sync', user=USER_A_ID)
         self.assertEqual([a['uri'] for a in aAlloc['questions']], [
             getQuestionPath(dbLec, 0),
