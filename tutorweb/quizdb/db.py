@@ -491,6 +491,10 @@ class Question(ORMBase):
         unique=False,
         default='tw_latexquestion',
     )
+    title = sqlalchemy.schema.Column(
+        sqlalchemy.types.Text(),
+        nullable=True,
+    )
     plonePath = sqlalchemy.schema.Column(
         sqlalchemy.types.String(128),
         nullable=False,

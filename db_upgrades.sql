@@ -63,3 +63,7 @@ ALTER TABLE lectureStudentSetting
 ALTER TABLE host
     ADD comment VARCHAR(1024) NULL;
 ALTER TABLE host DROP INDEX ix_host_fqdn;
+
+-- 2019-08-12
+
+ALTER TABLE question ADD `title` TEXT NULL;

@@ -156,6 +156,7 @@ def _ploneQuestionDict(listing):
 
             ploneQns[objPath] = dict(
                 qnType=l['portal_type'],
+                title=getattr(obj, 'title', ''),
                 lastUpdate=_toUTCDateTime(l['modified']),
                 correctChoices=[i for i, a in enumerate(allChoices) if a['correct']],
                 incorrectChoices=[i for i, a in enumerate(allChoices) if not a['correct']],
@@ -187,6 +188,7 @@ def syncPloneQuestions(dbLec, lectureObj):
             dbQn.correctChoices = json.dumps(qn['correctChoices'])
             dbQn.incorrectChoices = json.dumps(qn['incorrectChoices'])
             dbQn.lastUpdate = qn['lastUpdate']
+            dbQn.title = qn.get('title', '')
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
         elif dbQn.active and not(dbQn.plonePath.startswith(dbLec.plonePath)):
@@ -214,6 +216,7 @@ def syncPloneQuestions(dbLec, lectureObj):
             Session.add(db.Question(
                 plonePath=path,
                 qnType=qn['qnType'],
+                title=qn.get('title', ''),
                 lastUpdate=qn['lastUpdate'],
                 correctChoices=json.dumps(qn['correctChoices']),
                 incorrectChoices=json.dumps(qn['incorrectChoices']),
