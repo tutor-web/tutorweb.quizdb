@@ -26,7 +26,7 @@ INTEGER_SETTINGS = set((
     'grade_nmin',
     'grade_nmax',
 ))
-STRING_SETTINGS = set(('iaa_type', 'grade_algorithm'))
+STRING_SETTINGS = set(('iaa_type', 'iaa_exam_finished_tmpl', 'grade_algorithm'))
 SERVERSIDE_SETTINGS = [
     'prob_template_eval',
     'cap_template_qns',
