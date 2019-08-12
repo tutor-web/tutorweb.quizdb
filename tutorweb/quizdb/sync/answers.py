@@ -163,12 +163,7 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
         if 'answer_time' not in a:
             logger.debug("Unanswered question passed to sync")
             continue
-        parts = a['uri'].split('?', 1)
-        answerQueue.append((
-            parts[0],
-            urlparse.parse_qs(parts[1]) if len(parts) > 1 else {},
-            a,
-        ))
+        answerQueue.append(a)
 
     # Lock answers for this lecture/student, to stop any concurrent updates
     answerRows = {}
@@ -179,13 +174,13 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
         answerRows['%d:%d' % (questionId, calendar.timegm(timeEnd.timetuple()))] = True
 
     dbQns = dict(alloc.getQuestions(
-        uris=[uri for (uri, _, _) in answerQueue],
+        uris=[a['uri'] for a in answerQueue],
         lockForUpdate=True,
         active=None,  # NB: Might be writing historical answers
     ))
 
     rowsAdded = 0
-    for (questionUri, queryString, a) in answerQueue:
+    for a in answerQueue:
         # We have work to do, so get/create the summary
         # NB: On intial sync we do lots of lectures at once, creating the entry at this
         # point is wasted effort, and a cause of deadlocks as we try to sync whole tutorial
@@ -193,6 +188,11 @@ def parseAnswerQueue(alloc, rawAnswerQueue, settings, studentSettings={}):
             dbAnsSummary
         except NameError:
             (dbAnsSummary, maxTimeEnd) = getAnswerSummary(dbLec.lectureId, student)
+
+        # Extract querystring if there is one
+        questionUri = a['uri']
+        parts = questionUri.split('?', 1)
+        queryString = urlparse.parse_qs(parts[1]) if len(parts) > 1 else {}
 
         # Fetch question for allocation
         dbQn = dbQns.get(questionUri, None)

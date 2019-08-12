@@ -9,11 +9,16 @@ from tutorweb.quizdb import db
 from .base import Allocation as BaseAllocation, DEFAULT_QUESTION_CAP
 
 
+def parse_uri(uri):
+    uri = re.sub(r'\?.*$', '', uri)
+    return uri.rsplit("/", 1)[-1]
+
+
 class OriginalAllocation(BaseAllocation):
     @classmethod
     def allocFromUri(cls, student, uri, urlBase="/"):
         # No lecture in URI, so fall back to querying database
-        publicId = uri.rsplit("/", 1)[-1]
+        publicId = parse_uri(uri)
 
         # NB: This isn't very efficient, but in theory it's transitional
         query = Session.query(db.Question, db.Allocation, db.Lecture) \
@@ -60,7 +65,7 @@ class OriginalAllocation(BaseAllocation):
 
         if uris is not None:
             query = query.filter(db.Allocation.publicId.in_(
-                u.rsplit('/', 1)[-1] for u in uris
+                parse_uri(u) for u in uris
             ))
         else:
             # TODO: Use this instead of getAllQuestions
@@ -75,8 +80,18 @@ class OriginalAllocation(BaseAllocation):
         if not isAdmin:
             query = query.filter(db.Allocation.studentId == self.student.studentId)
 
-        for (dbQn, dbAlloc) in query:
-            yield (self._questionUrl(dbAlloc.publicId), dbQn)
+        if uris is not None:
+            # Return dbQns in terms of inputted URIs, which may have
+            # addional querystrings that the _questionUrl() won't
+            dbQns = dict()
+            for (dbQn, dbAlloc) in query:
+                dbQns[dbAlloc.publicId] = dbQn
+            for u in uris:
+                if parse_uri(u) in dbQns:
+                    yield (u, dbQns[parse_uri(u)])
+        else:
+            for (dbQn, dbAlloc) in query:
+                yield (self._questionUrl(dbAlloc.publicId), dbQn)
 
     def updateAllocation(self, settings, question_cap=DEFAULT_QUESTION_CAP):
         # Get all existing allocations from the DB and their questions

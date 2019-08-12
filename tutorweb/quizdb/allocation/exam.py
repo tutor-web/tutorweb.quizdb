@@ -17,7 +17,7 @@ class ExamAllocation(BaseAllocation):
 
     def _decomposeUrl(self, url):
         url = urllib2.unquote(url.rsplit('/', 1)[-1])
-        m = re.match(r'(\d+):(.*)$', url)
+        m = re.match(r'(\d+):([^?]*)', url)
         if m:
             return dict(
                 lectureId=int(m.group(1)),
