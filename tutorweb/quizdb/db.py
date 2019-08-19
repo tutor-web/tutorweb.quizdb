@@ -368,7 +368,7 @@ class LectureGlobalSetting(ORMBase):
     )
     value = sqlalchemy.schema.Column(
         # Fixed value / mean value for gamma distribution
-        sqlalchemy.types.String(100),
+        sqlalchemy.types.String(4096),
         nullable=True,
     )
     shape = sqlalchemy.schema.Column(
@@ -453,7 +453,7 @@ class LectureStudentSetting(ORMBase):
         default=datetime.utcnow,
     )
     value = sqlalchemy.schema.Column(
-        sqlalchemy.types.String(100),
+        sqlalchemy.types.String(4096),
         nullable=False,
     )
 

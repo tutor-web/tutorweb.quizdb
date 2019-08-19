@@ -67,3 +67,8 @@ ALTER TABLE host DROP INDEX ix_host_fqdn;
 -- 2019-08-12
 
 ALTER TABLE question ADD `title` TEXT NULL;
+
+-- 2019-08-19
+
+ALTER TABLE lectureGlobalSetting MODIFY value VARCHAR(4096);
+ALTER TABLE lectureStudentSetting MODIFY value VARCHAR(4096);
