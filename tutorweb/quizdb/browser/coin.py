@@ -150,10 +150,9 @@ SELECT a.studentId,
     COALESCE((SELECT SUM(amount) FROM coinAward ca WHERE ca.studentId = a.studentId), 0)
     AS unclaimed
 FROM answer a, student s
-WHERE coinsAwarded > 0
-AND a.studentId = s.studentId AND s.hostId = 1
+WHERE a.studentId = s.studentId AND s.hostId = 1
+AND coinsAwarded > 0
 AND a.timeEnd < CURDATE() - INTERVAL 2 YEAR
-AND a.studentId NOT IN (SELECT DISTINCT c.studentId FROM coinAward c WHERE c.awardTime >= CURDATE() - INTERVAL 2 YEAR)
 GROUP BY a.studentId
 HAVING unclaimed > 0
         """):
