@@ -30,6 +30,7 @@ def lectureModified(obj, event=None):
     portal_workflow = getToolByName(obj, "portal_workflow")
     logger.debug("lecture %s modified" % obj.id)
 
+    # NB: This event includes question addition (but questions will not have content included)
     status = portal_workflow.getStatusOf("simple_publication_workflow", obj)
     if status and status.get("review_state", None) == "published":
         dbLec = syncPloneLecture(obj)
@@ -62,8 +63,11 @@ def tutorialRemoved(obj, event=None):
 def questionAdded(obj, event=None):
     logger.debug("question %s added" % obj.id)
 
-    # NB: Ideally we just sync the questions, but need the dbLec anyway
-    syncPloneQuestions(syncPloneLecture(obj.aq_parent), obj.aq_parent)
+    # NB: A question addition will fire
+    #     -> questionAdded
+    #     -> lectureModified
+    #     -> questionModified
+    # ... content only available at final step. So wait
 
 
 def questionModified(obj, event=None):

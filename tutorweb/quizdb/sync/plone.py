@@ -189,6 +189,12 @@ def syncPloneQuestions(dbLec, lectureObj):
             dbQn.incorrectChoices = json.dumps(qn['incorrectChoices'])
             dbQn.lastUpdate = qn['lastUpdate']
             dbQn.title = qn.get('title', '')
+            # NB: Question may have been synced before counts were available so
+            #     allow them to be updated if still at 0.
+            if dbQn.timesAnswered == 0:
+                dbQn.timesAnswered = qn['timesAnswered']
+            if dbQn.timesCorrect == 0:
+                dbQn.timesCorrect = qn['timesCorrect']
             # Dont add this question later
             del ploneQns[dbQn.plonePath]
         elif dbQn.active and not(dbQn.plonePath.startswith(dbLec.plonePath)):
