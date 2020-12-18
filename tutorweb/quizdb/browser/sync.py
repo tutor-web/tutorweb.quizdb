@@ -1,4 +1,9 @@
+import re
+
 from AccessControl import Unauthorized
+from z3c.saconfig import Session
+
+from tutorweb.quizdb import db
 
 from .base import JSONBrowserView
 
@@ -74,9 +79,18 @@ class SyncLectureView(JSONBrowserView):
             settings,
         )
 
+        # Find any next lecure
+        nextLec = (Session.query(db.Lecture)
+            .filter(db.Lecture.hostId == dbLec.hostId)
+            .filter(db.Lecture.plonePath.startswith(re.sub(r'/[^/]+/?$', '/', dbLec.plonePath)))
+            .filter(db.Lecture.plonePath > dbLec.plonePath)
+            .order_by(db.Lecture.plonePath)
+            .first())
+
         # Build lecture dict
         return dict(
             uri=self.lectureObjToUrl(self.context),
+            next_uri=self.lectureObjToUrl(nextLec) if nextLec else None,
             user=student.userName,
             question_uri=self.lectureObjToUrl(self.context, 'quizdb-all-questions'),
             slide_uri=self.lectureObjToUrl(self.context, 'slide-html'),
