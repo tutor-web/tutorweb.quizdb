@@ -419,7 +419,6 @@ class LectureStudentSetting(ORMBase):
     )
     lectureVersion = sqlalchemy.schema.Column(
         sqlalchemy.types.Integer(),
-        sqlalchemy.schema.ForeignKey('lectureGlobalSetting.lectureVersion'),
         primary_key=True,
     )
     studentId = sqlalchemy.schema.Column(

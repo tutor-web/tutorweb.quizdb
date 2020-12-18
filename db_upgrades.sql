@@ -72,3 +72,7 @@ ALTER TABLE question ADD `title` TEXT NULL;
 
 ALTER TABLE lectureGlobalSetting MODIFY value VARCHAR(4096);
 ALTER TABLE lectureStudentSetting MODIFY value VARCHAR(4096);
+
+-- 2020-12-18
+
+ALTER TABLE lectureStudentSetting DROP FOREIGN KEY lectureStudentSetting_ibfk_3;
