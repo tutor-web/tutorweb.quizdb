@@ -112,7 +112,8 @@ class OriginalAllocation(BaseAllocation):
                 .join(db.Question)
                 .filter(db.Allocation.studentId == self.student.studentId)
                 .filter(db.Allocation.active == True)
-                .filter(db.Allocation.lectureId == self.dbLec.lectureId)):
+                .filter(db.Allocation.lectureId == self.dbLec.lectureId)
+                .order_by(db.Allocation.allocationId)):
             if not(dbQn.active) or (dbAlloc.allocationTime < dbQn.lastUpdate):
                 # Question has been removed or is stale
                 dbAlloc.active = False
@@ -131,23 +132,9 @@ class OriginalAllocation(BaseAllocation):
                 allocs[i]['alloc'].active = False
                 del allocs[i]
 
-            # If there's questions to spare, and requested to do so, reallocate questions
+            # If there's questions to spare, and requested to do so, throw away oldest questions
             if len(allocs) == questionCap and self.reAllocQuestions:
-                if self.targetDifficulty is None:
-                    raise ValueError("Must have a target difficulty to know what to remove")
-
-                # Make ranking how likely questions are, based on targetDifficulty
-                suitability = []
-                for a in allocs:
-                    if a['question'].timesAnswered == 0:
-                        # New questions should be added regardless
-                        suitability.append(1)
-                    else:
-                        suitability.append(1 - abs(self.targetDifficulty - float(a['question'].timesCorrect) / a['question'].timesAnswered))
-                ranking = sorted(range(len(allocs)), key=lambda k: suitability[k])
-
-                # Remove the least likely tenth
-                for i in sorted(ranking[0:len(allocs) / 10 + 1], reverse=True):
+                for i in reversed(xrange(int(questionCap * float(settings.get('allocation_realloc_perc', 20)) / 100))):
                     allocs[i]['alloc'].active = False
                     del allocs[i]
 
