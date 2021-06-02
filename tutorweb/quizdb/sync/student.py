@@ -80,7 +80,6 @@ def _variantApplicable(variant, dbStudent):
         # Is the student subscribed to a course?
         return bool(Session.query(db.Subscription)
                        .filter_by(student=dbStudent)
-                       .filter_by(hidden=False)
                        .filter(db.Subscription.plonePath.like('/%/schools-and-classes/%'))
                        .first())
 
