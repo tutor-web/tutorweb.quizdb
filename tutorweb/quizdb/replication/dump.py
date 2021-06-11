@@ -9,8 +9,8 @@ from z3c.saconfig import Session
 from sqlalchemy import and_, func
 from tutorweb.quizdb import db
 
-from Globals import DevelopmentMode
-if DevelopmentMode:
+from App.config import getConfiguration
+if getConfiguration().debug_mode:
     logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 

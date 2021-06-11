@@ -3,7 +3,7 @@ import logging
 import re
 
 from AccessControl import Unauthorized
-from Globals import DevelopmentMode
+from App.config import getConfiguration
 from zope.publisher.interfaces import NotFound
 from z3c.saconfig import Session
 from zope.component.hooks import getSite
@@ -140,7 +140,7 @@ class JSONBrowserView(BrowserView, BrowserViewHelpers):
                 message=str(ex),
             ))
         except Exception, ex:
-            if DevelopmentMode:
+            if getConfiguration().debug_mode:
                 import traceback
             logging.error("Failed call: " + self.request['URL'])
             logging.exception(ex)
@@ -149,7 +149,7 @@ class JSONBrowserView(BrowserView, BrowserViewHelpers):
             return json.dumps(dict(
                 error=ex.__class__.__name__,
                 message=str(ex),
-                stacktrace=traceback.format_exc() if DevelopmentMode else '',
+                stacktrace=traceback.format_exc() if getConfiguration().debug_mode else '',
             ))
 
 
@@ -177,7 +177,7 @@ class PlainTextBrowserView(BrowserView, BrowserViewHelpers):
             return ""
 
         except Exception, ex:
-            if DevelopmentMode:
+            if getConfiguration().debug_mode:
                 import traceback
             logging.error("Failed call: " + self.request['URL'])
             logging.exception(ex)
@@ -186,7 +186,7 @@ class PlainTextBrowserView(BrowserView, BrowserViewHelpers):
             response.write("Error: %s: %s\n%s" % (
                 ex.__class__.__name__,
                 str(ex),
-                traceback.format_exc() if DevelopmentMode else '',
+                traceback.format_exc() if getConfiguration().debug_mode else '',
             ))
 
     def asPlainText(self):
