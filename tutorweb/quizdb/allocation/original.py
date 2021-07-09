@@ -21,11 +21,12 @@ class OriginalAllocation(BaseAllocation):
         publicId = parse_uri(uri)
 
         # NB: This isn't very efficient, but in theory it's transitional
-        query = Session.query(db.Question, db.Allocation, db.Lecture) \
-            .join(db.Allocation).join(db.Lecture) \
+        query = Session.query(db.Allocation, db.Question, db.Lecture) \
+            .join(db.Question, db.Allocation.questionId == db.Question.questionId) \
+            .join(db.Lecture, db.Allocation.lectureId == db.Lecture.lectureId) \
             .filter(db.Allocation.publicId == publicId) \
             .filter(db.Question.active == True)
-        (dbQn, dbAlloc, dbLec) = query.one()
+        (dbAlloc, dbQn, dbLec) = query.one()
 
         return OriginalAllocation(
             student=student,
