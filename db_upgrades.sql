@@ -1,3 +1,9 @@
+-- 2021-07-17
+ALTER TABLE answer MODIFY COLUMN grade DECIMAL(5,3);
+ALTER TABLE answerSummary MODIFY COLUMN grade DECIMAL(5,3) NOT NULL;
+ALTER TABLE answerSummary MODIFY COLUMN gradeHighWaterMark DECIMAL(5,3) NOT NULL;
+ALTER TABLE userGeneratedAnswer MODIFY COLUMN studentGrade DECIMAL(5,3);
+
 -- 698d76d238223b18e794c8021b5e6158db82c0d8
 ALTER TABLE question ADD incorrectChoices varchar(128) NOT NULL;
 

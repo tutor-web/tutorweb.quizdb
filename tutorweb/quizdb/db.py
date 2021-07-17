@@ -631,7 +631,7 @@ class Answer(ORMBase):
         nullable=False,
     )
     grade = sqlalchemy.schema.Column(
-        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        sqlalchemy.types.Numeric(precision=5, scale=3, asdecimal=False),
         nullable=True,
     )
     practice = sqlalchemy.schema.Column(
@@ -672,12 +672,12 @@ class AnswerSummary(ORMBase):
         nullable=False,
     )
     grade = sqlalchemy.schema.Column(
-        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        sqlalchemy.types.Numeric(precision=5, scale=3, asdecimal=False),
         nullable=False,
         default=0,
     )
     gradeHighWaterMark = sqlalchemy.schema.Column(
-        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        sqlalchemy.types.Numeric(precision=5, scale=3, asdecimal=False),
         nullable=False,
         default=0,
     )
@@ -905,7 +905,7 @@ class UserGeneratedAnswer(ORMBase):
         default='',
     )
     studentGrade = sqlalchemy.schema.Column(
-        sqlalchemy.types.Numeric(precision=4, scale=3, asdecimal=False),
+        sqlalchemy.types.Numeric(precision=5, scale=3, asdecimal=False),
         nullable=False,
         default=0,
     )
