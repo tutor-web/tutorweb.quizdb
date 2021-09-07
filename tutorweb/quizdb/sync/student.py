@@ -42,6 +42,8 @@ def _chooseSettingValue(lgs):
         raise ValueError("Cannot choose random value for setting %s" % lgs.key)
 
     if lgs.shape is not None:
+        if lgs.value is None:
+            raise ValueError("shape %f set but no corresponding value set" % lgs.shape)
         # Fetch value according to a gamma function
         for i in xrange(10):
             out = numpy.random.gamma(shape=float(lgs.shape), scale=float(lgs.value))
@@ -136,7 +138,14 @@ def getStudentSettings(dbLec, dbStudent):
             out[lgs.key] = old_set[1].value
             continue
 
-        newValue = _chooseSettingValue(lgs)
+        try:
+            newValue = _chooseSettingValue(lgs)
+        except Exception as e:
+            # Re-raise error
+            raise type(e), type(e)("Cannot choose a value for %s: %s" % (
+                lgs.key,
+                e.message,
+            )), sys.exc_info()[2]
         if newValue is None:
             # We don't need a customised value, just use the global one.
             out[lgs.key] = lgs.value

@@ -29,6 +29,10 @@ class SyncStudentIntegration(IntegrationTestCase):
             self.assertTrue(out >= 90)
             self.assertTrue(out < 100)
 
+        # Can't specify shape without value
+        with self.assertRaisesRegexp(ValueError, 'but no corresponding value'):
+            csv(key='foo', shape=8)
+
         # Gamma values hit the mean
         out = 0
         for x in xrange(LOTS_OF_TESTS):
