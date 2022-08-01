@@ -310,7 +310,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.objectPublish(lecObj)
 
         dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
-        dbStudent = getDbStudent(USER_A_ID)
+        dbStudent = getDbStudent(USER_A_ID, email="%s@example.com" % USER_A_ID)
 
         # Get an allocation from the first version
         settings = getStudentSettings(dbLec, dbStudent)
@@ -372,7 +372,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.objectPublish(lecObj)
 
         dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
-        dbStudent = getDbStudent(USER_A_ID)
+        dbStudent = getDbStudent(USER_A_ID, email="%s@example.com" % USER_A_ID)
 
         # Get an allocation from the first version
         settings = getStudentSettings(dbLec, dbStudent)
@@ -451,7 +451,7 @@ class GetCoinAwardTest(FunctionalTestCase):
         self.objectPublish(lecObj)
 
         dbLec = getDbLecture('/'.join(lecObj.getPhysicalPath()))
-        dbStudent = getDbStudent(USER_A_ID)
+        dbStudent = getDbStudent(USER_A_ID, email="%s@example.com" % USER_A_ID)
 
         # Get an allocation from the first version
         settings = getStudentSettings(dbLec, dbStudent)

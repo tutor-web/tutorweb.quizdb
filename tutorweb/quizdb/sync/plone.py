@@ -7,6 +7,7 @@ import pytz
 
 from sqlalchemy.orm.exc import NoResultFound
 from z3c.saconfig import Session
+from Products.CMFCore.utils import getToolByName
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
@@ -17,9 +18,11 @@ def syncClassSubscriptions(classObj):
     Make sure all students in a class are subscribed
     """
     ploneClassPath = '/'.join(classObj.getPhysicalPath())
+    mtool = getToolByName(classObj, 'portal_membership')
 
     for s in (classObj.students or []):
-        dbStudent = getDbStudent(s)
+        mb = mtool.getMemberById(s)
+        dbStudent = getDbStudent(s, email=mb.getProperty('email'))
 
         try:
             dbSub = (Session.query(db.Subscription)

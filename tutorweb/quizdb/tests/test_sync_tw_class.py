@@ -2,7 +2,9 @@ import transaction
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
+from z3c.saconfig import Session
 
+from tutorweb.quizdb import db
 from tutorweb.content.tests.base import setRelations
 from .base import IntegrationTestCase
 from .base import MANAGER_ID, USER_A_ID, USER_B_ID, USER_C_ID
@@ -60,7 +62,7 @@ class SyncClassSubscriptionsTest(IntegrationTestCase):
         )
 
         # Add student A, they get auto-subscribed
-        classObj.students = [USER_A_ID]
+        classObj.students = [USER_A_ID, USER_C_ID]
         self.notifyModify(classObj)
         self.assertEqual(
             getSubscriptions(user=USER_A_ID),
@@ -72,3 +74,7 @@ class SyncClassSubscriptionsTest(IntegrationTestCase):
             getSubscriptions(user=USER_B_ID),
             dict(children=[])
         )
+
+        # Student C's e-mail address is set (which had to happen in syncSubscriptions)
+        dbS = Session.query(db.Student).filter_by(userName=USER_C_ID).one()
+        self.assertEqual(dbS.eMail, USER_C_ID + '@example.com')

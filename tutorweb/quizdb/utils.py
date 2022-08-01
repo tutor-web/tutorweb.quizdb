@@ -28,10 +28,10 @@ def getDbHost():
     return dbHost
 
 
-def getDbStudent(username, email=None):
+def getDbStudent(username, email):
     """
     Find / create a student object with (username), updating (email)
-    if supplied. Return object
+    Return object
     """
     dbHost = getDbHost()
     try:
@@ -43,7 +43,7 @@ def getDbStudent(username, email=None):
         dbStudent = db.Student(
             userName=username,
             hostId=dbHost.hostId,
-            eMail=username,  # NB: email can't be NULL, so assume username is an email address
+            eMail=email,
         )
         Session.add(dbStudent)
     if email:

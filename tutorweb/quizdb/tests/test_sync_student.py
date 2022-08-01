@@ -64,7 +64,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         # Get settings for 3 students
         settings1 = {}
         for u in ['andrew', 'betty', 'clara']:
-            settings1[u] = getStudentSettings(dbLec, getDbStudent(u))
+            settings1[u] = getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u))
 
         # Static settings1 are the same
         self.assertEqual(settings1['andrew']['ut_static'], "0.9")
@@ -94,7 +94,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         # Values updated, random values still the same
         settings2 = {}
         for u in ['andrew', 'betty', 'clara']:
-            settings2[u] = getStudentSettings(dbLec, getDbStudent(u))
+            settings2[u] = getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u))
         self.assertEqual(settings2['andrew']['ut_static'], "0.4")
         self.assertEqual(settings2['betty']['ut_static'], "0.4")
         self.assertEqual(settings2['clara']['ut_static'], "0.4")
@@ -117,7 +117,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         # Values updated, given new random values meeting criteria
         settings3 = {}
         for u in ['andrew', 'betty', 'clara']:
-            settings3[u] = getStudentSettings(dbLec, getDbStudent(u))
+            settings3[u] = getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u))
         self.assertEqual(settings3['andrew']['ut_static'], "0.4")
         self.assertEqual(settings3['betty']['ut_static'], "0.4")
         self.assertEqual(settings3['clara']['ut_static'], "0.4")
@@ -163,7 +163,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         import transaction ; transaction.commit()
 
         # Get settings for A&B students
-        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID]]
+        settings = [getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u)) for u in [USER_A_ID, USER_B_ID]]
         self.assertEqual(
             [s['ut_static'] for s in settings],
             [u'1.9', u'0.9'],
@@ -178,7 +178,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.notifyModify(classObj)
 
         # Get settings for all students
-        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        settings = [getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
         self.assertEqual(
             [s['ut_static'] for s in settings],
             [u'1.9', u'1.9', u'1.9'], # NB: All part of a class now
@@ -189,7 +189,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         )
 
         # Update lecture, throw away registered variant
-        old_settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        old_settings = [getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
         lecObj.settings = [
             dict(key="ut_extra", value="1"),
             dict(key="ut_static", value="0.9"),
@@ -198,7 +198,7 @@ class SyncStudentIntegration(IntegrationTestCase):
             dict(key="ut_uniform:registered:max", value="110"),
         ]
         self.notifyModify(lecObj)
-        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        settings = [getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
         self.assertEqual(
             [s['ut_extra'] for s in settings],
             [u'1', u'1', u'1'],
@@ -222,7 +222,7 @@ class SyncStudentIntegration(IntegrationTestCase):
         self.notifyDelete(classObj)
 
         # Get settings for all students
-        settings = [getStudentSettings(dbLec, getDbStudent(u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
+        settings = [getStudentSettings(dbLec, getDbStudent(u, email="%s@example.com" % u)) for u in [USER_A_ID, USER_B_ID, USER_C_ID]]
         self.assertEqual(
             [s['ut_static'] for s in settings],
             [u'0.9', u'0.9', u'0.9'],  # static values update
