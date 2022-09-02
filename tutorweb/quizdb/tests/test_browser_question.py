@@ -8,6 +8,7 @@ from Products.CMFCore.utils import getToolByName
 
 from plone.app.testing import login
 
+from ..sync.questions import getAllQuestionPath
 from .base import FunctionalTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, USER_D_ID, MANAGER_ID
 
@@ -90,6 +91,7 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # Get qb1, q2, qntmp
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         self.assertEqual(len(aAlloc['questions']), 3)
         qntmp = [
             qn['uri'] for qn
@@ -106,6 +108,7 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # Sync again, only get q1 & q2
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         self.assertEqual(len(aAlloc['questions']), 2)
 
         # Still can't fetch qntmp no more
@@ -183,6 +186,7 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # User A should get assigned the template question
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID)
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         qn = searchForQn(aAlloc['questions'][0]['uri'], {"title": u'Unittest tmpllec tmplQ0'}, user=USER_A_ID)
 
         # Write a question back
@@ -228,16 +232,19 @@ class GetQuestionViewTest(FunctionalTestCase):
 
         # User B/C/D might get to answer questions
         bAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_B_ID)
+        self.assertTrue(getAllQuestionPath(bAlloc['questions']) in bAlloc['question_uri'])
         self.assertEqual(set(qn['text'] for qn in qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)['usergenerated']), set([
             u'<div class="parse-as-tex">Want some rye?</div>',
             u'<div class="parse-as-tex">Stupid question</div>',
         ]))
         cAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_C_ID)
+        self.assertTrue(getAllQuestionPath(cAlloc['questions']) in cAlloc['question_uri'])
         self.assertEqual(set(qn['text'] for qn in qnsByType(cAlloc['questions'][0]['uri'], user=USER_C_ID, loops=40)['usergenerated']), set([
             u'<div class="parse-as-tex">Want some rye?</div>',
             u'<div class="parse-as-tex">Stupid question</div>',
         ]))
         dAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_D_ID)
+        self.assertTrue(getAllQuestionPath(dAlloc['questions']) in dAlloc['question_uri'])
         self.assertEqual(set(qn['text'] for qn in qnsByType(dAlloc['questions'][0]['uri'], user=USER_D_ID, loops=40)['usergenerated']), set([
             u'<div class="parse-as-tex">Want some rye?</div>',
             u'<div class="parse-as-tex">Stupid question</div>',
@@ -271,6 +278,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
+        self.assertTrue(getAllQuestionPath(bAlloc['questions']) in bAlloc['question_uri'])
         self.assertEqual(set(qn['text'] for qn in qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID)['usergenerated']), set([
             u'<div class="parse-as-tex">Stupid question</div>',
         ]))
@@ -295,6 +303,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
+        self.assertTrue(getAllQuestionPath(bAlloc['questions']) in bAlloc['question_uri'])
         self.assertEqual(set(qnsByType(bAlloc['questions'][0]['uri'], user=USER_B_ID).keys()), set(['template', 'BadRequest']))
 
         # Keep on writing questions, will hit cap
@@ -318,6 +327,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         self.assertEqual(set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()), set(['BadRequest']))
         # NB: We can still submit them, even though we've hit cap now. Possibly bad?
         aAlloc = self.getJson('http://nohost/plone/dept1/tmpltut/tmpllec/@@quizdb-sync', user=USER_A_ID, body=dict(
@@ -340,6 +350,7 @@ class GetQuestionViewTest(FunctionalTestCase):
                 ),
             ],
         ))
+        self.assertTrue(getAllQuestionPath(bAlloc['questions']) in bAlloc['question_uri'])
         self.assertEqual(set(qnsByType(aAlloc['questions'][0]['uri'], user=USER_A_ID).keys()), set(['BadRequest']))
 
         # B, C & D are still going
@@ -475,7 +486,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
 
         # Allocate to user A, should get questions
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
-        self.assertTrue('/quizdb-all-questions' in aAlloc['question_uri'])
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         self.assertEqual(
             sorted([q['title'] for q in self.getJson(aAlloc['question_uri']).values()]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2', u'Unittest D1 T1 L1 QTmp'],
@@ -493,6 +504,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
 
         # After sync, qntmp still gone
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         self.assertEqual(
             sorted([q['title'] for q in self.getJson(aAlloc['question_uri']).values()]),
             [u'Unittest D1 T1 L1 Q1', u'Unittest D1 T1 L1 Q2'],
@@ -512,6 +524,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
 
         # Allocate to user A, should get questions
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         allQns = self.getJson(aAlloc['question_uri'])
         self.assertEqual(
             sorted([q['title'] for q in allQns.values()]),
@@ -528,6 +541,7 @@ class GetLectureQuestionsViewTest(FunctionalTestCase):
 
         # Sync, should see new copy (and only one copy) of first question
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
+        self.assertTrue(getAllQuestionPath(aAlloc['questions']) in aAlloc['question_uri'])
         allQns = self.getJson(aAlloc['question_uri'])
         self.assertEqual(
             sorted([q['title'] for q in allQns.values()]),

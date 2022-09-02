@@ -7,6 +7,7 @@ from zope.testing.loggingsupport import InstalledHandler
 from plone.app.testing import login
 
 from ..allocation.base import DEFAULT_QUESTION_CAP
+from ..sync.questions import getAllQuestionPath
 from .base import FunctionalTestCase, IntegrationTestCase
 from .base import USER_A_ID, USER_B_ID, USER_C_ID, MANAGER_ID
 
@@ -49,7 +50,7 @@ class SyncViewFunctional(FunctionalTestCase):
         aAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(aAlloc['title'], u'Unittest D1 T1 L1')
         self.assertEquals(aAlloc['uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-sync')
-        self.assertEquals(aAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-all-questions')
+        self.assertEquals(aAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/' + getAllQuestionPath(aAlloc['questions']))
         self.assertEquals(aAlloc['slide_uri'], u'http://nohost/plone/dept1/tut1/lec1/slide-html')
         self.assertEquals(aAlloc['user'], u'Arnold')
         self.assertEquals(len(aAlloc['questions']), 2)
@@ -62,7 +63,7 @@ class SyncViewFunctional(FunctionalTestCase):
         aAlloc2 = self.getJson('http://nohost/plone/dept1/tut1/lec2/@@quizdb-sync', user=USER_A_ID)
         self.assertEquals(aAlloc2['title'], u'Unittest D1 T1 L2')
         self.assertEquals(aAlloc2['uri'], u'http://nohost/plone/dept1/tut1/lec2/quizdb-sync')
-        self.assertEquals(aAlloc2['question_uri'], u'http://nohost/plone/dept1/tut1/lec2/quizdb-all-questions')
+        self.assertEquals(aAlloc2['question_uri'], u'http://nohost/plone/dept1/tut1/lec2/' + getAllQuestionPath(aAlloc2['questions']))
         self.assertEquals(aAlloc2['slide_uri'], u'http://nohost/plone/dept1/tut1/lec2/slide-html')
         self.assertEquals(len(aAlloc2['questions']), 2)
         self.assertEquals(
@@ -74,13 +75,14 @@ class SyncViewFunctional(FunctionalTestCase):
         bAlloc = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_B_ID)
         self.assertEquals(bAlloc['title'], u'Unittest D1 T1 L1')
         self.assertEquals(bAlloc['uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-sync')
-        self.assertEquals(bAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/quizdb-all-questions')
+        self.assertEquals(bAlloc['question_uri'], u'http://nohost/plone/dept1/tut1/lec1/' + getAllQuestionPath(bAlloc['questions']))
         self.assertEquals(bAlloc['user'], u'Betty')
         self.assertEquals(len(bAlloc['questions']), 2)
         self.assertTrue(aAlloc['questions'][0]['uri'] != bAlloc['questions'][0]['uri'])
         self.assertTrue(aAlloc['questions'][0]['uri'] != bAlloc['questions'][1]['uri'])
         self.assertTrue(aAlloc['questions'][1]['uri'] != bAlloc['questions'][0]['uri'])
         self.assertTrue(aAlloc['questions'][1]['uri'] != bAlloc['questions'][1]['uri'])
+        self.assertTrue(aAlloc['question_uri'] != bAlloc['question_uri'])
 
         # Still get the same allocations if we call again
         aAlloc1 = self.getJson('http://nohost/plone/dept1/tut1/lec1/@@quizdb-sync', user=USER_A_ID)
@@ -89,6 +91,8 @@ class SyncViewFunctional(FunctionalTestCase):
         self.assertTrue(aAlloc['questions'][1]['uri'] == aAlloc1['questions'][1]['uri'])
         self.assertTrue(bAlloc['questions'][0]['uri'] == bAlloc1['questions'][0]['uri'])
         self.assertTrue(bAlloc['questions'][1]['uri'] == bAlloc1['questions'][1]['uri'])
+        self.assertTrue(aAlloc['question_uri'] == aAlloc1['question_uri'])
+        self.assertTrue(bAlloc['question_uri'] == bAlloc1['question_uri'])
 
     def test_adddelete(self):
         """Allocate some questions"""

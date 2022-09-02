@@ -8,7 +8,7 @@ from tutorweb.quizdb import db
 from .base import JSONBrowserView
 
 from ..allocation.base import Allocation
-from ..sync.questions import getQuestionAllocation
+from ..sync.questions import getQuestionAllocation, getAllQuestionPath
 from ..sync.answers import parseAnswerQueue
 from ..sync.student import getStudentSettings, SERVERSIDE_SETTINGS
 
@@ -74,10 +74,10 @@ class SyncLectureView(JSONBrowserView):
         )
 
         # ... then fetch question lists
-        questions = getQuestionAllocation(
+        questions = list(getQuestionAllocation(
             allocObj,
             settings,
-        )
+        ))
 
         # Find any next lecure
         nextLec = (Session.query(db.Lecture)
@@ -92,11 +92,11 @@ class SyncLectureView(JSONBrowserView):
             uri=self.lectureObjToUrl(self.context),
             next_uri=self.lectureObjToUrl(nextLec) if nextLec else None,
             user=student.userName,
-            question_uri=self.lectureObjToUrl(self.context, 'quizdb-all-questions'),
+            question_uri=self.lectureObjToUrl(self.context, getAllQuestionPath(questions)),
             slide_uri=self.lectureObjToUrl(self.context, 'slide-html'),
             review_uri=self.lectureObjToUrl(self.context, 'quizdb-review-ugqn'),
             title=self.context.title,
             settings=dict((k, v) for k, v in settings.items() if k not in SERVERSIDE_SETTINGS),
             answerQueue=answerQueue,
-            questions=list(questions),
+            questions=questions,
         )

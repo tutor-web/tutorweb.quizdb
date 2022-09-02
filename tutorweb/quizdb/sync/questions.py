@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import pytz
 
@@ -17,3 +18,10 @@ def getQuestionAllocation(alloc, settings):
             correct=dbQn.timesCorrect,
             online_only=dbQn.onlineOnly,
         )
+
+
+def getAllQuestionPath(questions):
+    """Return all-questions URI with hash of all current question URIs"""
+    return 'quizdb-all-questions?%s' % (
+        hashlib.sha1("".join(sorted(q['uri'] for q in questions)).encode("utf8")).hexdigest()
+    )
