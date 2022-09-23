@@ -82,3 +82,9 @@ ALTER TABLE lectureStudentSetting MODIFY value VARCHAR(4096);
 -- 2020-12-18
 
 ALTER TABLE lectureStudentSetting DROP FOREIGN KEY lectureStudentSetting_ibfk_3;
+
+-- 2022-09-20
+
+CREATE TABLE student_collationbup LIKE student;
+INSERT INTO student_collationbup SELECT * FROM student;
+ALTER TABLE student CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
