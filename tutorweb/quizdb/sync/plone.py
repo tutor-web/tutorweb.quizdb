@@ -22,7 +22,7 @@ def syncClassSubscriptions(classObj):
 
     for s in (classObj.students or []):
         mb = mtool.getMemberById(s)
-        dbStudent = getDbStudent(s, email=mb.getProperty('email'))
+        dbStudent = getDbStudent(mb.getUserName(), mb.getProperty('email'))
 
         try:
             dbSub = (Session.query(db.Subscription)
