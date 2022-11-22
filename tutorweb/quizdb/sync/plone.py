@@ -3,15 +3,20 @@ Manage syncing between Plone<->QuizDB
 """
 import datetime
 import json
+import logging
 import pytz
 
 from sqlalchemy.orm.exc import NoResultFound
 from z3c.saconfig import Session
 from Products.CMFCore.utils import getToolByName
+from Products.statusmessages.interfaces import IStatusMessage
 
 from tutorweb.content.schema import IQuestion
 from tutorweb.quizdb import db
 from tutorweb.quizdb.utils import getDbHost, getDbStudent
+
+logger = logging.getLogger(__package__)
+
 
 def syncClassSubscriptions(classObj):
     """
@@ -19,9 +24,14 @@ def syncClassSubscriptions(classObj):
     """
     ploneClassPath = '/'.join(classObj.getPhysicalPath())
     mtool = getToolByName(classObj, 'portal_membership')
+    messages = IStatusMessage(getattr(classObj, "REQUEST"))
 
     for s in (classObj.students or []):
         mb = mtool.getMemberById(s)
+        if mb is None:
+            logger.warn("Student %s doesn't exist in class %s, continuing", s, ploneClassPath)
+            messages.add("Student %s doesn't exist, not adding to MySQL" % s, type="warn")
+            continue
         dbStudent = getDbStudent(mb.getUserName(), mb.getProperty('email'))
 
         try:
