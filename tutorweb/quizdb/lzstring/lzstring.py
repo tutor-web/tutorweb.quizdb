@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Copyright © 2017 Marcel Dancak <dancakm@gmail.com>
 This work is free. You can redistribute it and/or modify it under the
@@ -6,6 +7,11 @@ as published by Sam Hocevar. See the COPYING file for more details.
 """
 
 import math
+try:
+    # NB: unichr() is only available in Python2
+    unichr
+except NameError:
+    unichr = chr
 
 
 keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
@@ -371,7 +377,7 @@ class LZString(object):
     def compressToUTF16(uncompressed):
         if uncompressed is None:
             return ""
-        return _compress(uncompressed, 15, lambda a: chr(a+32)) + " "
+        return _compress(uncompressed, 15, lambda a: unichr(a+32)) + " "
 
     @staticmethod
     def compressToBase64(uncompressed):
