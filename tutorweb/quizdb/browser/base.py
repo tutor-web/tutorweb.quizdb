@@ -17,6 +17,7 @@ from Products.CMFCore.utils import getToolByName
 from Products.Five.browser import BrowserView
 
 from tutorweb.quizdb import db
+from tutorweb.quizdb.lzstring.lzstring import LZString
 from tutorweb.quizdb.utils import getDbHost, getDbStudent, getDbLecture
 
 
@@ -108,6 +109,9 @@ class JSONBrowserView(BrowserView, BrowserViewHelpers):
 
             out = self.asDict(data)
             self.request.response.setStatus(200)
+            if getattr(self, 'compress_utf16', False):
+                self.request.response.setHeader("Content-type", "application/binary; charset=utf-16")
+                return LZString.compressToUTF16(json.dumps(out))
             self.request.response.setHeader("Content-type", "application/json")
             return json.dumps(out)
         except Unauthorized, ex:

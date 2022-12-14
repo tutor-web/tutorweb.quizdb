@@ -28,6 +28,7 @@ from tutorweb.content.tests.base import (
 from tutorweb.content.tests.base import TestFixture as ContentTestFixture
 from tutorweb.content.tests.base import FunctionalTestCase as ContentFunctionalTestCase
 from tutorweb.quizdb import ORMBase
+from tutorweb.quizdb.lzstring.lzstring import LZString
 
 class TestFixture(ContentTestFixture):
     def setUpZope(self, app, configurationContext):
@@ -289,16 +290,21 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
             browser.post(path, json.dumps(body))
         else:
             browser.open(path)
-        self.assertEqual(browser.headers['content-type'], 'application/json')
+        if browser.headers['content-type'] == 'application/json':
+            out = json.loads(browser.contents)
+        elif browser.headers['content-type'] == 'application/binary; charset=utf-16':
+            out = json.loads(LZString.decompressFromUTF16(unicode(browser.contents, 'utf16')))
+        else:
+            raise ValueError("Unknown content-type %s" % browser.headers['content-type'])
         self.assertTrue(
             browser.headers['Status'][0:3] in expectedStatuses,
             msg="Status %s didn't match %s: %s" % (
                 browser.headers['Status'][0:3],
                 "/".join(expectedStatuses),
-                json.loads(browser.contents),
+                out,
             )
         )
-        return json.loads(browser.contents)
+        return out
 
     def getPlainText(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
         """Call view, decode JSON results"""
