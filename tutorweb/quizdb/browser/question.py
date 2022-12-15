@@ -236,6 +236,8 @@ class GetQuestionView(QuestionView):
 
 class GetLectureQuestionsView(QuestionView):
     """Fetch all questions for a lecture"""
+    compress_utf16 = True
+
     def asDict(self, data):
         dbLec = self.getDbLecture()
         alloc = Allocation.allocFor(
