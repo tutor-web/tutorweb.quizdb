@@ -28,6 +28,10 @@
         handler=".sync.lectureModified"
         />
     <subscriber
+        for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectMovedEvent"
+        handler=".sync.lectureMoved"
+        />
+    <subscriber
         for="tutorweb.content.schema.ILecture zope.lifecycleevent.interfaces.IObjectRemovedEvent"
         handler=".sync.lectureRemoved"
         />

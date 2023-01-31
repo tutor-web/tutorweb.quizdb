@@ -125,6 +125,19 @@ def syncPloneLecture(lectureObj):
     return dbLec
 
 
+def movePloneLecture(oldPath, newPath):
+    """Lecture moved oldPath -> NewPath"""
+    dbHost = getDbHost()
+    try:
+        dbLec = Session.query(db.Lecture).with_lockmode('update') \
+            .filter(db.Lecture.hostId == dbHost.hostId) \
+            .filter(db.Lecture.plonePath == oldPath).one()
+    except NoResultFound:
+        return
+    dbLec.plonePath = newPath
+    Session.flush()
+
+
 def removePloneLecture(lectureObj):
     """Mark this lecture as inactive"""
     dbHost = getDbHost()

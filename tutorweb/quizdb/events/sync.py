@@ -8,7 +8,7 @@ from Products.CMFCore.utils import getToolByName
 from tutorweb.content.schema import ILectureSettings
 from tutorweb.quizdb.sync.plone import \
     syncClassSubscriptions, removeClassSubscriptions, \
-    syncPloneLecture, removePloneLecture, \
+    syncPloneLecture, movePloneLecture, removePloneLecture, \
     syncPloneQuestions
 
 logger = logging.getLogger(__package__)
@@ -38,6 +38,12 @@ def lectureModified(obj, event=None):
     else:
         removePloneLecture(obj)
 
+
+def lectureMoved(obj, event=None):
+    movePloneLecture(
+        '/'.join(event.oldParent.getPhysicalPath() + (event.oldName,)),
+        '/'.join(event.newParent.getPhysicalPath() + (event.newName,)),
+    )
 
 def lectureRemoved(obj, event=None):
     logger.debug("lecture %s removed" % obj.id)
