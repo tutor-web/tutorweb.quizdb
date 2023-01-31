@@ -127,7 +127,19 @@ def syncPloneLecture(lectureObj):
 
 def removePloneLecture(lectureObj):
     """Mark this lecture as inactive"""
-    pass # TODO:
+    dbHost = getDbHost()
+    plonePath = '/'.join(lectureObj.getPhysicalPath())
+    try:
+        dbLec = Session.query(db.Lecture).with_lockmode('update') \
+            .filter(db.Lecture.hostId == dbHost.hostId) \
+            .filter(db.Lecture.plonePath == plonePath).one()
+    except NoResultFound:
+        return
+    dbLec.plonePath = ''.join((
+        datetime.datetime.utcnow().strftime('/deleted-%Y-%m-%d--%H:%M:%S'),
+        dbLec.plonePath,
+    ))
+    Session.flush()
 
 def _toUTCDateTime(t):
     """Convert Zope DateTime into UTC datetime object"""
