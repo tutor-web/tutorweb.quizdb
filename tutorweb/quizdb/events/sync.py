@@ -40,10 +40,13 @@ def lectureModified(obj, event=None):
 
 
 def lectureMoved(obj, event=None):
-    movePloneLecture(
-        '/'.join(event.oldParent.getPhysicalPath() + (event.oldName,)),
-        '/'.join(event.newParent.getPhysicalPath() + (event.newName,)),
-    )
+    # NB: Creating a lecture also triggers a move None -> new, ignore that.
+    if event.oldParent and event.newParent and event.oldName and event.newName:
+        movePloneLecture(
+            '/'.join(event.oldParent.getPhysicalPath() + (event.oldName,)),
+            '/'.join(event.newParent.getPhysicalPath() + (event.newName,)),
+        )
+
 
 def lectureRemoved(obj, event=None):
     logger.debug("lecture %s removed" % obj.id)
