@@ -5,6 +5,7 @@ import datetime
 import json
 import logging
 import pytz
+import random
 
 from sqlalchemy.orm.exc import NoResultFound
 from z3c.saconfig import Session
@@ -150,6 +151,7 @@ def removePloneLecture(lectureObj):
         return
     dbLec.plonePath = ''.join((
         datetime.datetime.utcnow().strftime('/deleted-%Y-%m-%d--%H:%M:%S'),
+        '.%d' % random.randint(100,1000),
         dbLec.plonePath,
     ))
     Session.flush()
