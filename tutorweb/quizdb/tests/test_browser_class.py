@@ -4,6 +4,7 @@ import re
 from StringIO import StringIO
 
 import transaction
+from AccessControl import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from plone.app.testing import login
@@ -298,6 +299,19 @@ class StudentTableViewTest(IntegrationTestCase):
     def logs(self, name='sqlalchemy'):
         return [x.getMessage() for x in self.loghandlers[name].records]
 
+    def clearLocalRolesCache(self):
+        """ Clear borg.localroles cache.
+
+        borg.localroles check role implementation caches user/request combinations.
+        If we edit the roles for a user we need to clear this cache,
+
+        https://4.docs.plone.org/develop/plone/security/local_roles.html#local-role-caching
+        """
+        from zope.annotation.interfaces import IAnnotations
+        ann = IAnnotations(self.layer['app'].REQUEST)
+        for key in list(ann.keys()): # Little destructive here, deletes *all* annotations
+            del ann[key]
+
     def test_noAnswers(self):
         """Generating an empty CSV isn't a problem"""
         c = self.getCSV()
@@ -319,6 +333,17 @@ class StudentTableViewTest(IntegrationTestCase):
             # Break up calls so we record a different time for each, enough
             # here that some won't have the same question assigned.
             self.updateAnswerQueue(USER_A_ID, lec1, [grade])
+
+        # User A / B can't look at class results
+        login(portal, USER_A_ID)
+        with self.assertRaisesRegexp(Unauthorized, 'student-table'):
+            c = self.getCSV()
+        login(portal, USER_B_ID)
+        with self.assertRaisesRegexp(Unauthorized, 'student-table'):
+            c = self.getCSV()
+
+        # Manager can
+        login(portal, MANAGER_ID)
         c = self.getCSV()
         self.assertEqual([[x['Student'], x['Lecture'][-4:], x['Grade'], x['Time answered']] for x in c], [
             ['Arnold', 'lec1', '0.3', '2013-08-20 12:01:45'],
@@ -339,6 +364,17 @@ class StudentTableViewTest(IntegrationTestCase):
             ['Betty', 'lec2', '0.41', '2013-08-20 12:03:25'],
             ['Betty', 'lec2', '0.81', '2013-08-20 12:03:35'],
         ])
+
+        # Assign teacher role to USER_A, they can too
+        portal['classa'].manage_setLocalRoles(USER_A_ID, ('Teacher',))
+        portal['classa'].reindexObjectSecurity()
+        self.clearLocalRolesCache()
+        # NB: Check with portal['classa'].get_local_roles()
+        login(portal, USER_A_ID)
+        self.assertEqual(self.getCSV(), c)
+        login(portal, USER_B_ID)
+        with self.assertRaisesRegexp(Unauthorized, 'student-table'):
+            c = self.getCSV()
 
     def getCSV(self):
         """Look up view for class, return CSV as array of dicts"""
