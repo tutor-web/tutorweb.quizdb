@@ -141,6 +141,7 @@ def movePloneLecture(oldPath, newPath):
 
 def removePloneLecture(lectureObj):
     """Mark this lecture as inactive"""
+    return  # NB: Currently disabled
     dbHost = getDbHost()
     plonePath = '/'.join(lectureObj.getPhysicalPath())
     try:
