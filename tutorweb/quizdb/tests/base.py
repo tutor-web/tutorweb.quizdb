@@ -277,9 +277,14 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
         transaction.commit()
         super(FunctionalTestCase, self).tearDown()
 
-    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
-        """Call view, decode JSON results"""
-        browser = self.getBrowser(None, user=user)
+    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200, streaming=False):
+        """Call view, decode JSON results
+
+        streaming=True for views that response.write() their output, which
+        the test browser otherwise reports as an empty body - see
+        getBrowser().
+        """
+        browser = self.getBrowser(None, user=user, streaming=streaming)
         browser.handleErrors = False
         browser.raiseHttpErrors = False
         if isinstance(expectedStatus, list):
