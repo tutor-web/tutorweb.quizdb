@@ -33,6 +33,19 @@
       permission="zope2.View"
       />
 
+    <!-- TODO: Deliberately unauthenticated so ./bin/build.sh can fetch a
+         bundle without credentials. Revisit before release: one request
+         returns every question and answer in a tutorial, where
+         quizdb-sync/quizdb-all-questions only ever hand a logged-in student
+         their own allocation, and answers are obfuscated with nothing but
+         base64 (see question.py's getQuestionData). zope.Public rather than
+         zope2.View so it doesn't depend on the tutorial's workflow state. -->
+    <browser:page name="quizdb-tutorial-dump"
+      for="tutorweb.content.schema.ITutorial"
+      class=".dump.TutorialDumpView"
+      permission="zope.Public"
+      />
+
     <browser:page name="quizdb-all-questions"
       for="tutorweb.content.schema.ILecture"
       class=".question.GetLectureQuestionsView"
