@@ -1,4 +1,3 @@
-import sys
 import base64
 import json
 from StringIO import StringIO
@@ -7,21 +6,44 @@ import urllib2
 
 from zExceptions import BadRequest
 
-class CoinConfig(object):
-    RPC_HOST = "moohost"
-    RPC_PORT = 900
-    RPC_USER = "smly"
-    RPC_PASS = "realgoodpassword"
-    RPC_WALLETPASS = None
-class FakeConfig(object):
-    coin_config = CoinConfig()
-sys.modules["tutorweb.quizdb.config"] = FakeConfig
+# config.py reads zope.conf as it is imported and raises if there is nothing
+# there, and these tests have no layer to set one up, so install the same
+# product-config the layers use before importing anything that reads it.
+#
+# NB: This used to replace tutorweb.quizdb.config in sys.modules with a
+# stand-in carrying a coin_config and nothing else, which left the rest of the
+# test run using the stand-in too - and failed outright as soon as config.py
+# grew a value (dump_config) the stand-in didn't know to carry.
+from .base import installProductConfig
+installProductConfig()
 
 from .. import coin
 
 
 class TestCoin(unittest.TestCase):
+    # What to run against: uselessly fake, and with no wallet passphrase, so
+    # sendTransaction() makes only the one call each test is looking at
+    COIN_CONFIG = dict(
+        RPC_HOST="moohost",
+        RPC_PORT=900,
+        RPC_USER="smly",
+        RPC_PASS="realgoodpassword",
+        RPC_WALLETPASS=None,
+    )
+
+    def setUp(self):
+        # coin_config is read once and shared by everything in the process, so
+        # put back whatever the layers configured once we're done with it
+        self.oldCoinConfig = dict(
+            (name, getattr(coin.coin_config, name, None))
+            for name in self.COIN_CONFIG
+        )
+        for name, value in self.COIN_CONFIG.items():
+            setattr(coin.coin_config, name, value)
+
     def tearDown(self):
+        for name, value in self.oldCoinConfig.items():
+            setattr(coin.coin_config, name, value)
         chooseOpener()
 
     def test_utTransactions(self):
@@ -37,13 +59,6 @@ class TestCoin(unittest.TestCase):
         """Requests get properly encoded"""
         chooseOpener(MockHTTPHandler)
         global nextResponse
-
-        # Configure with usless settings
-        coin.coin_config.RPC_HOST = "moohost"
-        coin.coin_config.RPC_PORT = 900
-        coin.coin_config.RPC_USER = "smly"
-        coin.coin_config.RPC_PASS = "realgoodpassword"
-        coin.coin_config.RPC_WALLETPASS = None
 
         nextResponse = dict(result=1234)
         self.assertEqual(coin.sendTransaction('WaLlEt', 23), 1234)
@@ -117,9 +132,7 @@ class TestCoin(unittest.TestCase):
         chooseOpener(MockHTTPHandler)
         global nextResponse
 
-        # Configure with usless settings
-        coin.coin_config.RPC_HOST = "moohost"
-        coin.coin_config.RPC_PORT = 900
+        # A wallet that needs opening first, unlike setUp's
         coin.coin_config.RPC_USER = "smelly"
         coin.coin_config.RPC_PASS = "badpassword"
         coin.coin_config.RPC_WALLETPASS = "letmein"

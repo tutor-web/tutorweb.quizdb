@@ -10,12 +10,13 @@ from plone.app.testing import login
 from tutorweb.quizdb import db
 
 from .base import FunctionalTestCase
-from .base import USER_A_ID, MANAGER_ID
+from .base import PRODUCT_CONFIG, USER_A_ID, MANAGER_ID
 
 PORTAL = u'http://nohost/plone/'
-# The shared secret the test fixture configures the instance with, and the
-# header it travels in (see tests/base.py, TutorialDumpView.KEY_HEADER)
-DUMP_KEY = 'ut-dumpkey'
+# The shared secret the instance is configured with, and the header it travels
+# in. Spelled out rather than taken from TutorialDumpView.KEY_HEADER, being
+# the wire contract build.sh has to match.
+DUMP_KEY = PRODUCT_CONFIG['dump-key']
 KEY_HEADER = 'X-Tutorweb-Dump-Key'
 
 

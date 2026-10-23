@@ -30,21 +30,39 @@ from tutorweb.content.tests.base import FunctionalTestCase as ContentFunctionalT
 from tutorweb.quizdb import ORMBase
 from tutorweb.quizdb.lzstring.lzstring import LZString
 
+# The dummy site configuration tests run against, i.e. what an instance would
+# get from zope.conf's product-config (see tutorweb.buildout's cfgs/base.cfg).
+# Out here rather than inside the fixture so test_coin.py, which has no layer
+# to set one up for it, can install this same one - config.py reads these once
+# and keeps them, so everything in a test run needs to agree on them.
+PRODUCT_CONFIG = {
+    'coin-rpc-host': 'ut-rpchost',
+    'coin-rpc-port': '0818118181',
+    'coin-rpc-user': 'ut-rpcuser',
+    'coin-rpc-pass': 'ut-rpcpass',
+    'coin-rpc-walletpass': 'ut-rpcwalletpass',
+    'coin-captcha-key': 'ut-captchakey',
+    'dump-key': 'ut-dumpkey',
+}
+
+
+def installProductConfig():
+    """
+    Put PRODUCT_CONFIG where config.py's getConfigKey() will look for it.
+
+    config.py reads zope.conf as it is imported and raises if there is nothing
+    there, so this has to happen before anything imports it.
+    """
+    config = getConfiguration()
+    config.product_config = getattr(config, 'product_config', {})
+    config.product_config['tutorweb.quizdb'] = PRODUCT_CONFIG
+
+
 class TestFixture(ContentTestFixture):
     def setUpZope(self, app, configurationContext):
         super(TestFixture, self).setUpZope(app, configurationContext)
 
-        # Create some dummy site configuration to use
-        config = getConfiguration()
-        config.product_config = getattr(config, 'product_config', {})
-        config.product_config['tutorweb.quizdb'] = {
-            'coin-rpc-host': 'ut-rpchost',
-            'coin-rpc-port': '0818118181',
-            'coin-rpc-user': 'ut-rpcuser',
-            'coin-rpc-pass': 'ut-rpcpass',
-            'coin-rpc-walletpass': 'ut-rpcwalletpass',
-            'dump-key': 'ut-dumpkey',
-        }
+        installProductConfig()
 
         import tutorweb.quizdb
         xmlconfig.include(configurationContext, 'configure.zcml', tutorweb.quizdb)
