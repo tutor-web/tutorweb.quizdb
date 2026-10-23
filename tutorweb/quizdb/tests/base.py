@@ -290,7 +290,8 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
         """
         browser = self.getBrowser(None, user=user, streaming=streaming)
         for name, value in headers.items():
-            browser.addHeader(name, value)
+            if value:  # NB: _z2_testbrowser gets confused by empty-string headers
+                browser.addHeader(name, value)
         browser.handleErrors = False
         browser.raiseHttpErrors = False
         if isinstance(expectedStatus, list):
