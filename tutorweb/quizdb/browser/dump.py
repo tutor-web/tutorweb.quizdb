@@ -1,6 +1,8 @@
+import hmac
 import logging
 import re
 
+from AccessControl import Unauthorized
 from z3c.saconfig import Session
 from zope.publisher.interfaces import NotFound
 
@@ -9,9 +11,23 @@ from tutorweb.quizdb import db
 from .base import StreamingJSONBrowserView
 from .question import QuestionView
 
+from ..config import dump_config
 from ..utils import getDbLecture
 
 logger = logging.getLogger(__package__)
+
+
+def _asBytes(s):
+    """
+    s as bytes, for hmac.compare_digest, which won't mix the two.
+
+    zope.conf and request headers both give us str, but encode anything that
+    did arrive as unicode rather than letting str.encode() try to decode
+    non-ASCII bytes as ASCII first and raise.
+    """
+    if isinstance(s, unicode):
+        return s.encode('utf-8')
+    return s
 
 
 class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
@@ -47,6 +63,9 @@ class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
     syncLecture() rejecting a seeded lecture as somebody else's. The client
     supplies all three for whoever is using it.
 
+    NB: Authenticated by the KEY_HEADER shared secret rather than by a
+    Plone login - see requireDumpKey().
+
     NB: 'slide_uri'/'review_uri' are the only URIs naming something that
     isn't an entry here - server-rendered HTML that isn't bundled, so they
     stay pointed at this server. Everything else resolves within the dump.
@@ -62,6 +81,22 @@ class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
     # 'error.json' StreamingJSONBrowserView reports failures under.
     TUTORIAL_DIR = 'tutorials'
     QUESTION_DIR = 'questions'
+
+    def requireDumpKey(self):
+        """
+        Require 'X-Tutorweb-Dump-Key' to match zope.conf's dump-key, or refuse.
+
+        Not Plone's authentication: there is no student involved here, this
+        endpoint needs to be accesible from a CI job, see
+        https://github.com/tutor-web/tutorweb.app
+        """
+        expected = _asBytes(dump_config.KEY or '')
+        got = _asBytes(self.request.getHeader('X-Tutorweb-Dump-Key') or '')
+
+        # Constant-time, so a wrong key can't be narrowed down a character at
+        # a time by watching how long the comparison takes
+        if not expected or not hmac.compare_digest(expected, got):
+            raise Unauthorized('Missing or invalid X-Tutorweb-Dump-Key header')
 
     def _normaliseBase(self, base):
         """A base we can concatenate a key onto"""
@@ -201,6 +236,9 @@ class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
         )
 
     def asJsonItems(self, data):
+        # NB: Before we start streaming, so returning 403 is possible
+        self.requireDumpKey()
+
         data = data or {}
         self._homeLectures = {}
         self.base = self._normaliseBase(

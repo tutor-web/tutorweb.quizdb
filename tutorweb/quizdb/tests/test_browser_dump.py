@@ -13,6 +13,10 @@ from .base import FunctionalTestCase
 from .base import USER_A_ID, MANAGER_ID
 
 PORTAL = u'http://nohost/plone/'
+# The shared secret the test fixture configures the instance with, and the
+# header it travels in (see tests/base.py, TutorialDumpView.KEY_HEADER)
+DUMP_KEY = 'ut-dumpkey'
+KEY_HEADER = 'X-Tutorweb-Dump-Key'
 
 
 class TutorialDumpViewFunctional(FunctionalTestCase):
@@ -26,11 +30,14 @@ class TutorialDumpViewFunctional(FunctionalTestCase):
         # lectures - so commit before dumping anything.
         transaction.commit()
 
-    def dump(self, path='http://nohost/plone/dept1/tut1/@@quizdb-tutorial-dump', **kwargs):
+    def dump(self, path='http://nohost/plone/dept1/tut1/@@quizdb-tutorial-dump', key=DUMP_KEY, **kwargs):
         kwargs.setdefault('user', MANAGER_ID)
         # The view streams its output, so the test browser needs to read it
         # out of stdout rather than the response body
         kwargs.setdefault('streaming', True)
+        # key=None to send no shared secret at all, as opposed to a wrong one
+        if key is not None:
+            kwargs.setdefault('headers', {KEY_HEADER: key})
         return self.getJson(path, **kwargs)
 
     def lecKey(self, plonePath):
@@ -67,16 +74,53 @@ class TutorialDumpViewFunctional(FunctionalTestCase):
 
     def test_anonymous(self):
         """
-        Deliberately unauthenticated for now, so build.sh needs no
-        credentials - see the TODO in configure.zcml.
+        The shared secret is the credential, not a Plone login: with the key
+        and no login at all, build.sh gets its dump.
         """
         out = self.dump(user=None)
         self.assertTrue(u'tutorials/dept1/tut1.json' in out)
 
     def test_student(self):
-        """...and so a logged-in student can fetch one too"""
+        """...and a login makes no difference either way, given the key"""
         out = self.dump(user=USER_A_ID)
         self.assertTrue(u'tutorials/dept1/tut1.json' in out)
+
+    def test_noKey(self):
+        """Without the key nobody gets a dump, however they are logged in"""
+        for user in (None, USER_A_ID, MANAGER_ID):
+            out = self.dump(user=user, key=None, expectedStatus=403)
+            self.assertEqual(out[u'error.json']['error'], u'Unauthorized')
+            # Refused before any of it was written, so it's a 403 with
+            # nothing else in it rather than an error.json under a 200
+            self.assertEqual(list(out.keys()), [u'error.json'])
+
+    def test_wrongKey(self):
+        """A key that isn't the configured one is no better than none"""
+        for key in ('', 'ut-dumpke', DUMP_KEY + 'x', DUMP_KEY.upper(), 'ut-rpcpass'):
+            out = self.dump(key=key, expectedStatus=403)
+            self.assertEqual(out[u'error.json']['error'], u'Unauthorized')
+            self.assertEqual(list(out.keys()), [u'error.json'])
+
+    def test_keyNotConfigured(self):
+        """
+        An instance that hasn't been given a dump-key refuses everybody,
+        rather than letting everybody in - a request offering no key, or an
+        empty one, included.
+        """
+        from ..config import dump_config
+
+        original = dump_config.KEY
+        try:
+            for notConfigured in (None, ''):
+                dump_config.KEY = notConfigured
+                for key in (None, '', DUMP_KEY):
+                    out = self.dump(key=key, expectedStatus=403)
+                    self.assertEqual(out[u'error.json']['error'], u'Unauthorized')
+        finally:
+            dump_config.KEY = original
+
+        # ...and the key still works once it's configured again
+        self.assertTrue(u'tutorials/dept1/tut1.json' in self.dump())
 
     def test_flatFileNames(self):
         """
