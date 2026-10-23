@@ -33,6 +33,14 @@
       permission="zope2.View"
       />
 
+    <!-- zope.Public, but not unauthenticated: the view itself requires the
+         X-Tutorweb-Dump-Key shared secret (see dump.py's requireDumpKey) -->
+    <browser:page name="quizdb-tutorial-dump"
+      for="tutorweb.content.schema.ITutorial"
+      class=".dump.TutorialDumpView"
+      permission="zope.Public"
+      />
+
     <browser:page name="quizdb-all-questions"
       for="tutorweb.content.schema.ILecture"
       class=".question.GetLectureQuestionsView"

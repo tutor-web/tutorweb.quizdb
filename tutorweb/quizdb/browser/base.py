@@ -157,6 +157,106 @@ class JSONBrowserView(BrowserView, BrowserViewHelpers):
             ))
 
 
+class StreamingJSONBrowserView(JSONBrowserView):
+    """
+    Write out a JSON object a member at a time, for responses too big to want
+    in memory whole. asJsonItems(data) yields (key, value) pairs, each
+    serialised and written as it is produced.
+
+    Errors arrive as an ERROR_KEY member either way:
+
+    - Before anything is written, the response is just {ERROR_KEY: {...}},
+      with a status code to match (as JSONBrowserView gives).
+    - Once streaming, the status has gone out and can't be taken back, so it
+      stays 200 and ERROR_KEY is appended, the object still being closed so
+      it parses. Callers must therefore check for ERROR_KEY rather than
+      trust the status.
+    """
+
+    ERROR_KEY = 'error.json'
+
+    def asJsonItems(self, data):
+        """Yield (key, value) pairs to write out"""
+        raise NotImplementedError
+
+    def errorStatus(self, ex):
+        """Status code for an exception, as JSONBrowserView.__call__ gives"""
+        if isinstance(ex, (Unauthorized, Redirect)):
+            return 403
+        if isinstance(ex, NotFound):
+            return 404
+        if isinstance(ex, BadRequest):
+            return 400
+        return 500
+
+    def errorDetails(self, ex):
+        """The ERROR_KEY contents for an exception"""
+        if getConfiguration().debug_mode:
+            import traceback
+        out = dict(error=ex.__class__.__name__)
+        if isinstance(ex, Redirect):
+            out['location'] = str(ex)
+        else:
+            out['message'] = str(ex)
+        if getConfiguration().debug_mode:
+            out['stacktrace'] = traceback.format_exc()
+        return out
+
+    def __call__(self):
+        response = self.request.response
+        written = False
+
+        def startResponse():
+            response.setStatus(200)
+            response.setHeader("Content-type", "application/json")
+            response.write("{")
+
+        try:
+            # Is there a request body? (as JSONBrowserView.__call__)
+            if self.request.get_header('content_length') > 0:
+                self.request.stdin.seek(0)
+                data = json.loads(self.request.stdin.read())
+            else:
+                data = self.request.form
+
+            for key, value in self.asJsonItems(data):
+                # Serialise before writing any separator: a failure here
+                # would otherwise leave a dangling comma, and appending
+                # ERROR_KEY after one gives unparseable output
+                member = "%s:%s" % (json.dumps(key), json.dumps(value))
+                if not written:
+                    startResponse()
+                    written = True
+                else:
+                    response.write(",")
+                response.write(member)
+
+            if not written:
+                # Nothing to say, but still owe the caller a valid object
+                startResponse()
+            response.write("}")
+            return ""
+
+        except Exception, ex:
+            logging.error("Failed call: " + self.request['URL'])
+            logging.exception(ex)
+            member = "%s:%s" % (
+                json.dumps(self.ERROR_KEY),
+                json.dumps(self.errorDetails(ex)),
+            )
+
+            if written:
+                # Status already sent, so say so in-band and close the
+                # object so the caller can still read it
+                response.write("," + member)
+                response.write("}")
+                return ""
+
+            response.setStatus(self.errorStatus(ex))
+            response.setHeader("Content-type", "application/json")
+            return "{%s}" % member
+
+
 class PlainTextBrowserView(BrowserView, BrowserViewHelpers):
     def __call__(self):
         response = self.request.response

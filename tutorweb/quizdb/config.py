@@ -26,3 +26,7 @@ coin_config.RPC_USER = getConfigKey('coin-rpc-user')
 coin_config.RPC_PASS = getConfigKey('coin-rpc-pass')
 coin_config.RPC_WALLETPASS = getConfigKey('coin-rpc-walletpass')
 coin_config.CAPTCHA_KEY = getConfigKey('coin-captcha-key')
+
+dump_config = ConfigObject()
+# Shared secret @@quizdb-tutorial-dump expects in X-Tutorweb-Dump-Key
+dump_config.KEY = getConfigKey('dump-key')

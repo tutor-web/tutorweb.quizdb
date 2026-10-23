@@ -43,6 +43,7 @@ class TestFixture(ContentTestFixture):
             'coin-rpc-user': 'ut-rpcuser',
             'coin-rpc-pass': 'ut-rpcpass',
             'coin-rpc-walletpass': 'ut-rpcwalletpass',
+            'dump-key': 'ut-dumpkey',
         }
 
         import tutorweb.quizdb
@@ -277,9 +278,19 @@ class FunctionalTestCase(ContentFunctionalTestCase, TestHelpers):
         transaction.commit()
         super(FunctionalTestCase, self).tearDown()
 
-    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200):
-        """Call view, decode JSON results"""
-        browser = self.getBrowser(None, user=user)
+    def getJson(self, path, body=None ,user=USER_A_ID, expectedStatus=200, streaming=False, headers={}):
+        """Call view, decode JSON results
+
+        streaming=True for views that response.write() their output, which
+        the test browser otherwise reports as an empty body - see
+        getBrowser().
+
+        headers is any extra request headers to send, e.g. the shared secret
+        @@quizdb-tutorial-dump wants.
+        """
+        browser = self.getBrowser(None, user=user, streaming=streaming)
+        for name, value in headers.items():
+            browser.addHeader(name, value)
         browser.handleErrors = False
         browser.raiseHttpErrors = False
         if isinstance(expectedStatus, list):
