@@ -3,6 +3,7 @@ import logging
 import re
 
 from AccessControl import Unauthorized
+from sqlalchemy import func
 from z3c.saconfig import Session
 from zope.publisher.interfaces import NotFound
 
@@ -56,12 +57,9 @@ class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
     the root the app serves the bundle from, taken from the querystring or
     JSON body and defaulting to this portal's URL.
 
-    Takes no student and writes nothing, and the output says nothing about
-    one either: no 'settings' (there's nobody to choose the randomised ones
-    for, and one draw baked in would be the same "random" choice on every
-    device), no 'answerQueue', and no 'user' - the last being what stops
-    syncLecture() rejecting a seeded lecture as somebody else's. The client
-    supplies all three for whoever is using it.
+    The dump should be irrespective of student, as it's embedded into
+    the app. No settings are written apart from 'hist_sel', which says
+    more about the lecture than the student.
 
     NB: Authenticated by the KEY_HEADER shared secret rather than by a
     Plone login - see requireDumpKey().
@@ -188,6 +186,31 @@ class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
             .order_by(db.Question.plonePath)
             .all())
 
+    def lectureSettings(self, dbLec):
+        """
+        The settings to bundle with a lecture: 'hist_sel' alone.
+
+        Unlike the rest of the settings, hist_sel is structural - it says
+        whether the lecture draws on the student's history at all - so a
+        bundled lecture that left it out would drill differently from the
+        same lecture synced, iaa.js defaulting it to 0.
+        """
+        latestVersion = (Session.query(func.max(db.LectureGlobalSetting.lectureVersion))
+            .filter_by(lectureId=dbLec.lectureId)
+        ).one()[0]
+        dbLgs = (Session.query(db.LectureGlobalSetting)
+            .filter_by(lectureId=dbLec.lectureId)
+            .filter_by(lectureVersion=latestVersion)
+            .filter_by(key='hist_sel')
+            .filter_by(variant='')
+            .first())
+
+        # NB: A string, as @@quizdb-sync's settings are, getSetting() parsing
+        # a float back out of it
+        return dict(
+            hist_sel=dbLgs.value if dbLgs is not None and dbLgs.value is not None else u'0',
+        )
+
     def dumpLecture(self, lectureObj, dbLec, nextDbLec, emitted):
         """
         Yield (filename, content) for each of the lecture's questions, then
@@ -232,6 +255,7 @@ class TutorialDumpView(StreamingJSONBrowserView, QuestionView):
             slide_uri=self.lectureObjToUrl(lectureObj, 'slide-html'),
             review_uri=self.lectureObjToUrl(lectureObj, 'quizdb-review-ugqn'),
             title=lectureObj.title,
+            settings=self.lectureSettings(dbLec),
             questions=questions,
         )
 

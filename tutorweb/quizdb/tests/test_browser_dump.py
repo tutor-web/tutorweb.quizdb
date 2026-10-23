@@ -203,6 +203,7 @@ class TutorialDumpViewFunctional(FunctionalTestCase):
             u'next_uri',
             u'questions',
             u'review_uri',
+            u'settings',
             u'slide_uri',
             u'title',
             u'uri',
@@ -215,13 +216,95 @@ class TutorialDumpViewFunctional(FunctionalTestCase):
     def test_nothingPerStudent(self):
         """
         Nothing in the dump is specific to a student: the client supplies the
-        settings, answer queue and user for whoever is using it.
+        answer queue and user for whoever is using it, and every setting bar
+        hist_sel, which belongs to the lecture (see test_histSel).
         """
         out = self.dump()
 
         for content in out.values():
-            for key in ('settings', 'answerQueue', 'user'):
+            for key in ('answerQueue', 'user'):
                 self.assertFalse(key in content, msg=key)
+            if 'settings' in content:
+                self.assertEqual(list(content['settings'].keys()), [u'hist_sel'])
+
+    def histSel(self, settings):
+        """Dump lec1 with (settings) in place, and report its hist_sel"""
+        portal = self.layer['portal']
+
+        portal['dept1']['tut1']['lec1'].settings = settings
+        self.objectPublish(portal['dept1']['tut1']['lec1'])
+        transaction.commit()
+
+        out = self.dump()
+        return out[self.lecKey('/plone/dept1/tut1/lec1')]['settings']['hist_sel']
+
+    def test_histSel(self):
+        """
+        hist_sel travels with the lecture: it says whether the lecture draws
+        on the student's history, so a bundled lecture has to drill the same
+        way as a synced one.
+        """
+        # The registry default, for a lecture that doesn't set one
+        self.assertEqual(self.histSel(None), u'0')
+
+        # ...and the lecture's own setting when it has one
+        self.assertEqual(self.histSel([
+            dict(key='hist_sel', value='0.8'),
+        ]), u'0.8')
+
+        # A string, as @@quizdb-sync's settings are
+        self.assertEqual(self.histSel([
+            dict(key='hist_sel', value='1'),
+        ]), u'1')
+
+        # Only hist_sel is bundled, the rest being the client's to choose
+        # (as test_nothingPerStudent checks)
+        self.assertEqual(self.histSel([
+            dict(key='hist_sel', value='0.5'),
+            dict(key='question_cap', value='10'),
+        ]), u'0.5')
+
+    def test_histSelPerLecture(self):
+        """Each lecture gets its own, not the tutorial's or its neighbour's"""
+        portal = self.layer['portal']
+
+        portal['dept1']['tut1'].settings = [dict(key='hist_sel', value='0.1')]
+        portal['dept1']['tut1']['lec1'].settings = [dict(key='hist_sel', value='0.8')]
+        portal['dept1']['tut1']['lec2'].settings = None
+        for lec in ('lec1', 'lec2'):
+            self.objectPublish(portal['dept1']['tut1'][lec])
+        transaction.commit()
+
+        out = self.dump()
+        self.assertEqual(
+            out[self.lecKey('/plone/dept1/tut1/lec1')]['settings']['hist_sel'],
+            u'0.8',
+        )
+        # Inherited from the tutorial, as @@quizdb-sync would
+        self.assertEqual(
+            out[self.lecKey('/plone/dept1/tut1/lec2')]['settings']['hist_sel'],
+            u'0.1',
+        )
+
+    def test_histSelNotDrawn(self):
+        """
+        A hist_sel to be drawn per student isn't ours to draw: one draw baked
+        in would be the same "random" choice on every device, so it stays at
+        the default until a sync brings the student their own.
+        """
+        self.assertEqual(self.histSel([
+            dict(key='hist_sel:min', value='0.2'),
+            dict(key='hist_sel:max', value='0.8'),
+        ]), u'0')
+
+    def test_histSelVariantIgnored(self):
+        """
+        Likewise a variant, which takes a student to be applicable to: the
+        dump bundles the general case.
+        """
+        self.assertEqual(self.histSel([
+            dict(key='hist_sel', variant='registered', value='0.8'),
+        ]), u'0')
 
     def test_everyReferenceResolvesWithinTheDump(self):
         """
